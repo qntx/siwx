@@ -1,5 +1,5 @@
 [workspace]
-members = ["siwx"]
+members = ["siwx", "siwx-cli"]
 default-members = ["siwx"]
 resolver = "3"
 
