@@ -9,3 +9,11 @@ version = "0.1.0"
 [[package]]
 name = "siwx-cli"
 version = "0.1.0"
+
+[[package]]
+name = "siwx-evm"
+version = "0.1.0"
+
+[[package]]
+name = "siwx-svm"
+version = "0.1.0"
