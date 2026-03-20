@@ -313,6 +313,12 @@ impl SiwxMessage {
             ));
         }
 
+        // Resources must be valid RFC 3986 URIs
+        for r in &self.resources {
+            UriString::try_from(r.as_str())
+                .map_err(|e| SiwxError::InvalidUri(format!("invalid resource URI: {e}")))?;
+        }
+
         // Domain binding
         if let Some(ref expected) = opts.domain
             && *expected != self.domain
@@ -416,6 +422,9 @@ impl FromStr for SiwxMessage {
             lines.next();
             let mut res = Vec::new();
             for line in lines {
+                if line.is_empty() {
+                    break;
+                }
                 let item = line.strip_prefix("- ").ok_or_else(|| {
                     SiwxError::invalid_format("resource line must start with '- '")
                 })?;
@@ -678,5 +687,23 @@ Resources:
     fn empty_domain_rejected() {
         let err = SiwxMessage::new("", "a", "https://d.com", "1", "1").unwrap_err();
         assert!(matches!(err, SiwxError::InvalidFormat(_)));
+    }
+
+    #[test]
+    fn parse_tolerates_trailing_newline() {
+        let msg = sample_message();
+        let mut text = msg.to_sign_string("Ethereum");
+        text.push('\n');
+        let parsed: SiwxMessage = text.parse().expect("should parse with trailing newline");
+        assert_eq!(parsed, msg);
+    }
+
+    #[test]
+    fn invalid_resource_uri_rejected() {
+        let msg = SiwxMessage::new("d.com", "a", "https://d.com", "1", "1")
+            .unwrap()
+            .with_resources(["not a valid uri ::: bad"]);
+        let err = msg.validate(&ValidateOpts::default()).unwrap_err();
+        assert!(matches!(err, SiwxError::InvalidUri(_)));
     }
 }
