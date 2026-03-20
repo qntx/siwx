@@ -91,6 +91,21 @@ impl SiwxMessage {
     /// # Errors
     ///
     /// Returns [`SiwxError`] if any mandatory field is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use siwx::SiwxMessage;
+    ///
+    /// let msg = SiwxMessage::new(
+    ///     "example.com",
+    ///     "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+    ///     "https://example.com/login",
+    ///     "1",
+    ///     "1",
+    /// )?;
+    /// # Ok::<(), siwx::SiwxError>(())
+    /// ```
     pub fn new(
         domain: impl Into<String>,
         address: impl Into<String>,
@@ -166,14 +181,23 @@ impl SiwxMessage {
         self.resources = resources.into_iter().map(Into::into).collect();
         self
     }
-}
 
-impl SiwxMessage {
     /// Render the human-readable signing string.
     ///
     /// `chain_name` is the human-readable ecosystem label shown in the
     /// preamble (e.g. `"Ethereum"`, `"Solana"`).  Each chain crate provides a
     /// constant for this.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use siwx::SiwxMessage;
+    ///
+    /// let msg = SiwxMessage::new("example.com", "addr1", "https://example.com", "1", "1")?;
+    /// let text = msg.to_sign_string("Ethereum");
+    /// assert!(text.starts_with("example.com wants you to sign in with your Ethereum account:"));
+    /// # Ok::<(), siwx::SiwxError>(())
+    /// ```
     #[must_use]
     pub fn to_sign_string(&self, chain_name: &str) -> String {
         let mut out = String::with_capacity(512);
@@ -236,6 +260,7 @@ impl SiwxMessage {
 
 /// Options for temporal validation.
 #[derive(Debug, Clone, Default)]
+#[non_exhaustive]
 pub struct ValidateOpts {
     /// The point in time to check against. Defaults to `OffsetDateTime::now_utc()`.
     pub timestamp: Option<OffsetDateTime>,
@@ -251,6 +276,16 @@ impl SiwxMessage {
     /// # Errors
     ///
     /// Returns an appropriate [`SiwxError`] variant on any validation failure.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use siwx::{SiwxMessage, ValidateOpts};
+    ///
+    /// let msg = SiwxMessage::new("example.com", "addr1", "https://example.com", "1", "1")?;
+    /// msg.validate(&ValidateOpts::default())?;
+    /// # Ok::<(), siwx::SiwxError>(())
+    /// ```
     pub fn validate(&self, opts: &ValidateOpts) -> Result<(), SiwxError> {
         // Required fields must be non-empty
         if self.domain.is_empty() {
@@ -558,15 +593,7 @@ Resources:
         let msg = sample_message();
         let text = msg.to_sign_string("Ethereum");
         let parsed: SiwxMessage = text.parse().expect("parse");
-        assert_eq!(parsed.domain, msg.domain);
-        assert_eq!(parsed.address, msg.address);
-        assert_eq!(parsed.statement, msg.statement);
-        assert_eq!(parsed.uri, msg.uri);
-        assert_eq!(parsed.version, msg.version);
-        assert_eq!(parsed.chain_id, msg.chain_id);
-        assert_eq!(parsed.nonce, msg.nonce);
-        assert_eq!(parsed.issued_at, msg.issued_at);
-        assert_eq!(parsed.resources, msg.resources);
+        assert_eq!(parsed, msg);
     }
 
     #[test]

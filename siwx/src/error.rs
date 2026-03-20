@@ -2,6 +2,7 @@ use std::fmt;
 
 /// Errors produced by siwx operations.
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum SiwxError {
     /// The `domain` field is missing or malformed.
     #[error("invalid domain: {0}")]

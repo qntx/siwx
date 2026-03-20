@@ -2,17 +2,28 @@
 
 use rand::RngExt;
 
+/// Default nonce length (17 characters, matching the siwe reference suite).
+pub const DEFAULT_LEN: usize = 17;
+
 const ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
 /// Generates a random alphanumeric nonce of the given `len`.
 ///
 /// CAIP-122 does not mandate a minimum length, but EIP-4361 requires ≥ 8
 /// characters. A length of 17 (matching the siwe reference suite) is a
-/// sensible default.
+/// sensible default — see [`DEFAULT_LEN`].
 ///
 /// # Panics
 ///
 /// Panics if `len == 0`.
+///
+/// # Examples
+///
+/// ```
+/// let nonce = siwx::nonce::generate(17);
+/// assert_eq!(nonce.len(), 17);
+/// assert!(nonce.chars().all(|c| c.is_ascii_alphanumeric()));
+/// ```
 #[must_use]
 pub fn generate(len: usize) -> String {
     assert!(len > 0, "nonce length must be > 0");
@@ -22,10 +33,14 @@ pub fn generate(len: usize) -> String {
         .collect()
 }
 
-/// Default nonce length (17 characters, matching the siwe reference suite).
-pub const DEFAULT_LEN: usize = 17;
-
 /// Generates a random alphanumeric nonce with the [`DEFAULT_LEN`] of 17.
+///
+/// # Examples
+///
+/// ```
+/// let nonce = siwx::nonce::generate_default();
+/// assert_eq!(nonce.len(), siwx::nonce::DEFAULT_LEN);
+/// ```
 #[must_use]
 pub fn generate_default() -> String {
     generate(DEFAULT_LEN)

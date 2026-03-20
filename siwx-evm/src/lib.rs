@@ -84,17 +84,6 @@ pub(crate) fn parse_address(s: &str) -> Result<Address, SiwxError> {
         .map_err(|e| SiwxError::InvalidAddress(e.to_string()))
 }
 
-/// Compute the EIP-191 prefixed hash of a message string.
-///
-/// `keccak256("\x19Ethereum Signed Message:\n" + len + message)`
-pub(crate) fn eip191_hash(message: &str) -> alloy::primitives::B256 {
-    let prefix = format!("\x19Ethereum Signed Message:\n{}", message.len());
-    let mut data = Vec::with_capacity(prefix.len() + message.len());
-    data.extend_from_slice(prefix.as_bytes());
-    data.extend_from_slice(message.as_bytes());
-    alloy::primitives::keccak256(&data)
-}
-
 /// Auto-detecting verifier that tries EIP-191 first; if the recovered address
 /// does not match `message.address`, falls back to EIP-1271.
 ///

@@ -1,7 +1,7 @@
-use alloy::primitives::Signature;
+use alloy::primitives::{Signature, eip191_hash_message};
 use siwx::{SiwxError, SiwxMessage};
 
-use crate::{eip191_hash, format_message, parse_address};
+use crate::{format_message, parse_address};
 
 /// EIP-191 `personal_sign` verifier.
 ///
@@ -24,7 +24,7 @@ impl Eip191Verifier {
             .map_err(|e| SiwxError::InvalidSignature(format!("bad signature encoding: {e}")))?;
 
         let text = format_message(message);
-        let hash = eip191_hash(&text);
+        let hash = eip191_hash_message(text.as_bytes());
 
         let recovered = alloy_sig
             .recover_address_from_prehash(&hash)
