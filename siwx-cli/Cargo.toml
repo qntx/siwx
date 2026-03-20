@@ -2,11 +2,15 @@
 name = "siwx-cli"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 description.workspace = true
 
 [dependencies]
+siwx.workspace = true
+siwx-evm.workspace = true
+siwx-svm.workspace = true
 
 [lints]
 workspace = true

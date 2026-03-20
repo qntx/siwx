@@ -4,14 +4,31 @@ default-members = ["siwx"]
 resolver = "3"
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
+rust-version = "1.85"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/qntx/siwx"
 description = "Sign In with X"
+keywords = ["caip-122", "sign-in", "authentication", "blockchain"]
+categories = ["authentication", "cryptography"]
 
 [workspace.dependencies]
+siwx = {version = "0.2", path = "siwx" }
+siwx-evm = { version = "0.2", path = "siwx-evm" }
+siwx-svm = { version = "0.2", path = "siwx-svm" }
 
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+time = { version = "0.3", features = ["parsing", "formatting"] }
+iri-string = "0.7"
+http = "1"
+rand = "0.10"
+alloy = { version = "1", features = ["sol-types", "contract", "provider-http", "signer-local", "network"] }
+ed25519-dalek = { version = "2", features = ["rand_core"] }
+bs58 = "0.5"
+hex = "0.4"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 
 [profile.release]
 codegen-units = 1

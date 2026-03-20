@@ -2,11 +2,27 @@
 name = "siwx"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 description.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [dependencies]
+thiserror.workspace = true
+time.workspace = true
+iri-string.workspace = true
+http.workspace = true
+rand.workspace = true
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+time = { version = "0.3", features = ["parsing", "formatting", "macros"] }
+
+[features]
+default = []
+serde = ["dep:serde", "time/serde-well-known"]
 
 [lints]
 workspace = true

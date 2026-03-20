@@ -21,6 +21,6 @@ allow-dbg-in-tests = true
 allow-print-in-tests = true
 allow-unwrap-in-tests = true
 
-avoid-breaking-exported-api = true
+avoid-breaking-exported-api = false
 
 literal-representation-threshold = 4
