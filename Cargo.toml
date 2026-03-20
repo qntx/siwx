@@ -22,12 +22,10 @@ thiserror = "2"
 serde = { version = "1", features = ["derive"] }
 time = { version = "0.3", features = ["parsing", "formatting"] }
 iri-string = "0.7"
-http = "1"
 rand = "0.10"
 alloy = { version = "1", features = ["sol-types", "contract", "provider-http", "signer-local", "network"] }
 ed25519-dalek = { version = "2", features = ["rand_core"] }
 bs58 = "0.5"
-hex = "0.4"
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 
 [profile.release]

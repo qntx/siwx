@@ -13,7 +13,6 @@ categories.workspace = true
 thiserror.workspace = true
 time.workspace = true
 iri-string.workspace = true
-http.workspace = true
 rand.workspace = true
 serde = { workspace = true, optional = true }
 

@@ -3305,7 +3305,6 @@ dependencies = [
 name = "siwx"
 version = "0.2.0"
 dependencies = [
- "http",
  "iri-string",
  "rand 0.10.0",
  "serde",

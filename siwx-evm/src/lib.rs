@@ -57,20 +57,7 @@ pub fn format_message(message: &SiwxMessage) -> String {
 ///
 /// Returns [`SiwxError::InvalidAddress`] if the format is wrong.
 pub fn validate_address(address: &str) -> Result<(), SiwxError> {
-    if address.len() != 42 {
-        return Err(SiwxError::InvalidAddress(format!(
-            "expected 42 chars (0x + 40 hex), got {}",
-            address.len()
-        )));
-    }
-    if !address.starts_with("0x") {
-        return Err(SiwxError::InvalidAddress("must start with 0x".into()));
-    }
-    if !address[2..].chars().all(|c| c.is_ascii_hexdigit()) {
-        return Err(SiwxError::InvalidAddress(
-            "contains non-hex characters".into(),
-        ));
-    }
+    parse_address(address)?;
     Ok(())
 }
 
