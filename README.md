@@ -7,17 +7,11 @@
 **Chain-Agnostic Wallet Authentication for Rust**
 
 [![CI][ci-badge]][ci-url]
-[![crates.io][crate-badge]][crate-url]
-[![docs.rs][doc-badge]][doc-url]
 [![License][license-badge]][license-url]
 [![Rust][rust-badge]][rust-url]
 
 [ci-badge]: https://github.com/qntx/siwx/actions/workflows/rust.yml/badge.svg
 [ci-url]: https://github.com/qntx/siwx/actions/workflows/rust.yml
-[crate-badge]: https://img.shields.io/crates/v/siwx.svg
-[crate-url]: https://crates.io/crates/siwx
-[doc-badge]: https://img.shields.io/docsrs/siwx.svg
-[doc-url]: https://docs.rs/siwx
 [license-badge]: https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg
 [license-url]: LICENSE-MIT
 [rust-badge]: https://img.shields.io/badge/rust-edition%202024-orange.svg
@@ -26,9 +20,33 @@
 Type-safe Rust SDK for [CAIP-122](https://chainagnostic.org/CAIPs/caip-122) Sign-In with X.
 Construct, parse, validate, and verify wallet authentication messages across any blockchain.
 
-[Quick Start](#quick-start) | [Architecture](#architecture) | [API docs][doc-url]
+[Quick Start](#quick-start) | [CLI](#cli) | [Architecture](#architecture) | [API docs][siwx-doc-url]
 
 </div>
+
+## Crates
+
+| Crate | | Description |
+| --- | --- | --- |
+| **[`siwx`](siwx/)** | [![crates.io][siwx-crate]][siwx-crate-url] [![docs.rs][siwx-doc]][siwx-doc-url] | Core data model, parser, validator, `Verifier` trait |
+| **[`siwx-evm`](siwx-evm/)** | [![crates.io][evm-crate]][evm-crate-url] [![docs.rs][evm-doc]][evm-doc-url] | EIP-191 + EIP-1271 verification — Ethereum, Polygon, Arbitrum, … |
+| **[`siwx-svm`](siwx-svm/)** | [![crates.io][svm-crate]][svm-crate-url] [![docs.rs][svm-doc]][svm-doc-url] | Ed25519 verification — Solana |
+| **[`siwx-cli`](siwx-cli/)** | [![crates.io][cli-crate]][cli-crate-url] | CLI tool for message generation, parsing, and verification |
+
+[siwx-crate]: https://img.shields.io/crates/v/siwx.svg
+[siwx-crate-url]: https://crates.io/crates/siwx
+[evm-crate]: https://img.shields.io/crates/v/siwx-evm.svg
+[evm-crate-url]: https://crates.io/crates/siwx-evm
+[svm-crate]: https://img.shields.io/crates/v/siwx-svm.svg
+[svm-crate-url]: https://crates.io/crates/siwx-svm
+[cli-crate]: https://img.shields.io/crates/v/siwx-cli.svg
+[cli-crate-url]: https://crates.io/crates/siwx-cli
+[siwx-doc]: https://img.shields.io/docsrs/siwx.svg
+[siwx-doc-url]: https://docs.rs/siwx
+[evm-doc]: https://img.shields.io/docsrs/siwx-evm.svg
+[evm-doc-url]: https://docs.rs/siwx-evm
+[svm-doc]: https://img.shields.io/docsrs/siwx-svm.svg
+[svm-doc-url]: https://docs.rs/siwx-svm
 
 ## Overview
 
@@ -38,16 +56,9 @@ CAIP-122 standardises **wallet-based authentication** across blockchains — the
 - **Message parsing** — round-trip `FromStr` / `Display` for the human-readable signing format
 - **Temporal & domain validation** — expiration, not-before, domain binding, nonce binding
 - **Signature verification** — pluggable `Verifier` trait with built-in EVM and Solana support
+- **CLI tool** — generate, parse, and verify messages from the command line with JSON output
 
 The core `siwx` crate is chain-agnostic; chain-specific logic is in companion crates.
-
-## Crates
-
-| Crate | Description | Chains |
-| --- | --- | --- |
-| [`siwx`](siwx/) | Core data model, parser, validator, `Verifier` trait | Any |
-| [`siwx-evm`](siwx-evm/) | EIP-191 (`personal_sign`) + EIP-1271 (smart contract) | Ethereum, Polygon, Arbitrum, … |
-| [`siwx-svm`](siwx-svm/) | Ed25519 signature verification | Solana |
 
 ## Quick Start
 
@@ -101,24 +112,82 @@ let verifier = EvmVerifier::with_rpc("https://eth.llamarpc.com");
 verifier.verify(&message, &signature_bytes).await?;
 ```
 
-### Solana example
+## CLI
 
-```rust,no_run
-use siwx::{SiwxMessage, Verifier};
-use siwx_svm::Ed25519Verifier;
+### Install the CLI
 
-let message = SiwxMessage::new(
-    "example.com",
-    "GwAF45zjfyGzUbd3i3hXxzGeuchzEZXwpRYHZM5912F1",
-    "https://example.com/login",
-    "1",
-    "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d",  // Solana mainnet genesis hash
-)?;
+**Shell** (macOS / Linux):
 
-let text = siwx_svm::format_message(&message);
-// → "example.com wants you to sign in with your Solana account:\nGwAF45…"
+```sh
+curl -fsSL https://sh.qntx.fun/siwx | sh
+```
 
-// Ed25519Verifier::new(pubkey_bytes).verify(&message, &sig_bytes).await?;
+**PowerShell** (Windows):
+
+```powershell
+irm https://sh.qntx.fun/siwx/ps | iex
+```
+
+Or via Cargo:
+
+```bash
+cargo install siwx-cli
+```
+
+### Generate message
+
+```sh
+siwx evm message \
+  --domain example.com \
+  --address 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 \
+  --uri https://example.com/login \
+  --chain-id 1 \
+  --statement "Sign in to Example"
+```
+
+```sh
+siwx svm message \
+  --domain example.com \
+  --address GwAF45zjfyGzUbd3i3hXxzGeuchzEZXwpRYHZM5912F1 \
+  --uri https://example.com/login \
+  --chain-id 5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d
+```
+
+### Verify signature
+
+```sh
+siwx evm verify --message "..." --signature 0x...
+siwx svm verify --message "..." --signature 0x...
+```
+
+### Utilities
+
+```sh
+siwx nonce                    # generate cryptographic nonce (default 17 chars)
+siwx nonce -l 32              # custom length
+siwx parse --message "..."    # parse CAIP-122 message into structured fields
+```
+
+### JSON output
+
+All commands support `--json` for programmatic / agent consumption:
+
+```sh
+siwx --json evm message --domain example.com --address 0x... --uri https://... --chain-id 1
+```
+
+```json
+{
+  "chain": "ethereum",
+  "message": "example.com wants you to sign in with your Ethereum account:\n...",
+  "domain": "example.com",
+  "address": "0x...",
+  "uri": "https://...",
+  "version": "1",
+  "chain_id": "1",
+  "nonce": "L8s2Mf7kGxPQN9a4z",
+  "issued_at": "2024-01-01T00:00:00Z"
+}
 ```
 
 ## Architecture

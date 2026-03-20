@@ -1,33 +1,34 @@
-//! siwx-cli — Command-line tool for Sign-In with X message generation.
+#![allow(clippy::print_stdout, clippy::print_stderr)]
+//! siwx — CAIP-122 Sign-In with X CLI tool.
 
-#[allow(clippy::print_stdout)]
+mod cmd;
+mod output;
+
+use clap::Parser;
+use cmd::{Cli, Commands};
+
 fn main() {
-    let msg = siwx::SiwxMessage::new(
-        "example.com",
-        "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
-        "https://example.com/login",
-        "1",
-        "1",
-    )
-    .expect("valid message")
-    .with_statement("Sign in to Example App")
-    .with_nonce(siwx::nonce::generate_default());
+    let cli = Cli::parse();
+    let json = cli.json;
 
-    println!("=== Ethereum ===");
-    println!("{}", siwx_evm::format_message(&msg));
-    println!();
+    if let Err(e) = run(cli) {
+        if json {
+            let _ = output::print_json(&output::ErrorOutput {
+                error: e.to_string(),
+            });
+        } else {
+            eprintln!("Error: {e}");
+        }
+        std::process::exit(1);
+    }
+}
 
-    let sol_msg = siwx::SiwxMessage::new(
-        "example.com",
-        "GwAF45zjfyGzUbd3i3hXxzGeuchzEZXwpRYHZM5912F1",
-        "https://example.com/login",
-        "1",
-        "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d",
-    )
-    .expect("valid message")
-    .with_statement("Sign in to Example App")
-    .with_nonce(siwx::nonce::generate_default());
-
-    println!("=== Solana ===");
-    println!("{}", siwx_svm::format_message(&sol_msg));
+fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
+    let json = cli.json;
+    match cli.command {
+        Commands::Evm(cmd) => cmd.execute(json),
+        Commands::Svm(cmd) => cmd.execute(json),
+        Commands::Nonce(args) => args.execute(json),
+        Commands::Parse(args) => args.execute(json),
+    }
 }
