@@ -62,16 +62,7 @@ The core `siwx` crate is chain-agnostic; chain-specific logic is in companion cr
 
 ## Quick Start
 
-Add dependencies to your `Cargo.toml`:
-
-```toml
-[dependencies]
-siwx = "0.2"
-siwx-evm = "0.2"   # for Ethereum
-siwx-svm = "0.2"   # for Solana
-```
-
-### Construct a challenge message (backend)
+### Construct message (backend)
 
 ```rust
 use siwx::SiwxMessage;
@@ -158,14 +149,6 @@ siwx svm message \
 ```sh
 siwx evm verify --message "..." --signature 0x...
 siwx svm verify --message "..." --signature 0x...
-```
-
-### Utilities
-
-```sh
-siwx nonce                    # generate cryptographic nonce (default 17 chars)
-siwx nonce -l 32              # custom length
-siwx parse --message "..."    # parse CAIP-122 message into structured fields
 ```
 
 ### JSON output

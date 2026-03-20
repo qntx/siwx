@@ -3427,7 +3427,7 @@ dependencies = [
 
 [[package]]
 name = "siwx"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "iri-string",
  "rand 0.10.0",
@@ -3438,7 +3438,7 @@ dependencies = [
 
 [[package]]
 name = "siwx-cli"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "clap",
  "colored",
@@ -3454,7 +3454,7 @@ dependencies = [
 
 [[package]]
 name = "siwx-evm"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "alloy",
  "siwx",
@@ -3463,7 +3463,7 @@ dependencies = [
 
 [[package]]
 name = "siwx-svm"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bs58",
  "ed25519-dalek",
