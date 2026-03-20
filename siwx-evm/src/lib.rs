@@ -57,6 +57,9 @@ pub fn format_message(message: &SiwxMessage) -> String {
 ///
 /// Returns [`SiwxError::InvalidAddress`] if the format is wrong.
 pub fn validate_address(address: &str) -> Result<(), SiwxError> {
+    if !address.starts_with("0x") {
+        return Err(SiwxError::InvalidAddress("must start with 0x".into()));
+    }
     parse_address(address)?;
     Ok(())
 }
