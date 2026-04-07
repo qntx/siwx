@@ -28,7 +28,7 @@ trivial-copy-size-limit = 8
 
 large-error-threshold = 128
 
-avoid-breaking-exported-api = true
+avoid-breaking-exported-api = false
 check-private-items = false
 
 allow-dbg-in-tests = true

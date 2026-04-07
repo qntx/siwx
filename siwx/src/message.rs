@@ -85,6 +85,18 @@ pub struct SiwxMessage {
     pub resources: Vec<String>,
 }
 
+/// Options for temporal validation.
+#[derive(Debug, Clone, Default)]
+#[non_exhaustive]
+pub struct ValidateOpts {
+    /// The point in time to check against. Defaults to `OffsetDateTime::now_utc()`.
+    pub timestamp: Option<OffsetDateTime>,
+    /// Expected domain (if set, must match `message.domain`).
+    pub domain: Option<String>,
+    /// Expected nonce (if set, must match `message.nonce`).
+    pub nonce: Option<String>,
+}
+
 impl SiwxMessage {
     /// Create a minimal valid message with only the mandatory CAIP-122 fields.
     ///
@@ -256,21 +268,7 @@ impl SiwxMessage {
         out.truncate(trimmed_len);
         out
     }
-}
 
-/// Options for temporal validation.
-#[derive(Debug, Clone, Default)]
-#[non_exhaustive]
-pub struct ValidateOpts {
-    /// The point in time to check against. Defaults to `OffsetDateTime::now_utc()`.
-    pub timestamp: Option<OffsetDateTime>,
-    /// Expected domain (if set, must match `message.domain`).
-    pub domain: Option<String>,
-    /// Expected nonce (if set, must match `message.nonce`).
-    pub nonce: Option<String>,
-}
-
-impl SiwxMessage {
     /// Validate the message fields and temporal constraints.
     ///
     /// # Errors
