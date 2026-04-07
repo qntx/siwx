@@ -4,8 +4,8 @@ mod evm;
 mod svm;
 
 use clap::{Args, Parser, Subcommand};
-pub use evm::EvmCommand;
-pub use svm::SvmCommand;
+pub(crate) use evm::EvmCommand;
+pub(crate) use svm::SvmCommand;
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
@@ -16,7 +16,7 @@ use crate::output;
 #[command(name = "siwx")]
 #[command(version, about, long_about = None)]
 #[command(propagate_version = true)]
-pub struct Cli {
+pub(crate) struct Cli {
     /// Output in JSON format for programmatic/agent consumption.
     #[arg(long, global = true)]
     pub json: bool,
@@ -27,7 +27,7 @@ pub struct Cli {
 
 /// Available commands.
 #[derive(Subcommand)]
-pub enum Commands {
+pub(crate) enum Commands {
     /// Ethereum (EIP-155) operations.
     #[command(name = "evm", alias = "eth")]
     Evm(EvmCommand),
@@ -47,7 +47,7 @@ pub enum Commands {
 
 /// Shared message-generation arguments.
 #[derive(Args)]
-pub struct MessageArgs {
+pub(crate) struct MessageArgs {
     /// RFC 4501 domain requesting the signing.
     #[arg(long)]
     pub domain: String,
@@ -95,7 +95,7 @@ pub struct MessageArgs {
 
 /// Shared verify arguments.
 #[derive(Args)]
-pub struct VerifyArgs {
+pub(crate) struct VerifyArgs {
     /// The raw CAIP-122 signing message text.
     #[arg(long)]
     pub message: String,
@@ -106,21 +106,21 @@ pub struct VerifyArgs {
 }
 
 #[derive(Args)]
-pub struct NonceArgs {
+pub(crate) struct NonceArgs {
     /// Nonce length in characters.
     #[arg(short, long, default_value_t = siwx::nonce::DEFAULT_LEN)]
     pub len: usize,
 }
 
 #[derive(Args)]
-pub struct ParseArgs {
+pub(crate) struct ParseArgs {
     /// Raw CAIP-122 message text to parse.
     #[arg(long)]
     pub message: String,
 }
 
 impl MessageArgs {
-    pub fn build(&self) -> Result<siwx::SiwxMessage, Box<dyn std::error::Error>> {
+    pub(crate) fn build(&self) -> Result<siwx::SiwxMessage, Box<dyn std::error::Error>> {
         let nonce = self
             .nonce
             .clone()
@@ -156,7 +156,7 @@ impl MessageArgs {
 }
 
 impl NonceArgs {
-    pub fn execute(&self, json: bool) -> Result<(), Box<dyn std::error::Error>> {
+    pub(crate) fn execute(&self, json: bool) -> Result<(), Box<dyn std::error::Error>> {
         let nonce = siwx::nonce::generate(self.len);
         if json {
             output::print_json(&output::NonceOutput {
@@ -171,20 +171,20 @@ impl NonceArgs {
 }
 
 impl ParseArgs {
-    pub fn execute(&self, json: bool) -> Result<(), Box<dyn std::error::Error>> {
+    pub(crate) fn execute(&self, json: bool) -> Result<(), Box<dyn std::error::Error>> {
         let msg: siwx::SiwxMessage = self.message.parse()?;
         let out = output::ParseOutput::from_message(&msg);
         output::render_parse(&out, json)
     }
 }
 
-pub fn decode_hex_signature(s: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+pub(crate) fn decode_hex_signature(s: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let s = s.strip_prefix("0x").unwrap_or(s);
     Ok(hex::decode(s)?)
 }
 
-pub fn fmt_ts(t: OffsetDateTime) -> String {
-    t.format(&Rfc3339).expect("RFC 3339 formatting cannot fail")
+pub(crate) fn fmt_ts(t: OffsetDateTime) -> String {
+    t.format(&Rfc3339).unwrap_or_else(|_| t.to_string())
 }
 
 fn parse_time_or_duration(s: &str) -> Result<OffsetDateTime, Box<dyn std::error::Error>> {

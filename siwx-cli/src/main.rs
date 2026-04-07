@@ -1,26 +1,37 @@
-#![allow(clippy::print_stdout, clippy::print_stderr)]
+#![expect(
+    clippy::print_stdout,
+    clippy::print_stderr,
+    reason = "CLI tool intentionally outputs to terminal"
+)]
 //! siwx — CAIP-122 Sign-In with X CLI tool.
 
 mod cmd;
 mod output;
 
+use std::process::ExitCode;
+
 use clap::Parser;
 use cmd::{Cli, Commands};
 
-fn main() {
+fn main() -> ExitCode {
     let cli = Cli::parse();
     let json = cli.json;
 
     if let Err(e) = run(cli) {
         if json {
-            let _ = output::print_json(&output::ErrorOutput {
+            if output::print_json(&output::ErrorOutput {
                 error: e.to_string(),
-            });
+            })
+            .is_err()
+            {
+                eprintln!("Failed to serialize error output");
+            }
         } else {
             eprintln!("Error: {e}");
         }
-        std::process::exit(1);
+        return ExitCode::FAILURE;
     }
+    ExitCode::SUCCESS
 }
 
 fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {

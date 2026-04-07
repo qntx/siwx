@@ -8,13 +8,13 @@ use crate::output;
 
 /// Solana operations.
 #[derive(Args)]
-pub struct SvmCommand {
+pub(crate) struct SvmCommand {
     #[command(subcommand)]
     pub action: SvmAction,
 }
 
 #[derive(Subcommand)]
-pub enum SvmAction {
+pub(crate) enum SvmAction {
     /// Generate a CAIP-122 signing message for Solana.
     Message(Box<MessageArgs>),
     /// Verify an Ed25519 signature over a CAIP-122 message.
@@ -23,13 +23,13 @@ pub enum SvmAction {
 
 /// SVM-specific verify arguments.
 #[derive(Args)]
-pub struct SvmVerifyArgs {
+pub(crate) struct SvmVerifyArgs {
     #[command(flatten)]
     pub common: VerifyArgs,
 }
 
 impl SvmCommand {
-    pub fn execute(&self, json: bool) -> Result<(), Box<dyn std::error::Error>> {
+    pub(crate) fn execute(&self, json: bool) -> Result<(), Box<dyn std::error::Error>> {
         match &self.action {
             SvmAction::Message(args) => message(args, json),
             SvmAction::Verify(args) => verify(args, json),

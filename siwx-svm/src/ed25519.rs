@@ -75,8 +75,8 @@ mod tests {
     use super::*;
 
     fn make_keypair(seed: u8) -> SigningKey {
-        #[allow(clippy::cast_possible_truncation)]
-        let bytes: [u8; 32] = std::array::from_fn(|i| seed.wrapping_add(i as u8));
+        let bytes: [u8; 32] =
+            std::array::from_fn(|i| seed.wrapping_add(u8::try_from(i).unwrap_or(0)));
         SigningKey::from_bytes(&bytes)
     }
 

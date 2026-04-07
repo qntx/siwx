@@ -8,13 +8,13 @@ use crate::output;
 
 /// Ethereum (EIP-155) operations.
 #[derive(Args)]
-pub struct EvmCommand {
+pub(crate) struct EvmCommand {
     #[command(subcommand)]
     pub action: EvmAction,
 }
 
 #[derive(Subcommand)]
-pub enum EvmAction {
+pub(crate) enum EvmAction {
     /// Generate a CAIP-122 signing message for Ethereum.
     Message(Box<MessageArgs>),
     /// Verify an EIP-191 signature over a CAIP-122 message.
@@ -23,13 +23,13 @@ pub enum EvmAction {
 
 /// EVM-specific verify arguments.
 #[derive(Args)]
-pub struct EvmVerifyArgs {
+pub(crate) struct EvmVerifyArgs {
     #[command(flatten)]
     pub common: VerifyArgs,
 }
 
 impl EvmCommand {
-    pub fn execute(&self, json: bool) -> Result<(), Box<dyn std::error::Error>> {
+    pub(crate) fn execute(&self, json: bool) -> Result<(), Box<dyn std::error::Error>> {
         match &self.action {
             EvmAction::Message(args) => message(args, json),
             EvmAction::Verify(args) => verify(args, json),

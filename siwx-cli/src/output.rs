@@ -4,7 +4,7 @@ use colored::Colorize;
 use serde::Serialize;
 
 #[derive(Serialize)]
-pub struct MessageOutput {
+pub(crate) struct MessageOutput {
     pub chain: String,
     pub message: String,
     pub domain: String,
@@ -23,7 +23,7 @@ pub struct MessageOutput {
 }
 
 #[derive(Serialize)]
-pub struct VerifyOutput {
+pub(crate) struct VerifyOutput {
     pub valid: bool,
     pub chain: String,
     pub domain: String,
@@ -31,13 +31,13 @@ pub struct VerifyOutput {
 }
 
 #[derive(Serialize)]
-pub struct NonceOutput {
+pub(crate) struct NonceOutput {
     pub nonce: String,
     pub len: usize,
 }
 
 #[derive(Serialize)]
-pub struct ParseOutput {
+pub(crate) struct ParseOutput {
     pub domain: String,
     pub address: String,
     pub uri: String,
@@ -60,8 +60,7 @@ pub struct ParseOutput {
 }
 
 impl ParseOutput {
-    pub fn from_message(msg: &siwx::SiwxMessage) -> Self {
-        use time::format_description::well_known::Rfc3339;
+    pub(crate) fn from_message(msg: &siwx::SiwxMessage) -> Self {
         Self {
             domain: msg.domain.clone(),
             address: msg.address.clone(),
@@ -70,13 +69,9 @@ impl ParseOutput {
             chain_id: msg.chain_id.clone(),
             statement: msg.statement.clone(),
             nonce: msg.nonce.clone(),
-            issued_at: msg.issued_at.map(|t| t.format(&Rfc3339).expect("RFC 3339")),
-            expiration_time: msg
-                .expiration_time
-                .map(|t| t.format(&Rfc3339).expect("RFC 3339")),
-            not_before: msg
-                .not_before
-                .map(|t| t.format(&Rfc3339).expect("RFC 3339")),
+            issued_at: msg.issued_at.map(crate::cmd::fmt_ts),
+            expiration_time: msg.expiration_time.map(crate::cmd::fmt_ts),
+            not_before: msg.not_before.map(crate::cmd::fmt_ts),
             request_id: msg.request_id.clone(),
             resources: msg.resources.clone(),
         }
@@ -84,18 +79,18 @@ impl ParseOutput {
 }
 
 #[derive(Serialize)]
-pub struct ErrorOutput {
+pub(crate) struct ErrorOutput {
     pub error: String,
 }
 
-pub fn print_json<T: Serialize>(value: &T) -> Result<(), serde_json::Error> {
+pub(crate) fn print_json<T: Serialize>(value: &T) -> Result<(), serde_json::Error> {
     let json = serde_json::to_string_pretty(value)?;
     println!("{json}");
     Ok(())
 }
 
 #[rustfmt::skip]
-pub fn render_message(out: &MessageOutput, json: bool) -> Result<(), Box<dyn std::error::Error>> {
+pub(crate) fn render_message(out: &MessageOutput, json: bool) -> Result<(), Box<dyn std::error::Error>> {
     if json { return Ok(print_json(out)?); }
 
     println!();
@@ -122,7 +117,7 @@ pub fn render_message(out: &MessageOutput, json: bool) -> Result<(), Box<dyn std
 }
 
 #[rustfmt::skip]
-pub fn render_verify(out: &VerifyOutput, json: bool) -> Result<(), Box<dyn std::error::Error>> {
+pub(crate) fn render_verify(out: &VerifyOutput, json: bool) -> Result<(), Box<dyn std::error::Error>> {
     if json { return Ok(print_json(out)?); }
 
     println!();
@@ -139,7 +134,7 @@ pub fn render_verify(out: &VerifyOutput, json: bool) -> Result<(), Box<dyn std::
 }
 
 #[rustfmt::skip]
-pub fn render_parse(out: &ParseOutput, json: bool) -> Result<(), Box<dyn std::error::Error>> {
+pub(crate) fn render_parse(out: &ParseOutput, json: bool) -> Result<(), Box<dyn std::error::Error>> {
     if json { return Ok(print_json(out)?); }
 
     println!();

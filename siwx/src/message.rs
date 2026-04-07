@@ -388,7 +388,8 @@ impl FromStr for SiwxMessage {
         // Optional statement (any line not starting with a known tag)
         let statement = match lines.peek() {
             Some(&line) if !line.is_empty() && !is_tag(line) => {
-                let stmt = lines.next().expect("peek succeeded").to_owned();
+                let stmt = line.to_owned();
+                lines.next();
                 // consume trailing blank line
                 if let Some(&bl) = lines.peek()
                     && bl.is_empty()
@@ -420,17 +421,7 @@ impl FromStr for SiwxMessage {
         // Resources
         let resources = if lines.peek().is_some_and(|l| *l == RES_TAG) {
             lines.next();
-            let mut res = Vec::new();
-            for line in lines {
-                if line.is_empty() {
-                    break;
-                }
-                let item = line.strip_prefix("- ").ok_or_else(|| {
-                    SiwxError::invalid_format("resource line must start with '- '")
-                })?;
-                res.push(item.to_owned());
-            }
-            res
+            parse_resource_lines(&mut lines)?
         } else {
             Vec::new()
         };
@@ -476,7 +467,23 @@ fn push_tag(out: &mut String, tag: &str, value: &str) {
 }
 
 fn fmt_ts(t: OffsetDateTime) -> String {
-    t.format(&Rfc3339).expect("RFC 3339 formatting cannot fail")
+    t.format(&Rfc3339).unwrap_or_else(|_| t.to_string())
+}
+
+fn parse_resource_lines(
+    lines: &mut std::iter::Peekable<std::str::Split<'_, char>>,
+) -> Result<Vec<String>, SiwxError> {
+    let mut res = Vec::new();
+    for line in lines {
+        if line.is_empty() {
+            break;
+        }
+        let item = line
+            .strip_prefix("- ")
+            .ok_or_else(|| SiwxError::invalid_format("resource line must start with '- '"))?;
+        res.push(item.to_owned());
+    }
+    Ok(res)
 }
 
 fn parse_ts(s: &str) -> Result<OffsetDateTime, SiwxError> {
@@ -529,7 +536,10 @@ fn is_tag(line: &str) -> bool {
 }
 
 #[cfg(feature = "serde")]
-#[allow(clippy::ref_option)]
+#[expect(
+    clippy::ref_option,
+    reason = "serde serialize_with requires &Option<T> signature"
+)]
 fn ser_opt_ts<S: serde::Serializer>(
     ts: &Option<OffsetDateTime>,
     serializer: S,

@@ -29,7 +29,10 @@ pub fn generate(len: usize) -> String {
     assert!(len > 0, "nonce length must be > 0");
     let mut rng = rand::rng();
     (0..len)
-        .map(|_| ALPHABET[rng.random_range(..ALPHABET.len())] as char)
+        .map(|_| {
+            let idx = rng.random_range(..ALPHABET.len());
+            ALPHABET.get(idx).copied().unwrap_or(b'A') as char
+        })
         .collect()
 }
 
@@ -70,6 +73,6 @@ mod tests {
     #[test]
     #[should_panic(expected = "nonce length must be > 0")]
     fn zero_length_panics() {
-        let _ = generate(0);
+        drop(generate(0));
     }
 }
