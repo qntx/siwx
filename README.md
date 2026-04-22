@@ -55,7 +55,7 @@ CAIP-122 standardises **wallet-based authentication** across blockchains — the
 - **Message construction** — build CAIP-122 challenge messages with a builder API
 - **Message parsing** — round-trip `FromStr` / `Display` for the human-readable signing format
 - **Temporal & domain validation** — expiration, not-before, domain binding, nonce binding
-- **Signature verification** — pluggable `Verifier` trait with built-in EVM and Solana support
+- **Signature verification** — pluggable `Verifier` trait (with a `CHAIN_NAME` associated constant) and built-in EVM / Solana implementations
 - **CLI tool** — generate, parse, and verify messages from the command line with JSON output
 
 The core `siwx` crate is chain-agnostic; chain-specific logic is in companion crates.
@@ -65,7 +65,8 @@ The core `siwx` crate is chain-agnostic; chain-specific logic is in companion cr
 ### Construct message (backend)
 
 ```rust
-use siwx::SiwxMessage;
+use siwx::{SiwxMessage, Verifier};
+use siwx_evm::Eip191Verifier;
 
 let message = SiwxMessage::new(
     "example.com",                                    // domain
@@ -77,8 +78,10 @@ let message = SiwxMessage::new(
 .with_statement("Sign in to Example")
 .with_nonce(siwx::nonce::generate_default());
 
-// Format as the human-readable signing string
-let signing_input = siwx_evm::format_message(&message);
+// Render into the EIP-4361 signing string via the chain's Verifier.
+// `format_message` is a `Verifier` default method — the chain label comes
+// from `Eip191Verifier::CHAIN_NAME` ("Ethereum"), so it can never drift.
+let signing_input = Eip191Verifier::format_message(&message);
 // → "example.com wants you to sign in with your Ethereum account:\n0xd8dA…"
 ```
 
@@ -88,17 +91,22 @@ let signing_input = siwx_evm::format_message(&message);
 use siwx::{SiwxMessage, ValidateOpts, Verifier};
 use siwx_evm::EvmVerifier;
 
-// Parse the message returned from the frontend
+// Inputs (typically supplied by the frontend / session store):
+//   signing_input:   String        — the CAIP-122 message text the wallet signed
+//   signature_bytes: &[u8]         — raw bytes returned by the wallet
+//   expected_nonce:  String        — nonce your backend issued in step 1
+
+// 1. Parse the message text back into a typed value
 let message: SiwxMessage = signing_input.parse()?;
 
-// Validate fields & temporal constraints
+// 2. Validate fields & temporal constraints
 message.validate(&ValidateOpts {
     domain: Some("example.com".into()),
     nonce:  Some(expected_nonce),
     ..Default::default()
 })?;
 
-// Cryptographic verification (EIP-191 with EIP-1271 fallback)
+// 3. Cryptographic verification (EIP-191 first, EIP-1271 fallback via RPC)
 let verifier = EvmVerifier::with_rpc("https://eth.llamarpc.com");
 verifier.verify(&message, &signature_bytes).await?;
 ```
@@ -211,11 +219,20 @@ Chain-specific crates implement the `Verifier` trait:
 
 ```rust
 pub trait Verifier: Send + Sync {
+    /// Ecosystem label embedded in the CAIP-122 preamble — e.g. "Ethereum",
+    /// "Solana". Required, so new chains can never ship without one.
+    const CHAIN_NAME: &'static str;
+
+    /// Verify `signature` over `message`.
     fn verify(
         &self,
         message: &SiwxMessage,
         signature: &[u8],
     ) -> impl Future<Output = Result<(), SiwxError>> + Send;
+
+    /// Render `message` into the chain's canonical signing string.
+    /// Default impl calls `SiwxMessage::to_sign_string(Self::CHAIN_NAME)`.
+    fn format_message(message: &SiwxMessage) -> String { /* ... */ }
 }
 ```
 
@@ -228,7 +245,8 @@ pub trait Verifier: Send + Sync {
 
 ### Extending to New Chains
 
-Implement `Verifier` for your target chain:
+Implement `Verifier` for your target chain — just declare the chain label and
+plug in your verification logic; `format_message` is handled for you.
 
 ```rust,no_run
 use siwx::{SiwxError, SiwxMessage, Verifier};
@@ -236,6 +254,8 @@ use siwx::{SiwxError, SiwxMessage, Verifier};
 pub struct MyChainVerifier;
 
 impl Verifier for MyChainVerifier {
+    const CHAIN_NAME: &'static str = "MyChain";
+
     async fn verify(
         &self,
         message: &SiwxMessage,
@@ -245,6 +265,9 @@ impl Verifier for MyChainVerifier {
         todo!()
     }
 }
+
+// `MyChainVerifier::format_message(&msg)` now renders:
+//   "{domain} wants you to sign in with your MyChain account:\n{address}\n..."
 ```
 
 ## Features
