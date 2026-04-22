@@ -1,15 +1,14 @@
 //! # siwx-evm — Ethereum verification for Sign-In with X
 //!
-//! Implements CAIP-122 namespace profile for EIP-155 chains:
+//! Implements the CAIP-122 namespace profile for EIP-155 chains:
 //! - **EIP-191** (`personal_sign`) — ECDSA recovery-based verification
 //! - **EIP-1271** — smart-contract `isValidSignature` verification (requires RPC)
 //!
 //! # Quick start
 //!
 //! ```rust,no_run
-//! use siwx::SiwxMessage;
-//! use siwx_evm::{Eip191Verifier, CHAIN_NAME};
-//! use siwx::Verifier;
+//! use siwx::{SiwxMessage, Verifier};
+//! use siwx_evm::Eip191Verifier;
 //!
 //! # async fn run() -> Result<(), Box<dyn std::error::Error>> {
 //! let message = SiwxMessage::new(
@@ -19,7 +18,7 @@
 //!     "1",
 //!     "1",
 //! )?;
-//! let text = siwx_evm::format_message(&message);
+//! let text = Eip191Verifier::format_message(&message);
 //! // let signature_bytes: [u8; 65] = ...; // from wallet
 //! // Eip191Verifier.verify(&message, &signature_bytes).await?;
 //! # Ok(())
@@ -32,23 +31,10 @@ mod eip191;
 use alloy::primitives::Address;
 pub use eip191::Eip191Verifier;
 pub use eip1271::Eip1271Verifier;
-use siwx::{SiwxError, SiwxMessage};
+use siwx::{SiwxError, SiwxMessage, Verifier};
 
-/// Human-readable chain name for the EIP-155 namespace, used in the CAIP-122
-/// preamble line.
+/// Human-readable chain label embedded in the CAIP-122 preamble.
 pub const CHAIN_NAME: &str = "Ethereum";
-
-/// CAIP-122 signature type for EIP-191 `personal_sign`.
-pub const SIG_TYPE_EIP191: &str = "eip191";
-
-/// CAIP-122 signature type for EIP-1271 contract signatures.
-pub const SIG_TYPE_EIP1271: &str = "eip1271";
-
-/// Convenience: format a [`SiwxMessage`] into the EIP-4361 signing string.
-#[must_use]
-pub fn format_message(message: &SiwxMessage) -> String {
-    message.to_sign_string(CHAIN_NAME)
-}
 
 /// Validate that `address` is a well-formed 0x-prefixed, 40-hex-char Ethereum
 /// address.
@@ -65,10 +51,6 @@ pub fn validate_address(address: &str) -> Result<(), SiwxError> {
 }
 
 /// Parse an Ethereum address string into an [`alloy::primitives::Address`].
-///
-/// # Errors
-///
-/// Returns [`SiwxError::InvalidAddress`] on invalid format.
 pub(crate) fn parse_address(s: &str) -> Result<Address, SiwxError> {
     s.parse::<Address>()
         .map_err(|e| SiwxError::InvalidAddress(e.to_string()))
@@ -105,9 +87,11 @@ impl Default for EvmVerifier {
     }
 }
 
-impl siwx::Verifier for EvmVerifier {
+impl Verifier for EvmVerifier {
+    const CHAIN_NAME: &'static str = CHAIN_NAME;
+
     async fn verify(&self, message: &SiwxMessage, signature: &[u8]) -> Result<(), SiwxError> {
-        let eip191_err = match Eip191Verifier::verify_inner(message, signature) {
+        let eip191_err = match Eip191Verifier::verify_sync(message, signature) {
             Ok(()) => return Ok(()),
             Err(e) => e,
         };
@@ -117,7 +101,7 @@ impl siwx::Verifier for EvmVerifier {
         };
 
         Eip1271Verifier::new(rpc_url)
-            .verify_inner(message, signature)
+            .verify(message, signature)
             .await
     }
 }
@@ -127,20 +111,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn validate_address_valid() {
+    fn validate_address_accepts_canonical_formats() {
         assert!(validate_address("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045").is_ok());
         assert!(validate_address("0x0000000000000000000000000000000000000000").is_ok());
     }
 
     #[test]
-    fn validate_address_invalid() {
+    fn validate_address_rejects_bad_formats() {
         assert!(validate_address("not-an-address").is_err());
         assert!(validate_address("0x123").is_err());
         assert!(validate_address("d8dA6BF26964aF9D7eEd9e03E53415D37aA96045").is_err());
     }
 
     #[test]
-    fn format_message_preamble() {
+    fn format_message_uses_ethereum_preamble() {
         let msg = SiwxMessage::new(
             "example.com",
             "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
@@ -148,8 +132,8 @@ mod tests {
             "1",
             "1",
         )
-        .unwrap();
-        let text = format_message(&msg);
+        .expect("valid");
+        let text = Eip191Verifier::format_message(&msg);
         assert!(text.starts_with("example.com wants you to sign in with your Ethereum account:"));
     }
 }

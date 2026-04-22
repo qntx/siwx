@@ -1,7 +1,7 @@
-use ed25519_dalek::{Signature, Verifier, VerifyingKey};
-use siwx::{SiwxError, SiwxMessage};
+use ed25519_dalek::{Signature, Verifier as DalekVerifier, VerifyingKey};
+use siwx::{SiwxError, SiwxMessage, Verifier};
 
-use crate::format_message;
+use crate::CHAIN_NAME;
 
 /// Ed25519 signature verifier for Solana.
 ///
@@ -33,13 +33,12 @@ impl Ed25519Verifier {
         })?;
         Ok(Self { pubkey: arr })
     }
+}
 
-    /// Core verification logic (synchronous).
-    pub(crate) fn verify_inner(
-        &self,
-        message: &SiwxMessage,
-        signature: &[u8],
-    ) -> Result<(), SiwxError> {
+impl Verifier for Ed25519Verifier {
+    const CHAIN_NAME: &'static str = CHAIN_NAME;
+
+    async fn verify(&self, message: &SiwxMessage, signature: &[u8]) -> Result<(), SiwxError> {
         let sig_arr: [u8; 64] = signature.try_into().map_err(|_| {
             SiwxError::InvalidSignature(format!(
                 "Ed25519 signature must be 64 bytes, got {}",
@@ -51,25 +50,17 @@ impl Ed25519Verifier {
         let verifying_key = VerifyingKey::from_bytes(&self.pubkey)
             .map_err(|e| SiwxError::InvalidAddress(format!("invalid Ed25519 pubkey: {e}")))?;
 
-        let text = format_message(message);
-        let msg_bytes = text.as_bytes();
+        let text = message.to_sign_string(CHAIN_NAME);
 
         verifying_key
-            .verify(msg_bytes, &sig)
+            .verify(text.as_bytes(), &sig)
             .map_err(|e| SiwxError::VerificationFailed(format!("Ed25519 verify failed: {e}")))
-    }
-}
-
-impl siwx::Verifier for Ed25519Verifier {
-    async fn verify(&self, message: &SiwxMessage, signature: &[u8]) -> Result<(), SiwxError> {
-        self.verify_inner(message, signature)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use ed25519_dalek::Signer;
-    use ed25519_dalek::SigningKey;
+    use ed25519_dalek::{Signer, SigningKey};
     use siwx::Verifier as _;
 
     use super::*;
@@ -90,7 +81,7 @@ mod tests {
             .expect("valid")
             .with_nonce("testnonce12345678");
 
-        let text = format_message(&message);
+        let text = Ed25519Verifier::format_message(&message);
         let sig = sk.sign(text.as_bytes());
 
         Ed25519Verifier::new(vk.to_bytes())
@@ -108,7 +99,7 @@ mod tests {
         let message = SiwxMessage::new("example.com", &addr, "https://example.com/login", "1", "1")
             .expect("valid");
 
-        let text = format_message(&message);
+        let text = Ed25519Verifier::format_message(&message);
         let sig = sk.sign(text.as_bytes());
 
         let err = Ed25519Verifier::new(wrong_vk.to_bytes())

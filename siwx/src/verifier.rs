@@ -16,10 +16,25 @@ use crate::{SiwxError, SiwxMessage};
 ///   **cryptographically invalid**.
 /// * Return other `Err` variants for malformed inputs.
 pub trait Verifier: Send + Sync {
+    /// Ecosystem label embedded in the CAIP-122 preamble
+    /// (`"{domain} wants you to sign in with your {CHAIN_NAME} account:"`).
+    ///
+    /// For example, `"Ethereum"` for EIP-155 chains, `"Solana"` for Solana.
+    const CHAIN_NAME: &'static str;
+
     /// Verify `signature` over `message`.
     fn verify(
         &self,
         message: &SiwxMessage,
         signature: &[u8],
     ) -> impl Future<Output = Result<(), SiwxError>> + Send;
+
+    /// Render `message` into the chain's canonical signing string.
+    ///
+    /// Convenience default that calls
+    /// [`SiwxMessage::to_sign_string`] with [`Self::CHAIN_NAME`].
+    #[must_use]
+    fn format_message(message: &SiwxMessage) -> String {
+        message.to_sign_string(Self::CHAIN_NAME)
+    }
 }

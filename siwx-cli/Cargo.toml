@@ -10,6 +10,7 @@ description = "CAIP-122 Sign-In with X CLI tool"
 [[bin]]
 name = "siwx"
 path = "src/main.rs"
+doc = false
 
 [dependencies]
 siwx.workspace = true

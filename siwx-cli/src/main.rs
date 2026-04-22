@@ -13,33 +13,39 @@ use std::process::ExitCode;
 use clap::Parser;
 use cmd::{Cli, Commands};
 
-fn main() -> ExitCode {
+#[tokio::main(flavor = "current_thread")]
+async fn main() -> ExitCode {
     let cli = Cli::parse();
     let json = cli.json;
 
-    if let Err(e) = run(cli) {
-        if json {
-            if output::print_json(&output::ErrorOutput {
-                error: e.to_string(),
-            })
-            .is_err()
-            {
-                eprintln!("Failed to serialize error output");
-            }
-        } else {
-            eprintln!("Error: {e}");
+    match dispatch(cli).await {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(e) => {
+            report_error(&*e, json);
+            ExitCode::FAILURE
         }
-        return ExitCode::FAILURE;
     }
-    ExitCode::SUCCESS
 }
 
-fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
+async fn dispatch(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
     let json = cli.json;
     match cli.command {
-        Commands::Evm(cmd) => cmd.execute(json),
-        Commands::Svm(cmd) => cmd.execute(json),
+        Commands::Evm(cmd) => cmd.execute(json).await,
+        Commands::Svm(cmd) => cmd.execute(json).await,
         Commands::Nonce(args) => args.execute(json),
         Commands::Parse(args) => args.execute(json),
+    }
+}
+
+fn report_error(error: &dyn std::error::Error, json: bool) {
+    if json {
+        let payload = output::ErrorOutput {
+            error: error.to_string(),
+        };
+        if output::print_json(&payload).is_err() {
+            eprintln!("failed to serialize error output");
+        }
+    } else {
+        eprintln!("Error: {error}");
     }
 }

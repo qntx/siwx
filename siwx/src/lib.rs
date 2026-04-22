@@ -34,10 +34,14 @@
 //! [CAIP-122]: https://chainagnostic.org/CAIPs/caip-122
 
 mod error;
+mod formatter;
 mod message;
 pub mod nonce;
+mod parser;
+mod validate;
 mod verifier;
 
 pub use error::SiwxError;
-pub use message::{SiwxMessage, ValidateOpts};
+pub use message::SiwxMessage;
+pub use validate::ValidateOpts;
 pub use verifier::Verifier;

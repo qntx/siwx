@@ -1,10 +1,11 @@
 //! Ethereum (EIP-155) CLI commands.
 
 use clap::{Args, Subcommand};
-use siwx::Verifier as _;
+use siwx_evm::Eip191Verifier;
 
-use super::{MessageArgs, VerifyArgs, decode_hex_signature, fmt_ts};
-use crate::output;
+use super::{CmdResult, MessageArgs, VerifyArgs, run_message, run_verify};
+
+const CHAIN_LABEL: &str = "ethereum";
 
 /// Ethereum (EIP-155) operations.
 #[derive(Args)]
@@ -29,55 +30,12 @@ pub(crate) struct EvmVerifyArgs {
 }
 
 impl EvmCommand {
-    pub(crate) fn execute(&self, json: bool) -> Result<(), Box<dyn std::error::Error>> {
+    pub(crate) async fn execute(&self, json: bool) -> CmdResult {
         match &self.action {
-            EvmAction::Message(args) => message(args, json),
-            EvmAction::Verify(args) => verify(args, json),
+            EvmAction::Message(args) => run_message::<Eip191Verifier>(CHAIN_LABEL, args, json),
+            EvmAction::Verify(args) => {
+                run_verify(CHAIN_LABEL, &args.common, json, |_msg| Ok(Eip191Verifier)).await
+            }
         }
     }
-}
-
-fn message(args: &MessageArgs, json: bool) -> Result<(), Box<dyn std::error::Error>> {
-    let msg = args.build()?;
-    let text = siwx_evm::format_message(&msg);
-    let out = output::MessageOutput {
-        chain: "ethereum".into(),
-        message: text,
-        domain: msg.domain.clone(),
-        address: msg.address.clone(),
-        uri: msg.uri.clone(),
-        version: msg.version.clone(),
-        chain_id: msg.chain_id.clone(),
-        nonce: msg.nonce.clone(),
-        issued_at: msg.issued_at.map(fmt_ts),
-        expiration_time: msg.expiration_time.map(fmt_ts),
-        not_before: msg.not_before.map(fmt_ts),
-    };
-    output::render_message(&out, json)
-}
-
-fn verify(args: &EvmVerifyArgs, json: bool) -> Result<(), Box<dyn std::error::Error>> {
-    let msg: siwx::SiwxMessage = args.common.message.parse()?;
-    let sig = decode_hex_signature(&args.common.signature)?;
-
-    let rt = tokio::runtime::Builder::new_current_thread().build()?;
-
-    let result = rt.block_on(siwx_evm::Eip191Verifier.verify(&msg, &sig));
-
-    let out = output::VerifyOutput {
-        valid: result.is_ok(),
-        chain: "ethereum".into(),
-        domain: msg.domain,
-        address: msg.address,
-    };
-
-    if json {
-        output::print_json(&out)?;
-    } else {
-        output::render_verify(&out, false)?;
-        if let Err(e) = result {
-            eprintln!("  Detail: {e}");
-        }
-    }
-    Ok(())
 }

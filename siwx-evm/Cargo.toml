@@ -12,6 +12,7 @@ categories.workspace = true
 [dependencies]
 siwx.workspace = true
 alloy.workspace = true
+tokio = { workspace = true, features = ["sync"] }
 
 [dev-dependencies]
 tokio.workspace = true

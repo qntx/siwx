@@ -1,14 +1,13 @@
 //! # siwx-svm — Solana verification for Sign-In with X
 //!
-//! Implements CAIP-122 namespace profile for Solana:
-//! - **Ed25519** signature verification (`solana:ed25519`)
+//! Implements the CAIP-122 namespace profile for Solana:
+//! - **Ed25519** signature verification
 //!
 //! # Quick start
 //!
 //! ```rust,no_run
-//! use siwx::SiwxMessage;
-//! use siwx_svm::{Ed25519Verifier, CHAIN_NAME};
-//! use siwx::Verifier;
+//! use siwx::{SiwxMessage, Verifier};
+//! use siwx_svm::Ed25519Verifier;
 //!
 //! # async fn run() -> Result<(), Box<dyn std::error::Error>> {
 //! let message = SiwxMessage::new(
@@ -18,6 +17,7 @@
 //!     "1",
 //!     "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d",
 //! )?;
+//! let _text = Ed25519Verifier::format_message(&message);
 //! // let pubkey: [u8; 32] = ...; // Ed25519 public key
 //! // let sig_bytes: [u8; 64] = ...; // Ed25519 signature
 //! // Ed25519Verifier::new(pubkey).verify(&message, &sig_bytes).await?;
@@ -28,21 +28,10 @@
 mod ed25519;
 
 pub use ed25519::Ed25519Verifier;
-use siwx::{SiwxError, SiwxMessage};
+use siwx::SiwxError;
 
-/// Human-readable chain name for the Solana namespace, used in the CAIP-122
-/// preamble line.
+/// Human-readable chain label embedded in the CAIP-122 preamble.
 pub const CHAIN_NAME: &str = "Solana";
-
-/// CAIP-122 signature type for Solana Ed25519.
-pub const SIG_TYPE: &str = "solana:ed25519";
-
-/// Convenience: format a [`SiwxMessage`] into the Solana CAIP-122 signing
-/// string.
-#[must_use]
-pub fn format_message(message: &SiwxMessage) -> String {
-    message.to_sign_string(CHAIN_NAME)
-}
 
 /// Validate that `address` is a valid base58-encoded Solana public key (32
 /// bytes decoded).
@@ -65,22 +54,24 @@ pub fn validate_address(address: &str) -> Result<(), SiwxError> {
 
 #[cfg(test)]
 mod tests {
+    use siwx::{SiwxMessage, Verifier};
+
     use super::*;
 
     #[test]
-    fn validate_address_valid() {
+    fn validate_address_accepts_canonical_formats() {
         assert!(validate_address("11111111111111111111111111111111").is_ok());
         assert!(validate_address("GwAF45zjfyGzUbd3i3hXxzGeuchzEZXwpRYHZM5912F1").is_ok());
     }
 
     #[test]
-    fn validate_address_invalid() {
+    fn validate_address_rejects_bad_formats() {
         assert!(validate_address("not-valid").is_err());
         assert!(validate_address("").is_err());
     }
 
     #[test]
-    fn format_message_preamble() {
+    fn format_message_uses_solana_preamble() {
         let msg = SiwxMessage::new(
             "example.com",
             "GwAF45zjfyGzUbd3i3hXxzGeuchzEZXwpRYHZM5912F1",
@@ -88,8 +79,8 @@ mod tests {
             "1",
             "1",
         )
-        .unwrap();
-        let text = format_message(&msg);
+        .expect("valid");
+        let text = Ed25519Verifier::format_message(&msg);
         assert!(text.starts_with("example.com wants you to sign in with your Solana account:"));
     }
 }

@@ -1,7 +1,7 @@
 use alloy::primitives::{Signature, eip191_hash_message};
-use siwx::{SiwxError, SiwxMessage};
+use siwx::{SiwxError, SiwxMessage, Verifier};
 
-use crate::{format_message, parse_address};
+use crate::{CHAIN_NAME, parse_address};
 
 /// EIP-191 `personal_sign` verifier.
 ///
@@ -11,8 +11,13 @@ use crate::{format_message, parse_address};
 pub struct Eip191Verifier;
 
 impl Eip191Verifier {
-    /// Core verification logic (synchronous).
-    pub(crate) fn verify_inner(message: &SiwxMessage, signature: &[u8]) -> Result<(), SiwxError> {
+    /// Synchronous verification path used by [`crate::EvmVerifier`] as its
+    /// EIP-191 fast-path before falling back to EIP-1271.
+    ///
+    /// # Errors
+    ///
+    /// See [`Verifier::verify`].
+    pub fn verify_sync(message: &SiwxMessage, signature: &[u8]) -> Result<(), SiwxError> {
         if signature.len() != 65 {
             return Err(SiwxError::InvalidSignature(format!(
                 "EIP-191 signature must be 65 bytes, got {}",
@@ -23,7 +28,7 @@ impl Eip191Verifier {
         let alloy_sig = Signature::try_from(signature)
             .map_err(|e| SiwxError::InvalidSignature(format!("bad signature encoding: {e}")))?;
 
-        let text = format_message(message);
+        let text = message.to_sign_string(CHAIN_NAME);
         let hash = eip191_hash_message(text.as_bytes());
 
         let recovered = alloy_sig
@@ -42,9 +47,11 @@ impl Eip191Verifier {
     }
 }
 
-impl siwx::Verifier for Eip191Verifier {
+impl Verifier for Eip191Verifier {
+    const CHAIN_NAME: &'static str = CHAIN_NAME;
+
     async fn verify(&self, message: &SiwxMessage, signature: &[u8]) -> Result<(), SiwxError> {
-        Self::verify_inner(message, signature)
+        Self::verify_sync(message, signature)
     }
 }
 
@@ -67,7 +74,7 @@ mod tests {
             .expect("valid message")
             .with_nonce("testnonce12345678");
 
-        let text = format_message(&message);
+        let text = Eip191Verifier::format_message(&message);
         let sig = signer.sign_message(text.as_bytes()).await.expect("signing");
         let sig_bytes = sig.as_bytes();
 
@@ -94,7 +101,7 @@ mod tests {
         .expect("valid message")
         .with_nonce("testnonce12345678");
 
-        let text = format_message(&message);
+        let text = Eip191Verifier::format_message(&message);
         let sig = signer.sign_message(text.as_bytes()).await.expect("signing");
         let sig_bytes = sig.as_bytes();
 

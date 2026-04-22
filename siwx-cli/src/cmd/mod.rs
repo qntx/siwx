@@ -5,11 +5,18 @@ mod svm;
 
 use clap::{Args, Parser, Subcommand};
 pub(crate) use evm::EvmCommand;
+use siwx::{SiwxMessage, Verifier};
 pub(crate) use svm::SvmCommand;
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
-use crate::output;
+use crate::output::{
+    MessageOutput, NonceOutput, ParseOutput, VerifyOutput, print_json, render_message,
+    render_parse, render_verify,
+};
+
+type BoxedError = Box<dyn std::error::Error>;
+pub(crate) type CmdResult = Result<(), BoxedError>;
 
 /// siwx — CAIP-122 Sign-In with X CLI tool.
 #[derive(Parser)]
@@ -120,13 +127,13 @@ pub(crate) struct ParseArgs {
 }
 
 impl MessageArgs {
-    pub(crate) fn build(&self) -> Result<siwx::SiwxMessage, Box<dyn std::error::Error>> {
+    pub(crate) fn build(&self) -> Result<SiwxMessage, BoxedError> {
         let nonce = self
             .nonce
             .clone()
             .unwrap_or_else(siwx::nonce::generate_default);
 
-        let mut msg = siwx::SiwxMessage::new(
+        let mut msg = SiwxMessage::new(
             &self.domain,
             &self.address,
             &self.uri,
@@ -156,10 +163,10 @@ impl MessageArgs {
 }
 
 impl NonceArgs {
-    pub(crate) fn execute(&self, json: bool) -> Result<(), Box<dyn std::error::Error>> {
+    pub(crate) fn execute(&self, json: bool) -> CmdResult {
         let nonce = siwx::nonce::generate(self.len);
         if json {
-            output::print_json(&output::NonceOutput {
+            print_json(&NonceOutput {
                 nonce,
                 len: self.len,
             })?;
@@ -171,14 +178,61 @@ impl NonceArgs {
 }
 
 impl ParseArgs {
-    pub(crate) fn execute(&self, json: bool) -> Result<(), Box<dyn std::error::Error>> {
-        let msg: siwx::SiwxMessage = self.message.parse()?;
-        let out = output::ParseOutput::from_message(&msg);
-        output::render_parse(&out, json)
+    pub(crate) fn execute(&self, json: bool) -> CmdResult {
+        let msg: SiwxMessage = self.message.parse()?;
+        let out = ParseOutput::from_message(&msg);
+        render_parse(&out, json)
     }
 }
 
-pub(crate) fn decode_hex_signature(s: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+/// Build a message for chain `V` and render it.
+pub(crate) fn run_message<V: Verifier>(
+    chain_label: &'static str,
+    args: &MessageArgs,
+    json: bool,
+) -> CmdResult {
+    let msg = args.build()?;
+    let text = V::format_message(&msg);
+    let out = MessageOutput::new(chain_label, text, &msg);
+    render_message(&out, json)
+}
+
+/// Parse + verify a signature using the chain-specific verifier produced by
+/// `make_verifier` and render the outcome.
+pub(crate) async fn run_verify<V, F>(
+    chain_label: &'static str,
+    args: &VerifyArgs,
+    json: bool,
+    make_verifier: F,
+) -> CmdResult
+where
+    V: Verifier,
+    F: FnOnce(&SiwxMessage) -> Result<V, BoxedError>,
+{
+    let msg: SiwxMessage = args.message.parse()?;
+    let sig = decode_hex_signature(&args.signature)?;
+    let verifier = make_verifier(&msg)?;
+    let result = verifier.verify(&msg, &sig).await;
+
+    let out = VerifyOutput {
+        valid: result.is_ok(),
+        chain: chain_label.to_owned(),
+        domain: msg.domain.clone(),
+        address: msg.address.clone(),
+    };
+
+    if json {
+        print_json(&out)?;
+    } else {
+        render_verify(&out, false)?;
+        if let Err(e) = result {
+            eprintln!("  Detail: {e}");
+        }
+    }
+    Ok(())
+}
+
+pub(crate) fn decode_hex_signature(s: &str) -> Result<Vec<u8>, BoxedError> {
     let s = s.strip_prefix("0x").unwrap_or(s);
     Ok(hex::decode(s)?)
 }
@@ -187,7 +241,7 @@ pub(crate) fn fmt_ts(t: OffsetDateTime) -> String {
     t.format(&Rfc3339).unwrap_or_else(|_| t.to_string())
 }
 
-fn parse_time_or_duration(s: &str) -> Result<OffsetDateTime, Box<dyn std::error::Error>> {
+fn parse_time_or_duration(s: &str) -> Result<OffsetDateTime, BoxedError> {
     if let Ok(secs) = s.parse::<i64>() {
         return Ok(OffsetDateTime::now_utc() + time::Duration::seconds(secs));
     }
