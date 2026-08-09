@@ -5,7 +5,7 @@ mod svm;
 
 use clap::{Args, Parser, Subcommand};
 pub(crate) use evm::EvmCommand;
-use siwx::{SiwxMessage, Verifier};
+use siwx::{AuthOpts, SiwxMessage, Verifier, authenticate};
 pub(crate) use svm::SvmCommand;
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
@@ -94,10 +94,6 @@ pub(crate) struct MessageArgs {
     /// Resource URIs (repeatable).
     #[arg(long = "resource")]
     pub resources: Vec<String>,
-
-    /// Message version (default: "1").
-    #[arg(long = "msg-version", id = "msg_version", default_value = "1")]
-    pub msg_version: String,
 }
 
 /// Shared verify arguments.
@@ -110,11 +106,23 @@ pub(crate) struct VerifyArgs {
     /// Hex-encoded signature bytes (0x prefix optional).
     #[arg(long)]
     pub signature: String,
+
+    /// Expected domain binding (defaults to domain in the message).
+    #[arg(long)]
+    pub domain: Option<String>,
+
+    /// Expected nonce binding (defaults to nonce in the message).
+    #[arg(long)]
+    pub nonce: Option<String>,
+
+    /// Expected chain id binding (optional).
+    #[arg(long)]
+    pub chain_id: Option<String>,
 }
 
 #[derive(Args)]
 pub(crate) struct NonceArgs {
-    /// Nonce length in characters.
+    /// Nonce length in characters (≥ 8).
     #[arg(short, long, default_value_t = siwx::nonce::DEFAULT_LEN)]
     pub len: usize,
 }
@@ -137,14 +145,12 @@ impl MessageArgs {
             &self.domain,
             &self.address,
             &self.uri,
-            &self.msg_version,
             &self.chain_id,
-        )?
-        .with_nonce(nonce)
-        .with_issued_at(OffsetDateTime::now_utc());
+            nonce,
+        )?;
 
         if let Some(ref s) = self.statement {
-            msg = msg.with_statement(s);
+            msg = msg.with_statement(s)?;
         }
         if let Some(ref exp) = self.expiration {
             msg = msg.with_expiration_time(parse_time_or_duration(exp)?);
@@ -164,7 +170,7 @@ impl MessageArgs {
 
 impl NonceArgs {
     pub(crate) fn execute(&self, json: bool) -> CmdResult {
-        let nonce = siwx::nonce::generate(self.len);
+        let nonce = siwx::nonce::generate(self.len)?;
         if json {
             print_json(&NonceOutput {
                 nonce,
@@ -197,37 +203,44 @@ pub(crate) fn run_message<V: Verifier>(
     render_message(&out, json)
 }
 
-/// Parse + verify a signature using the chain-specific verifier produced by
-/// `make_verifier` and render the outcome.
-pub(crate) async fn run_verify<V, F>(
+/// Parse + authenticate a signature and render the outcome.
+///
+/// On cryptographic or validation failure, returns `Err` so the process exits
+/// non-zero. Success always reports `valid: true`.
+pub(crate) async fn run_verify<V: Verifier>(
     chain_label: &'static str,
     args: &VerifyArgs,
     json: bool,
-    make_verifier: F,
-) -> CmdResult
-where
-    V: Verifier,
-    F: FnOnce(&SiwxMessage) -> Result<V, BoxedError>,
-{
-    let msg: SiwxMessage = args.message.parse()?;
+    verifier: V,
+) -> CmdResult {
     let sig = decode_hex_signature(&args.signature)?;
-    let verifier = make_verifier(&msg)?;
-    let result = verifier.verify(&msg, &sig).await;
+    let provisional: SiwxMessage = args.message.parse()?;
+
+    let mut opts = AuthOpts::new(
+        args.domain
+            .clone()
+            .unwrap_or_else(|| provisional.domain.clone()),
+        args.nonce
+            .clone()
+            .unwrap_or_else(|| provisional.nonce.clone()),
+    );
+    if let Some(ref chain_id) = args.chain_id {
+        opts = opts.with_chain_id(chain_id);
+    }
+
+    let auth = authenticate(&verifier, &args.message, &sig, &opts).await?;
 
     let out = VerifyOutput {
-        valid: result.is_ok(),
+        valid: true,
         chain: chain_label.to_owned(),
-        domain: msg.domain.clone(),
-        address: msg.address.clone(),
+        domain: auth.message.domain,
+        address: auth.message.address,
     };
 
     if json {
         print_json(&out)?;
     } else {
         render_verify(&out, false)?;
-        if let Err(e) = result {
-            eprintln!("  Detail: {e}");
-        }
     }
     Ok(())
 }

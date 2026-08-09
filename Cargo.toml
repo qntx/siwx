@@ -4,7 +4,7 @@ default-members = ["siwx"]
 resolver = "3"
 
 [workspace.package]
-version = "0.3.2"
+version = "0.4.0"
 edition = "2024"
 rust-version = "1.85"
 license = "MIT OR Apache-2.0"
@@ -14,9 +14,9 @@ keywords = ["caip-122", "sign-in", "authentication", "blockchain"]
 categories = ["authentication", "cryptography"]
 
 [workspace.dependencies]
-siwx = {version = "0.3", path = "siwx" }
-siwx-evm = { version = "0.3", path = "siwx-evm" }
-siwx-svm = { version = "0.3", path = "siwx-svm" }
+siwx = { version = "0.4", path = "siwx" }
+siwx-evm = { version = "0.4", path = "siwx-evm" }
+siwx-svm = { version = "0.4", path = "siwx-svm" }
 
 thiserror = "2.0.18"
 serde = { version = "1.0.228", features = ["derive"] }
@@ -27,7 +27,7 @@ rand = "0.10.1"
 clap = { version = "4.6.1", features = ["derive"] }
 colored = "3.1.1"
 hex = "0.4.3"
-alloy = { version = "2.0.4", features = ["sol-types", "contract", "provider-http", "signer-local", "network"] }
+alloy = { version = "2.0.4", default-features = false, features = ["std", "signer-local"] }
 ed25519-dalek = { version = "3.0.0", features = ["rand_core"] }
 bs58 = "0.5.1"
 tokio = { version = "1.52.3", features = ["rt-multi-thread", "macros"] }

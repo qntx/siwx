@@ -11,8 +11,8 @@
 //! URI: {uri}
 //! Version: {version}
 //! Chain ID: {chain_id}
-//! [Nonce: {nonce}]
-//! [Issued At: {rfc3339}]
+//! Nonce: {nonce}
+//! Issued At: {rfc3339}
 //! [Expiration Time: {rfc3339}]
 //! [Not Before: {rfc3339}]
 //! [Request ID: {request_id}]
@@ -28,7 +28,7 @@ use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
 use crate::SiwxError;
-use crate::message::SiwxMessage;
+use crate::message::{SiwxMessage, VERSION, check_domain, check_nonce_shape, check_statement};
 
 pub(crate) const PREAMBLE_MID: &str = " wants you to sign in with your ";
 pub(crate) const PREAMBLE_TAIL: &str = " account:";
@@ -62,23 +62,36 @@ impl FromStr for SiwxMessage {
         let mut lines = input.split('\n').peekable();
 
         let (domain, _chain_name) = parse_preamble(next(&mut lines, "preamble")?)?;
+        let domain = check_domain(&domain)?;
         let address = next(&mut lines, "address")?.to_owned();
+        if address.is_empty() {
+            return Err(SiwxError::InvalidAddress("empty".into()));
+        }
 
         expect_blank(&mut lines, "blank line after address")?;
 
-        let statement = take_optional_statement(&mut lines);
+        let statement = take_optional_statement(&mut lines)?;
 
         let uri = take_required_tag(&mut lines, URI_TAG)?;
         let version = take_required_tag(&mut lines, VERSION_TAG)?;
+        if version != VERSION {
+            return Err(SiwxError::InvalidFormat(format!(
+                "version must be {VERSION}, got {version}"
+            )));
+        }
         let chain_id = take_required_tag(&mut lines, CHAIN_TAG)?;
+        if chain_id.is_empty() {
+            return Err(SiwxError::InvalidFormat("empty chain_id".into()));
+        }
 
-        let nonce = take_optional_tag(&mut lines, NONCE_TAG);
-        let issued_at = take_optional_ts(&mut lines, IAT_TAG)?;
+        let nonce = check_nonce_shape(&take_required_tag(&mut lines, NONCE_TAG)?)?;
+        let issued_at = take_required_ts(&mut lines, IAT_TAG)?;
         let expiration_time = take_optional_ts(&mut lines, EXP_TAG)?;
         let not_before = take_optional_ts(&mut lines, NBF_TAG)?;
         let request_id = take_optional_tag(&mut lines, RID_TAG);
 
         let resources = take_resources(&mut lines)?;
+        reject_trailing(&mut lines)?;
 
         Ok(Self {
             domain,
@@ -106,6 +119,9 @@ fn parse_preamble(header: &str) -> Result<(String, &str), SiwxError> {
     let chain_name = after_mid
         .strip_suffix(PREAMBLE_TAIL)
         .ok_or_else(|| SiwxError::invalid_format("missing 'account:' suffix"))?;
+    if chain_name.is_empty() {
+        return Err(SiwxError::invalid_format("empty chain name in preamble"));
+    }
     Ok((domain, chain_name))
 }
 
@@ -117,18 +133,22 @@ fn expect_blank(lines: &mut Lines<'_>, ctx: &str) -> Result<(), SiwxError> {
     Ok(())
 }
 
-fn take_optional_statement(lines: &mut Lines<'_>) -> Option<String> {
+fn take_optional_statement(lines: &mut Lines<'_>) -> Result<Option<String>, SiwxError> {
     let is_statement_line = lines
         .peek()
         .is_some_and(|line| !line.is_empty() && !is_tagged(line));
     if !is_statement_line {
-        return None;
+        return Ok(None);
     }
-    let stmt = lines.next()?.to_owned();
+    let stmt = lines
+        .next()
+        .ok_or_else(|| SiwxError::invalid_format("unexpected end of input (statement)"))?
+        .to_owned();
+    check_statement(&stmt)?;
     if lines.peek().is_some_and(|line| line.is_empty()) {
         lines.next();
     }
-    Some(stmt)
+    Ok(Some(stmt))
 }
 
 fn take_required_tag(lines: &mut Lines<'_>, tag: &str) -> Result<String, SiwxError> {
@@ -149,6 +169,11 @@ fn take_optional_tag(lines: &mut Lines<'_>, tag: &str) -> Option<String> {
     Some(value)
 }
 
+fn take_required_ts(lines: &mut Lines<'_>, tag: &str) -> Result<OffsetDateTime, SiwxError> {
+    let s = take_required_tag(lines, tag)?;
+    parse_ts(&s)
+}
+
 fn take_optional_ts(lines: &mut Lines<'_>, tag: &str) -> Result<Option<OffsetDateTime>, SiwxError> {
     take_optional_tag(lines, tag)
         .map(|s| parse_ts(&s))
@@ -161,16 +186,25 @@ fn take_resources(lines: &mut Lines<'_>) -> Result<Vec<String>, SiwxError> {
     }
     lines.next();
     let mut resources = Vec::new();
-    for line in lines {
-        if line.is_empty() {
-            break;
-        }
+    while lines.peek().is_some_and(|l| !l.is_empty() && *l != RES_TAG) {
+        let line = next(lines, "resource item")?;
         let item = line
             .strip_prefix("- ")
             .ok_or_else(|| SiwxError::invalid_format("resource line must start with '- '"))?;
         resources.push(item.to_owned());
     }
     Ok(resources)
+}
+
+fn reject_trailing(lines: &mut Lines<'_>) -> Result<(), SiwxError> {
+    for line in lines {
+        if !line.is_empty() {
+            return Err(SiwxError::invalid_format(format!(
+                "unexpected trailing content: {line}"
+            )));
+        }
+    }
+    Ok(())
 }
 
 fn parse_ts(s: &str) -> Result<OffsetDateTime, SiwxError> {
@@ -199,11 +233,11 @@ mod tests {
             "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
             "https://service.org/login",
             "1",
-            "1",
+            "32891756",
         )
         .expect("valid")
         .with_statement("I accept the ServiceOrg Terms of Service: https://service.org/tos")
-        .with_nonce("32891756")
+        .expect("statement")
         .with_issued_at(datetime!(2021-09-30 16:25:24 UTC))
         .with_resources([
             "ipfs://bafybeiemxf5abjwjbikoz4mc3a3dla6ual3jsgpdr4cjr3oz3evfyavhwq/",
@@ -220,24 +254,56 @@ mod tests {
     }
 
     #[test]
-    fn tolerates_trailing_newline() {
+    fn trailing_empty_line_ok() {
+        // split produces a final "" for a single trailing newline after last field;
+        // reject_trailing allows empty lines only.
         let msg = sample();
         let mut text = msg.to_sign_string("Ethereum");
         text.push('\n');
-        let parsed: SiwxMessage = text.parse().expect("should parse with trailing newline");
-        assert_eq!(parsed, msg);
+        let parsed: SiwxMessage = text.parse().expect("empty trailing line ok for parse");
+        assert_eq!(parsed.domain, msg.domain);
+        // Note: authenticate still rejects non-canonical (with trailing \n).
     }
 
     #[test]
-    fn minimal_no_optionals() {
-        let msg = SiwxMessage::new("example.com", "addr1", "https://example.com", "1", "1")
-            .expect("valid");
+    fn trailing_garbage_fails() {
+        let msg = sample();
+        let text = format!("{}\nGARBAGE", msg.to_sign_string("Ethereum"));
+        let err: SiwxError = text.parse::<SiwxMessage>().expect_err("garbage");
+        assert!(matches!(err, SiwxError::InvalidFormat(_)));
+    }
+
+    #[test]
+    fn missing_nonce_fails() {
+        let text = "\
+example.com wants you to sign in with your Ethereum account:
+addr1
+
+URI: https://example.com
+Version: 1
+Chain ID: 1
+Issued At: 2021-09-30T16:25:24Z";
+        let err: SiwxError = text.parse::<SiwxMessage>().expect_err("missing nonce");
+        assert!(matches!(err, SiwxError::InvalidFormat(_)));
+    }
+
+    #[test]
+    fn minimal_with_required_fields() {
+        let msg = SiwxMessage::new(
+            "example.com",
+            "addr1",
+            "https://example.com",
+            "1",
+            "testnonce12345678",
+        )
+        .expect("valid")
+        .with_issued_at(datetime!(2021-09-30 16:25:24 UTC));
         let text = msg.to_sign_string("Ethereum");
         let parsed: SiwxMessage = text.parse().expect("parse");
         assert_eq!(parsed.domain, "example.com");
         assert!(parsed.statement.is_none());
-        assert!(parsed.nonce.is_none());
-        assert!(parsed.issued_at.is_none());
+        assert_eq!(parsed.nonce, "testnonce12345678");
+        assert_eq!(parsed.issued_at, datetime!(2021-09-30 16:25:24 UTC));
     }
 
     #[test]

@@ -1,14 +1,15 @@
 //! # siwx-evm — Ethereum verification for Sign-In with X
 //!
-//! Implements the CAIP-122 namespace profile for EIP-155 chains:
-//! - **EIP-191** (`personal_sign`) — ECDSA recovery-based verification
-//! - **EIP-1271** — smart-contract `isValidSignature` verification (requires RPC)
+//! Implements the CAIP-122 namespace profile for EIP-155 chains via a single
+//! public type [`EvmVerifier`]:
+//! - **EIP-191** (`personal_sign`) — always available
+//! - **EIP-1271** — smart-contract `isValidSignature` (feature `eip1271` + RPC)
 //!
 //! # Quick start
 //!
 //! ```rust,no_run
 //! use siwx::{SiwxMessage, Verifier};
-//! use siwx_evm::Eip191Verifier;
+//! use siwx_evm::EvmVerifier;
 //!
 //! # async fn run() -> Result<(), Box<dyn std::error::Error>> {
 //! let message = SiwxMessage::new(
@@ -16,21 +17,23 @@
 //!     "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
 //!     "https://example.com/login",
 //!     "1",
-//!     "1",
+//!     siwx::nonce::generate_default(),
 //! )?;
-//! let text = Eip191Verifier::format_message(&message);
+//! let text = EvmVerifier::format_message(&message);
 //! // let signature_bytes: [u8; 65] = ...; // from wallet
-//! // Eip191Verifier.verify(&message, &signature_bytes).await?;
+//! // EvmVerifier::new().verify(&message, &text, &signature_bytes).await?;
 //! # Ok(())
 //! # }
 //! ```
 
+#[cfg(feature = "eip1271")]
 mod eip1271;
 mod eip191;
 
+#[cfg(not(feature = "eip1271"))]
+use std::future::Future;
+
 use alloy::primitives::Address;
-pub use eip191::Eip191Verifier;
-pub use eip1271::Eip1271Verifier;
 use siwx::{SiwxError, SiwxMessage, Verifier};
 
 /// Human-readable chain label embedded in the CAIP-122 preamble.
@@ -56,23 +59,31 @@ pub(crate) fn parse_address(s: &str) -> Result<Address, SiwxError> {
         .map_err(|e| SiwxError::InvalidAddress(e.to_string()))
 }
 
-/// Auto-detecting verifier that tries EIP-191 first; if the recovered address
-/// does not match `message.address`, falls back to EIP-1271.
+/// Ethereum CAIP-122 verifier.
 ///
-/// Requires an RPC URL for the EIP-1271 fallback path.
-#[derive(Debug)]
+/// Tries EIP-191 first. When built with the `eip1271` feature and constructed
+/// via [`Self::with_rpc`], falls back to EIP-1271 on EIP-191 failure.
+#[derive(Debug, Clone)]
+#[cfg_attr(not(feature = "eip1271"), derive(Copy))]
 pub struct EvmVerifier {
+    #[cfg(feature = "eip1271")]
     rpc_url: Option<String>,
 }
 
 impl EvmVerifier {
-    /// Create a verifier without RPC (EIP-191 only).
+    /// Create a verifier that only performs EIP-191 recovery.
     #[must_use]
     pub const fn new() -> Self {
-        Self { rpc_url: None }
+        Self {
+            #[cfg(feature = "eip1271")]
+            rpc_url: None,
+        }
     }
 
     /// Create a verifier with RPC for EIP-1271 fallback.
+    ///
+    /// Requires the `eip1271` feature.
+    #[cfg(feature = "eip1271")]
     #[must_use]
     pub fn with_rpc(url: impl Into<String>) -> Self {
         Self {
@@ -87,22 +98,41 @@ impl Default for EvmVerifier {
     }
 }
 
+#[cfg(not(feature = "eip1271"))]
 impl Verifier for EvmVerifier {
     const CHAIN_NAME: &'static str = CHAIN_NAME;
 
-    async fn verify(&self, message: &SiwxMessage, signature: &[u8]) -> Result<(), SiwxError> {
-        let eip191_err = match Eip191Verifier::verify_sync(message, signature) {
-            Ok(()) => return Ok(()),
-            Err(e) => e,
-        };
+    fn verify(
+        &self,
+        message: &SiwxMessage,
+        raw_message: &str,
+        signature: &[u8],
+    ) -> impl Future<Output = Result<(), SiwxError>> + Send {
+        std::future::ready(eip191::verify_sync(message, raw_message, signature))
+    }
+}
 
-        let Some(rpc_url) = self.rpc_url.as_deref() else {
-            return Err(eip191_err);
-        };
+#[cfg(feature = "eip1271")]
+impl Verifier for EvmVerifier {
+    const CHAIN_NAME: &'static str = CHAIN_NAME;
 
-        Eip1271Verifier::new(rpc_url)
-            .verify(message, signature)
-            .await
+    async fn verify(
+        &self,
+        message: &SiwxMessage,
+        raw_message: &str,
+        signature: &[u8],
+    ) -> Result<(), SiwxError> {
+        match eip191::verify_sync(message, raw_message, signature) {
+            Ok(()) => Ok(()),
+            Err(eip191_err) => {
+                let Some(rpc_url) = self.rpc_url.as_deref() else {
+                    return Err(eip191_err);
+                };
+                eip1271::Eip1271Verifier::new(rpc_url)
+                    .verify(message, raw_message, signature)
+                    .await
+            }
+        }
     }
 }
 
@@ -130,10 +160,10 @@ mod tests {
             "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
             "https://example.com",
             "1",
-            "1",
+            "testnonce12345678",
         )
         .expect("valid");
-        let text = Eip191Verifier::format_message(&msg);
+        let text = EvmVerifier::format_message(&msg);
         assert!(text.starts_with("example.com wants you to sign in with your Ethereum account:"));
     }
 }

@@ -1,7 +1,7 @@
 //! Ethereum (EIP-155) CLI commands.
 
 use clap::{Args, Subcommand};
-use siwx_evm::Eip191Verifier;
+use siwx_evm::EvmVerifier;
 
 use super::{CmdResult, MessageArgs, VerifyArgs, run_message, run_verify};
 
@@ -32,9 +32,9 @@ pub(crate) struct EvmVerifyArgs {
 impl EvmCommand {
     pub(crate) async fn execute(&self, json: bool) -> CmdResult {
         match &self.action {
-            EvmAction::Message(args) => run_message::<Eip191Verifier>(CHAIN_LABEL, args, json),
+            EvmAction::Message(args) => run_message::<EvmVerifier>(CHAIN_LABEL, args, json),
             EvmAction::Verify(args) => {
-                run_verify(CHAIN_LABEL, &args.common, json, |_msg| Ok(Eip191Verifier)).await
+                run_verify(CHAIN_LABEL, &args.common, json, EvmVerifier::new()).await
             }
         }
     }

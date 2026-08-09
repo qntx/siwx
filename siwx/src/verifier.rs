@@ -11,10 +11,16 @@ use crate::{SiwxError, SiwxMessage};
 ///
 /// # Contract
 ///
+/// * Hash / verify over **`raw_message` bytes** (the exact string the wallet
+///   signed), not a re-serialized form of `message`.
+/// * Bind cryptographic identity to `message.address`.
 /// * Return `Ok(())` when the signature is **valid** for the given message.
 /// * Return `Err(SiwxError::VerificationFailed(..))` when the signature is
 ///   **cryptographically invalid**.
 /// * Return other `Err` variants for malformed inputs.
+///
+/// Prefer [`crate::authenticate`] over calling [`Self::verify`] directly so
+/// parse, field validation, and canonical-form checks run first.
 pub trait Verifier: Send + Sync {
     /// Ecosystem label embedded in the CAIP-122 preamble
     /// (`"{domain} wants you to sign in with your {CHAIN_NAME} account:"`).
@@ -22,10 +28,15 @@ pub trait Verifier: Send + Sync {
     /// For example, `"Ethereum"` for EIP-155 chains, `"Solana"` for Solana.
     const CHAIN_NAME: &'static str;
 
-    /// Verify `signature` over `message`.
+    /// Verify `signature` over `raw_message`, binding identity to `message`.
+    ///
+    /// `raw_message` must be the exact bytes the wallet signed.
+    /// [`crate::authenticate`] guarantees it matches
+    /// [`Self::format_message`] before calling this method.
     fn verify(
         &self,
         message: &SiwxMessage,
+        raw_message: &str,
         signature: &[u8],
     ) -> impl Future<Output = Result<(), SiwxError>> + Send;
 

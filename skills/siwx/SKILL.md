@@ -77,14 +77,17 @@ The `--json` flag is **global** and must appear **before** the chain subcommand.
 | `--not-before`  |          | Not-before time (RFC 3339 or seconds from now)          |
 | `--request-id`  |          | System-specific request ID                              |
 | `--resource`    |          | Resource URI (repeatable)                               |
-| `--msg-version` |          | Message version (default: "1")                          |
+
 
 ## Verify Flags
 
-| Flag          | Required | Description                                |
-|---------------|----------|--------------------------------------------|
-| `--message`   | ✓        | The raw CAIP-122 signing message text      |
-| `--signature` | ✓        | Hex-encoded signature (0x prefix optional) |
+| Flag          | Required | Description                                                       |
+|---------------|----------|-------------------------------------------------------------------|
+| `--message`   | ✓        | The raw CAIP-122 signing message text                             |
+| `--signature` | ✓        | Hex-encoded signature (0x prefix optional)                        |
+| `--domain`    |          | Expected domain binding (defaults to domain in the message)       |
+| `--nonce`     |          | Expected nonce binding (defaults to nonce in the message)         |
+| `--chain-id`  |          | Expected chain id binding (optional)                              |
 
 ## Usage Examples
 
@@ -158,6 +161,8 @@ siwx --json parse --message "example.com wants you to sign in with your Ethereum
 
 ### Verify
 
+Success (`exit 0`):
+
 ```json
 {
   "valid": true,
@@ -166,6 +171,8 @@ siwx --json parse --message "example.com wants you to sign in with your Ethereum
   "address": "0xd8dA..."
 }
 ```
+
+Failure (`exit 1`) uses the error schema below. Invalid signatures do **not** return `valid: false` with exit 0.
 
 ### Nonce
 
@@ -208,5 +215,6 @@ All errors in JSON mode return exit code 1 with:
 4. **Issued-at auto-set**: `issued_at` is always set to the current UTC time.
 5. **Expiration shorthand**: Pass seconds for relative expiration: `--expiration 3600` = 1 hour from now.
 6. **Verify reads address from message**: For SVM verify, the public key is derived from the address in the parsed message.
-7. **Errors** in JSON mode return `{"error": "..."}` with exit code 1.
+7. **Errors** in JSON mode return `{"error": "..."}` with exit code 1 (including failed verify).
 8. **Signature format**: Always hex-encoded, `0x` prefix is optional.
+9. **Canonical form**: verify requires the message string to match the library formatter bit-for-bit (no trailing newline).
