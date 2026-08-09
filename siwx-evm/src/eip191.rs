@@ -41,10 +41,18 @@ pub(crate) fn verify_sync(
 #[cfg(test)]
 mod tests {
     use alloy::signers::{Signer, local::PrivateKeySigner};
-    use siwx::{SiwxMessage, Verifier};
+    use siwx::{AuthOpts, SiwxError, SiwxMessage, Verifier, authenticate};
     use time::macros::datetime;
 
     use crate::EvmVerifier;
+
+    /// Well-known Anvil/Hardhat account #0 private key (public test fixture only).
+    const FIXTURE_KEY: &str = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+
+    const FIXTURE_DOMAIN: &str = "login.example.com";
+    const FIXTURE_NONCE: &str = "fixtureNonce12345";
+    const FIXTURE_CHAIN: &str = "1";
+    const FIXTURE_URI: &str = "https://login.example.com/siwx";
 
     fn sample_message(addr: &str) -> SiwxMessage {
         SiwxMessage::new(
@@ -56,6 +64,80 @@ mod tests {
         )
         .expect("valid message")
         .with_issued_at(datetime!(2024-01-01 0:00 UTC))
+    }
+
+    fn fixture_signer() -> PrivateKeySigner {
+        FIXTURE_KEY.parse().expect("valid fixture key")
+    }
+
+    /// End-to-end EOA fixture: build → format → sign → `authenticate` with bound opts.
+    #[tokio::test]
+    async fn authenticate_eoa_fixture_end_to_end() {
+        let signer = fixture_signer();
+        let addr = format!("{:?}", signer.address());
+
+        let message = SiwxMessage::new(
+            FIXTURE_DOMAIN,
+            &addr,
+            FIXTURE_URI,
+            FIXTURE_CHAIN,
+            FIXTURE_NONCE,
+        )
+        .expect("valid message")
+        .with_statement("Sign in to Example")
+        .expect("statement")
+        .with_issued_at(datetime!(2024-06-01 12:00 UTC));
+
+        let raw = EvmVerifier::format_message(&message);
+        assert!(
+            raw.starts_with("login.example.com wants you to sign in with your Ethereum account:"),
+            "fixture uses shipped formatter"
+        );
+
+        let sig = signer
+            .sign_message(raw.as_bytes())
+            .await
+            .expect("signing over canonical raw");
+        let sig_bytes = sig.as_bytes();
+
+        let opts = AuthOpts::new(FIXTURE_DOMAIN, FIXTURE_NONCE)
+            .with_chain_id(FIXTURE_CHAIN)
+            .with_timestamp(datetime!(2024-06-01 12:00 UTC));
+
+        let auth = authenticate(&EvmVerifier::new(), &raw, &sig_bytes, &opts)
+            .await
+            .expect("authenticate must succeed on real EOA fixture");
+
+        assert_eq!(auth.message.domain, FIXTURE_DOMAIN);
+        assert_eq!(auth.message.nonce, FIXTURE_NONCE);
+        assert_eq!(auth.message.chain_id, FIXTURE_CHAIN);
+        assert_eq!(auth.message.address, addr);
+    }
+
+    #[tokio::test]
+    async fn authenticate_eoa_rejects_wrong_bound_nonce() {
+        let signer = fixture_signer();
+        let addr = format!("{:?}", signer.address());
+        let message = SiwxMessage::new(
+            FIXTURE_DOMAIN,
+            &addr,
+            FIXTURE_URI,
+            FIXTURE_CHAIN,
+            FIXTURE_NONCE,
+        )
+        .expect("valid")
+        .with_issued_at(datetime!(2024-06-01 12:00 UTC));
+        let raw = EvmVerifier::format_message(&message);
+        let sig = signer.sign_message(raw.as_bytes()).await.expect("sign");
+
+        let opts = AuthOpts::new(FIXTURE_DOMAIN, "wrongNonce99999")
+            .with_chain_id(FIXTURE_CHAIN)
+            .with_timestamp(datetime!(2024-06-01 12:00 UTC));
+
+        let err = authenticate(&EvmVerifier::new(), &raw, &sig.as_bytes(), &opts)
+            .await
+            .expect_err("nonce binding must fail");
+        assert!(matches!(err, SiwxError::InvalidNonce(_)));
     }
 
     #[tokio::test]
@@ -93,7 +175,7 @@ mod tests {
             .verify(&message, &text, &sig_bytes)
             .await
             .unwrap_err();
-        assert!(matches!(err, siwx::SiwxError::VerificationFailed(_)));
+        assert!(matches!(err, SiwxError::VerificationFailed(_)));
     }
 
     #[tokio::test]
@@ -104,7 +186,7 @@ mod tests {
             .verify(&message, &text, &[0u8; 32])
             .await
             .unwrap_err();
-        assert!(matches!(err, siwx::SiwxError::InvalidSignature(_)));
+        assert!(matches!(err, SiwxError::InvalidSignature(_)));
     }
 
     #[tokio::test]
@@ -125,6 +207,6 @@ mod tests {
             .verify(&message, &tampered, &sig.as_bytes())
             .await
             .unwrap_err();
-        assert!(matches!(err, siwx::SiwxError::VerificationFailed(_)));
+        assert!(matches!(err, SiwxError::VerificationFailed(_)));
     }
 }

@@ -10,7 +10,13 @@ use tokio::sync::OnceCell;
 use crate::parse_address;
 
 /// EIP-1271 magic value returned by `isValidSignature` on success.
-const EIP1271_MAGIC: FixedBytes<4> = FixedBytes([0x16, 0x26, 0xBA, 0x7E]);
+pub(crate) const EIP1271_MAGIC: FixedBytes<4> = FixedBytes([0x16, 0x26, 0xBA, 0x7E]);
+
+/// Returns true if `magic` is the EIP-1271 success value `0x1626ba7e`.
+#[must_use]
+pub(crate) fn is_success_magic(magic: FixedBytes<4>) -> bool {
+    magic == EIP1271_MAGIC
+}
 
 sol! {
     #[sol(rpc)]
@@ -69,7 +75,7 @@ impl Eip1271Verifier {
                 SiwxError::VerificationFailed(format!("isValidSignature call failed: {e}"))
             })?;
 
-        if magic != EIP1271_MAGIC {
+        if !is_success_magic(magic) {
             return Err(SiwxError::VerificationFailed(format!(
                 "EIP-1271 magic mismatch: expected {EIP1271_MAGIC}, got {magic}"
             )));
@@ -87,6 +93,15 @@ mod tests {
     fn eip1271_magic_is_is_valid_signature_selector() {
         // bytes4(keccak256("isValidSignature(bytes32,bytes)")) == 0x1626ba7e
         assert_eq!(EIP1271_MAGIC, FixedBytes([0x16, 0x26, 0xBA, 0x7E]));
+        assert!(is_success_magic(EIP1271_MAGIC));
+    }
+
+    #[test]
+    fn non_success_magic_is_rejected_by_helper() {
+        let bad = FixedBytes([0x00, 0x00, 0x00, 0x00]);
+        assert!(!is_success_magic(bad));
+        let almost = FixedBytes([0x16, 0x26, 0xBA, 0x7F]);
+        assert!(!is_success_magic(almost));
     }
 
     #[test]

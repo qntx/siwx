@@ -22,7 +22,15 @@ Hardening toward production-integrable verification.
 - `EvmVerifier::with_rpc_map` for chain_id → RPC selection (`eip1271`)
 - `SECURITY.md` threat-boundary notes
 - EIP-1271 magic / construction unit tests
+- EOA end-to-end `authenticate` fixture tests (shipped path)
+- Offline EIP-1271 failure paths (`with_rpc_map` missing chain_id after 191 fail)
 - `deny.toml` license allow list
+
+### Library vs product residuals
+
+Session/JWT, nonce store, EIP-6492, and live-RPC 1271 e2e remain **out of
+library scope** (see SECURITY.md). 0.5 claims a production-integrable
+**verification library**, not a full hosted auth stack.
 
 ## 0.4.0
 
