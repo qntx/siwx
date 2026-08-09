@@ -224,5 +224,80 @@ mod tests {
         assert!(v.rpc_url_for("1").unwrap().is_some());
         let err = v.rpc_url_for("137").unwrap_err();
         assert!(matches!(err, SiwxError::VerificationFailed(_)));
+        assert!(
+            err.to_string()
+                .contains("no RPC configured for chain_id 137"),
+            "error must name missing chain: {err}"
+        );
+    }
+
+    /// When EIP-191 fails, fallback uses the map; missing `chain_id` fails offline
+    /// without contacting a real network.
+    #[cfg(feature = "eip1271")]
+    #[tokio::test]
+    async fn verify_offline_fails_when_191_fails_and_chain_rpc_missing() {
+        use alloy::signers::{Signer, local::PrivateKeySigner};
+        use time::macros::datetime;
+
+        let signer: PrivateKeySigner =
+            "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+                .parse()
+                .expect("key");
+        // Message claims a different address so EIP-191 recovery fails.
+        let message = SiwxMessage::new(
+            "example.com",
+            "0x0000000000000000000000000000000000000001",
+            "https://example.com",
+            "137",
+            "testnonce12345678",
+        )
+        .expect("valid")
+        .with_issued_at(datetime!(2024-01-01 0:00 UTC));
+        let text = EvmVerifier::format_message(&message);
+        let sig = signer.sign_message(text.as_bytes()).await.expect("sign");
+
+        let verifier = EvmVerifier::with_rpc_map([("1", "https://eth.example.invalid")]);
+        let err = verifier
+            .verify(&message, &text, &sig.as_bytes())
+            .await
+            .expect_err("must fail without RPC for chain 137");
+        assert!(
+            matches!(err, SiwxError::VerificationFailed(_)),
+            "got {err:?}"
+        );
+        assert!(
+            err.to_string()
+                .contains("no RPC configured for chain_id 137"),
+            "got: {err}"
+        );
+    }
+
+    #[cfg(feature = "eip1271")]
+    #[tokio::test]
+    async fn verify_without_rpc_returns_eip191_error_when_sig_invalid() {
+        use time::macros::datetime;
+
+        let message = SiwxMessage::new(
+            "example.com",
+            "0x0000000000000000000000000000000000000001",
+            "https://example.com",
+            "1",
+            "testnonce12345678",
+        )
+        .expect("valid")
+        .with_issued_at(datetime!(2024-01-01 0:00 UTC));
+        let text = EvmVerifier::format_message(&message);
+        let err = EvmVerifier::new()
+            .verify(&message, &text, &[0u8; 65])
+            .await
+            .expect_err("bad sig without rpc");
+        // No RPC configured: surface the EIP-191 failure, not a map miss.
+        assert!(
+            matches!(
+                err,
+                SiwxError::InvalidSignature(_) | SiwxError::VerificationFailed(_)
+            ),
+            "got {err:?}"
+        );
     }
 }
