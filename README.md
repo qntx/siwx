@@ -95,13 +95,14 @@ use siwx_evm::EvmVerifier;
 //   signature_bytes: &[u8]         — raw bytes returned by the wallet
 //   expected_nonce:  String        — nonce your backend issued in step 1
 
-// Parse → validate (domain/nonce bind) → require canonical form → verify raw bytes.
+// Parse → validate (domain/nonce bind) → address shape → canonical form → verify raw.
 // Enable feature `eip1271` and use `EvmVerifier::with_rpc(...)` for contract wallets.
+// Multi-chain: also call `.with_chain_id(...)` on AuthOpts.
 let auth = authenticate(
     &EvmVerifier::new(),
     &signing_input,
     &signature_bytes,
-    &AuthOpts::new("example.com", expected_nonce),
+    &AuthOpts::new("example.com", expected_nonce).with_chain_id("1"),
 ).await?;
 // auth.message.address is the authenticated wallet
 let _ = auth;
@@ -273,6 +274,9 @@ impl Verifier for MyChainVerifier {
 | --- | --- | --- |
 | `serde` | `siwx` | `Serialize` / `Deserialize` for `SiwxMessage` |
 | `eip1271` | `siwx-evm` | Smart-contract signature verification via RPC (`EvmVerifier::with_rpc`) |
+| `eip1271` | `siwx-cli` | Enables `siwx evm verify --rpc <url>` (forwards to `siwx-evm/eip1271`) |
+
+See [SECURITY.md](SECURITY.md) for production integration boundaries (nonce store, RPC trust).
 
 ## Related Standards
 

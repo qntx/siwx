@@ -28,7 +28,10 @@ use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
 use crate::SiwxError;
-use crate::message::{SiwxMessage, VERSION, check_domain, check_nonce_shape, check_statement};
+use crate::message::{
+    MAX_MESSAGE_BYTES, MAX_RESOURCES, SiwxMessage, VERSION, check_domain, check_nonce_shape,
+    check_scheme, check_statement,
+};
 
 pub(crate) const PREAMBLE_MID: &str = " wants you to sign in with your ";
 pub(crate) const PREAMBLE_TAIL: &str = " account:";
@@ -59,9 +62,16 @@ impl FromStr for SiwxMessage {
     type Err = SiwxError;
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
+        if input.len() > MAX_MESSAGE_BYTES {
+            return Err(SiwxError::InvalidFormat(format!(
+                "message exceeds maximum size of {MAX_MESSAGE_BYTES} bytes"
+            )));
+        }
+
         let mut lines = input.split('\n').peekable();
 
-        let (domain, _chain_name) = parse_preamble(next(&mut lines, "preamble")?)?;
+        let (scheme, domain, _chain_name) = parse_preamble(next(&mut lines, "preamble")?)?;
+        let scheme = scheme.map(|s| check_scheme(&s)).transpose()?;
         let domain = check_domain(&domain)?;
         let address = next(&mut lines, "address")?.to_owned();
         if address.is_empty() {
@@ -94,6 +104,7 @@ impl FromStr for SiwxMessage {
         reject_trailing(&mut lines)?;
 
         Ok(Self {
+            scheme,
             domain,
             address,
             statement,
@@ -110,11 +121,13 @@ impl FromStr for SiwxMessage {
     }
 }
 
-fn parse_preamble(header: &str) -> Result<(String, &str), SiwxError> {
+/// Returns `(scheme, domain, chain_name)`.
+fn parse_preamble(header: &str) -> Result<(Option<String>, String, &str), SiwxError> {
     let mid = header
         .find(PREAMBLE_MID)
         .ok_or_else(|| SiwxError::invalid_format("missing preamble marker"))?;
-    let domain = header[..mid].to_owned();
+    let authority = &header[..mid];
+    let (scheme, domain) = split_scheme_domain(authority)?;
     let after_mid = &header[mid + PREAMBLE_MID.len()..];
     let chain_name = after_mid
         .strip_suffix(PREAMBLE_TAIL)
@@ -122,7 +135,19 @@ fn parse_preamble(header: &str) -> Result<(String, &str), SiwxError> {
     if chain_name.is_empty() {
         return Err(SiwxError::invalid_format("empty chain name in preamble"));
     }
-    Ok((domain, chain_name))
+    Ok((scheme, domain, chain_name))
+}
+
+fn split_scheme_domain(authority: &str) -> Result<(Option<String>, String), SiwxError> {
+    if let Some((scheme, rest)) = authority.split_once("://") {
+        if scheme.is_empty() || rest.is_empty() {
+            return Err(SiwxError::invalid_format(
+                "invalid scheme://domain preamble",
+            ));
+        }
+        return Ok((Some(scheme.to_owned()), rest.to_owned()));
+    }
+    Ok((None, authority.to_owned()))
 }
 
 fn expect_blank(lines: &mut Lines<'_>, ctx: &str) -> Result<(), SiwxError> {
@@ -187,6 +212,11 @@ fn take_resources(lines: &mut Lines<'_>) -> Result<Vec<String>, SiwxError> {
     lines.next();
     let mut resources = Vec::new();
     while lines.peek().is_some_and(|l| !l.is_empty() && *l != RES_TAG) {
+        if resources.len() >= MAX_RESOURCES {
+            return Err(SiwxError::invalid_format(format!(
+                "too many resources (max {MAX_RESOURCES})"
+            )));
+        }
         let line = next(lines, "resource item")?;
         let item = line
             .strip_prefix("- ")
@@ -312,5 +342,25 @@ Issued At: 2021-09-30T16:25:24Z";
             .parse::<SiwxMessage>()
             .expect_err("should fail");
         assert!(matches!(err, SiwxError::InvalidFormat(_)));
+    }
+
+    #[test]
+    fn scheme_prefix_roundtrip() {
+        let msg = SiwxMessage::new(
+            "example.com",
+            "addr1",
+            "https://example.com",
+            "1",
+            "testnonce12345678",
+        )
+        .expect("valid")
+        .with_scheme("https")
+        .expect("scheme")
+        .with_issued_at(datetime!(2021-09-30 16:25:24 UTC));
+        let text = msg.to_sign_string("Ethereum");
+        let parsed: SiwxMessage = text.parse().expect("parse");
+        assert_eq!(parsed.scheme.as_deref(), Some("https"));
+        assert_eq!(parsed.domain, "example.com");
+        assert_eq!(parsed, msg);
     }
 }

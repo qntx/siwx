@@ -42,6 +42,10 @@ impl SiwxMessage {
     pub fn to_sign_string(&self, chain_name: &str) -> String {
         let mut out = String::with_capacity(512);
 
+        if let Some(ref scheme) = self.scheme {
+            out.push_str(scheme);
+            out.push_str("://");
+        }
         out.push_str(&self.domain);
         out.push_str(PREAMBLE_MID);
         out.push_str(chain_name);
@@ -156,5 +160,26 @@ Resources:
         assert!(text.starts_with("service.org wants you to sign in with your Solana account:"));
         assert!(text.contains("Chain ID: 5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d"));
         assert!(text.contains("Nonce: testnonce12345678"));
+    }
+
+    #[test]
+    fn scheme_prefix_roundtrips_in_format() {
+        let msg = SiwxMessage::new(
+            "example.com",
+            "addr1",
+            "https://example.com",
+            "1",
+            "testnonce12345678",
+        )
+        .expect("valid")
+        .with_scheme("https")
+        .expect("scheme")
+        .with_issued_at(datetime!(2021-09-30 16:25:24 UTC));
+        let text = msg.to_sign_string("Ethereum");
+        assert!(
+            text.starts_with(
+                "https://example.com wants you to sign in with your Ethereum account:"
+            )
+        );
     }
 }

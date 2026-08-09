@@ -78,3 +78,20 @@ impl Eip1271Verifier {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn eip1271_magic_is_is_valid_signature_selector() {
+        // bytes4(keccak256("isValidSignature(bytes32,bytes)")) == 0x1626ba7e
+        assert_eq!(EIP1271_MAGIC, FixedBytes([0x16, 0x26, 0xBA, 0x7E]));
+    }
+
+    #[test]
+    fn eip1271_verifier_holds_rpc_url() {
+        let v = Eip1271Verifier::new("https://eth.example");
+        assert_eq!(v.rpc_url, "https://eth.example");
+    }
+}

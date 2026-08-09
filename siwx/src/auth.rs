@@ -1,5 +1,6 @@
 //! End-to-end authentication: parse → validate → canonical check → verify.
 
+use crate::message::MAX_MESSAGE_BYTES;
 use crate::validate::AuthOpts;
 use crate::verifier::Verifier;
 use crate::{SiwxError, SiwxMessage};
@@ -17,23 +18,32 @@ pub struct Authenticated {
 /// This is the recommended entry point for backend login flows.
 ///
 /// Steps:
-/// 1. Parse `raw_message` into [`SiwxMessage`].
-/// 2. [`SiwxMessage::validate`] with `opts` (domain, nonce, optional chain id).
-/// 3. Reject if `raw_message` is not bit-identical to
+/// 1. Reject oversize input ([`MAX_MESSAGE_BYTES`]).
+/// 2. Parse `raw_message` into [`SiwxMessage`].
+/// 3. [`SiwxMessage::validate`] with `opts` (domain, nonce, optional chain id).
+/// 4. [`Verifier::validate_address`] for chain-specific address shape.
+/// 5. Reject if `raw_message` is not bit-identical to
 ///    [`Verifier::format_message`] (also binds preamble chain name).
-/// 4. [`Verifier::verify`] over the original `raw_message` bytes.
+/// 6. [`Verifier::verify`] over the original `raw_message` bytes.
 ///
 /// # Errors
 ///
-/// Returns parse, validation, canonical-form, or verification errors.
+/// Returns parse, validation, address, canonical-form, or verification errors.
 pub async fn authenticate<V: Verifier>(
     verifier: &V,
     raw_message: &str,
     signature: &[u8],
     opts: &AuthOpts,
 ) -> Result<Authenticated, SiwxError> {
+    if raw_message.len() > MAX_MESSAGE_BYTES {
+        return Err(SiwxError::InvalidFormat(format!(
+            "message exceeds maximum size of {MAX_MESSAGE_BYTES} bytes"
+        )));
+    }
+
     let message: SiwxMessage = raw_message.parse()?;
     message.validate(opts)?;
+    V::validate_address(&message.address)?;
 
     let canonical = V::format_message(&message);
     if canonical != raw_message {
@@ -115,5 +125,19 @@ mod tests {
             .await
             .expect_err("domain binding");
         assert!(matches!(err, SiwxError::InvalidDomain(_)));
+    }
+
+    #[tokio::test]
+    async fn authenticate_rejects_oversize_message() {
+        let padding = "x".repeat(MAX_MESSAGE_BYTES + 1);
+        let err = authenticate(
+            &AcceptingVerifier,
+            &padding,
+            &[],
+            &AuthOpts::new("d.com", "n12345678"),
+        )
+        .await
+        .expect_err("oversize");
+        assert!(matches!(err, SiwxError::InvalidFormat(_)));
     }
 }
