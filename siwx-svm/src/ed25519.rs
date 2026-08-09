@@ -5,40 +5,43 @@ use crate::CHAIN_NAME;
 
 /// Ed25519 signature verifier for Solana.
 ///
-/// Verifies a 64-byte Ed25519 signature against the message bytes using the
-/// provided public key. Fully synchronous — no RPC needed.
-#[derive(Debug, Clone, Copy)]
-pub struct Ed25519Verifier {
-    pubkey: [u8; 32],
-}
+/// Verifies a 64-byte Ed25519 signature over the raw message bytes using the
+/// public key derived from `message.address` (base58). Fully synchronous —
+/// no RPC needed.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Ed25519Verifier;
 
 impl Ed25519Verifier {
-    /// Create a verifier for the given 32-byte Ed25519 public key.
+    /// Create a Solana Ed25519 verifier.
+    ///
+    /// The verifying key is always taken from `message.address` at verify
+    /// time — callers cannot inject a separate public key.
     #[must_use]
-    pub const fn new(pubkey: [u8; 32]) -> Self {
-        Self { pubkey }
+    pub const fn new() -> Self {
+        Self
     }
 
-    /// Create a verifier from a base58-encoded public key string.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`SiwxError::InvalidAddress`] if decoding fails or length != 32.
-    pub fn from_base58(key: &str) -> Result<Self, SiwxError> {
-        let bytes = bs58::decode(key)
+    fn verifying_key_from_address(address: &str) -> Result<VerifyingKey, SiwxError> {
+        let bytes = bs58::decode(address)
             .into_vec()
             .map_err(|e| SiwxError::InvalidAddress(format!("invalid base58 pubkey: {e}")))?;
         let arr: [u8; 32] = bytes.try_into().map_err(|v: Vec<u8>| {
             SiwxError::InvalidAddress(format!("Ed25519 pubkey must be 32 bytes, got {}", v.len()))
         })?;
-        Ok(Self { pubkey: arr })
+        VerifyingKey::from_bytes(&arr)
+            .map_err(|e| SiwxError::InvalidAddress(format!("invalid Ed25519 pubkey: {e}")))
     }
 }
 
 impl Verifier for Ed25519Verifier {
     const CHAIN_NAME: &'static str = CHAIN_NAME;
 
-    async fn verify(&self, message: &SiwxMessage, signature: &[u8]) -> Result<(), SiwxError> {
+    async fn verify(
+        &self,
+        message: &SiwxMessage,
+        raw_message: &str,
+        signature: &[u8],
+    ) -> Result<(), SiwxError> {
         let sig_arr: [u8; 64] = signature.try_into().map_err(|_| {
             SiwxError::InvalidSignature(format!(
                 "Ed25519 signature must be 64 bytes, got {}",
@@ -47,13 +50,10 @@ impl Verifier for Ed25519Verifier {
         })?;
         let sig = Signature::from_bytes(&sig_arr);
 
-        let verifying_key = VerifyingKey::from_bytes(&self.pubkey)
-            .map_err(|e| SiwxError::InvalidAddress(format!("invalid Ed25519 pubkey: {e}")))?;
-
-        let text = message.to_sign_string(CHAIN_NAME);
+        let verifying_key = Self::verifying_key_from_address(&message.address)?;
 
         verifying_key
-            .verify(text.as_bytes(), &sig)
+            .verify(raw_message.as_bytes(), &sig)
             .map_err(|e| SiwxError::VerificationFailed(format!("Ed25519 verify failed: {e}")))
     }
 }
@@ -62,6 +62,7 @@ impl Verifier for Ed25519Verifier {
 mod tests {
     use ed25519_dalek::{Signer, SigningKey};
     use siwx::Verifier as _;
+    use time::macros::datetime;
 
     use super::*;
 
@@ -71,39 +72,45 @@ mod tests {
         SigningKey::from_bytes(&bytes)
     }
 
+    fn sample_message(addr: &str) -> SiwxMessage {
+        SiwxMessage::new(
+            "example.com",
+            addr,
+            "https://example.com/login",
+            "1",
+            "testnonce12345678",
+        )
+        .expect("valid")
+        .with_issued_at(datetime!(2024-01-01 0:00 UTC))
+    }
+
     #[tokio::test]
     async fn ed25519_roundtrip() {
         let sk = make_keypair(1);
         let vk = sk.verifying_key();
         let addr = bs58::encode(vk.to_bytes()).into_string();
 
-        let message = SiwxMessage::new("example.com", &addr, "https://example.com/login", "1", "1")
-            .expect("valid")
-            .with_nonce("testnonce12345678");
-
+        let message = sample_message(&addr);
         let text = Ed25519Verifier::format_message(&message);
         let sig = sk.sign(text.as_bytes());
 
-        Ed25519Verifier::new(vk.to_bytes())
-            .verify(&message, &sig.to_bytes())
+        Ed25519Verifier::new()
+            .verify(&message, &text, &sig.to_bytes())
             .await
             .expect("should verify");
     }
 
     #[tokio::test]
-    async fn ed25519_wrong_key() {
+    async fn ed25519_wrong_address_in_message() {
         let sk = make_keypair(1);
-        let wrong_vk = make_keypair(2).verifying_key();
-        let addr = bs58::encode(wrong_vk.to_bytes()).into_string();
+        let wrong_addr = bs58::encode(make_keypair(2).verifying_key().to_bytes()).into_string();
 
-        let message = SiwxMessage::new("example.com", &addr, "https://example.com/login", "1", "1")
-            .expect("valid");
-
+        let message = sample_message(&wrong_addr);
         let text = Ed25519Verifier::format_message(&message);
         let sig = sk.sign(text.as_bytes());
 
-        let err = Ed25519Verifier::new(wrong_vk.to_bytes())
-            .verify(&message, &sig.to_bytes())
+        let err = Ed25519Verifier::new()
+            .verify(&message, &text, &sig.to_bytes())
             .await
             .unwrap_err();
         assert!(matches!(err, SiwxError::VerificationFailed(_)));
@@ -114,25 +121,36 @@ mod tests {
         let vk = make_keypair(1).verifying_key();
         let addr = bs58::encode(vk.to_bytes()).into_string();
 
-        let message = SiwxMessage::new("d.com", &addr, "https://d.com", "1", "1").unwrap();
+        let message = sample_message(&addr);
+        let text = Ed25519Verifier::format_message(&message);
 
-        let err = Ed25519Verifier::new(vk.to_bytes())
-            .verify(&message, &[0u8; 32])
+        let err = Ed25519Verifier::new()
+            .verify(&message, &text, &[0u8; 32])
             .await
             .unwrap_err();
         assert!(matches!(err, SiwxError::InvalidSignature(_)));
     }
 
-    #[test]
-    fn from_base58_valid() {
-        let vk = make_keypair(1).verifying_key();
-        let b58 = bs58::encode(vk.to_bytes()).into_string();
-        let verifier = Ed25519Verifier::from_base58(&b58).unwrap();
-        assert_eq!(verifier.pubkey, vk.to_bytes());
+    #[tokio::test]
+    async fn ed25519_rejects_signature_over_different_bytes() {
+        let sk = make_keypair(1);
+        let addr = bs58::encode(sk.verifying_key().to_bytes()).into_string();
+
+        let message = sample_message(&addr);
+        let text = Ed25519Verifier::format_message(&message);
+        let sig = sk.sign(text.as_bytes());
+
+        let mut tampered = text.clone();
+        tampered.push(' ');
+        let err = Ed25519Verifier::new()
+            .verify(&message, &tampered, &sig.to_bytes())
+            .await
+            .unwrap_err();
+        assert!(matches!(err, SiwxError::VerificationFailed(_)));
     }
 
     #[test]
-    fn from_base58_invalid() {
-        assert!(Ed25519Verifier::from_base58("!!!").is_err());
+    fn verifying_key_from_address_rejects_invalid() {
+        assert!(Ed25519Verifier::verifying_key_from_address("!!!").is_err());
     }
 }

@@ -66,49 +66,45 @@ The core `siwx` crate is chain-agnostic; chain-specific logic is in companion cr
 
 ```rust
 use siwx::{SiwxMessage, Verifier};
-use siwx_evm::Eip191Verifier;
+use siwx_evm::EvmVerifier;
 
 let message = SiwxMessage::new(
     "example.com",                                    // domain
     "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",     // address
     "https://example.com/login",                      // uri
-    "1",                                              // version
     "1",                                              // chain_id (EIP-155)
+    siwx::nonce::generate_default(),                  // nonce (≥ 8 alphanumeric)
 )?
-.with_statement("Sign in to Example")
-.with_nonce(siwx::nonce::generate_default());
+.with_statement("Sign in to Example")?;
 
 // Render into the EIP-4361 signing string via the chain's Verifier.
 // `format_message` is a `Verifier` default method — the chain label comes
-// from `Eip191Verifier::CHAIN_NAME` ("Ethereum"), so it can never drift.
-let signing_input = Eip191Verifier::format_message(&message);
+// from `EvmVerifier::CHAIN_NAME` ("Ethereum"), so it can never drift.
+let signing_input = EvmVerifier::format_message(&message);
 // → "example.com wants you to sign in with your Ethereum account:\n0xd8dA…"
 ```
 
 ### Verify signature (backend)
 
 ```rust,no_run
-use siwx::{SiwxMessage, ValidateOpts, Verifier};
+use siwx::{authenticate, AuthOpts, Verifier};
 use siwx_evm::EvmVerifier;
 
 // Inputs (typically supplied by the frontend / session store):
-//   signing_input:   String        — the CAIP-122 message text the wallet signed
+//   signing_input:   String        — the exact CAIP-122 text the wallet signed
 //   signature_bytes: &[u8]         — raw bytes returned by the wallet
 //   expected_nonce:  String        — nonce your backend issued in step 1
 
-// 1. Parse the message text back into a typed value
-let message: SiwxMessage = signing_input.parse()?;
-
-// 2. Validate fields & temporal constraints
-message.validate(&ValidateOpts {
-    domain: Some("example.com".into()),
-    nonce:  Some(expected_nonce),
-    ..Default::default()
-})?;
-
-// 3. Cryptographic verification (EIP-191 first, EIP-1271 fallback via RPC)
-let verifier = EvmVerifier::with_rpc("https://eth.llamarpc.com");
-verifier.verify(&message, &signature_bytes).await?;
+// Parse → validate (domain/nonce bind) → require canonical form → verify raw bytes.
+// Enable feature `eip1271` and use `EvmVerifier::with_rpc(...)` for contract wallets.
+let auth = authenticate(
+    &EvmVerifier::new(),
+    &signing_input,
+    &signature_bytes,
+    &AuthOpts::new("example.com", expected_nonce),
+).await?;
+// auth.message.address is the authenticated wallet
+let _ = auth;
 ```
 
 ## CLI
@@ -223,10 +219,12 @@ pub trait Verifier: Send + Sync {
     /// "Solana". Required, so new chains can never ship without one.
     const CHAIN_NAME: &'static str;
 
-    /// Verify `signature` over `message`.
+    /// Verify `signature` over `raw_message` (exact wallet bytes), binding
+    /// identity to `message.address`.
     fn verify(
         &self,
         message: &SiwxMessage,
+        raw_message: &str,
         signature: &[u8],
     ) -> impl Future<Output = Result<(), SiwxError>> + Send;
 
@@ -238,10 +236,8 @@ pub trait Verifier: Send + Sync {
 
 | Verifier | Crate | Signature Type | Async |
 | --- | --- | --- | --- |
-| `Eip191Verifier` | `siwx-evm` | ECDSA recovery (`personal_sign`) | No |
-| `Eip1271Verifier` | `siwx-evm` | Smart contract `isValidSignature` (RPC) | Yes |
-| `EvmVerifier` | `siwx-evm` | EIP-191 first, EIP-1271 fallback | Yes |
-| `Ed25519Verifier` | `siwx-svm` | Ed25519 | No |
+| `EvmVerifier` | `siwx-evm` | EIP-191; optional EIP-1271 (`eip1271` feature + RPC) | Yes |
+| `Ed25519Verifier` | `siwx-svm` | Ed25519 (pubkey from `message.address`) | No |
 
 ### Extending to New Chains
 
@@ -259,9 +255,10 @@ impl Verifier for MyChainVerifier {
     async fn verify(
         &self,
         message: &SiwxMessage,
+        raw_message: &str,
         signature: &[u8],
     ) -> Result<(), SiwxError> {
-        // Your chain-specific verification logic
+        // Verify `signature` over `raw_message`, bind identity to message.address
         todo!()
     }
 }
@@ -275,6 +272,7 @@ impl Verifier for MyChainVerifier {
 | Feature | Crate | Description |
 | --- | --- | --- |
 | `serde` | `siwx` | `Serialize` / `Deserialize` for `SiwxMessage` |
+| `eip1271` | `siwx-evm` | Smart-contract signature verification via RPC (`EvmVerifier::with_rpc`) |
 
 ## Related Standards
 

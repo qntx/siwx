@@ -20,10 +20,8 @@ pub(crate) struct MessageOutput {
     pub uri: String,
     pub version: String,
     pub chain_id: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub nonce: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub issued_at: Option<String>,
+    pub nonce: String,
+    pub issued_at: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub expiration_time: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -41,7 +39,7 @@ impl MessageOutput {
             version: msg.version.clone(),
             chain_id: msg.chain_id.clone(),
             nonce: msg.nonce.clone(),
-            issued_at: msg.issued_at.map(fmt_ts),
+            issued_at: fmt_ts(msg.issued_at),
             expiration_time: msg.expiration_time.map(fmt_ts),
             not_before: msg.not_before.map(fmt_ts),
         }
@@ -94,8 +92,8 @@ impl ParseOutput {
             version: msg.version.clone(),
             chain_id: msg.chain_id.clone(),
             statement: msg.statement.clone(),
-            nonce: msg.nonce.clone(),
-            issued_at: msg.issued_at.map(fmt_ts),
+            nonce: Some(msg.nonce.clone()),
+            issued_at: Some(fmt_ts(msg.issued_at)),
             expiration_time: msg.expiration_time.map(fmt_ts),
             not_before: msg.not_before.map(fmt_ts),
             request_id: msg.request_id.clone(),
@@ -130,12 +128,8 @@ pub(crate) fn render_message(
     field("URI", &out.uri);
     field("Version", &out.version);
     field("Chain ID", &out.chain_id);
-    if let Some(ref n) = out.nonce {
-        field("Nonce", n);
-    }
-    if let Some(ref t) = out.issued_at {
-        field("Issued At", t);
-    }
+    field("Nonce", &out.nonce);
+    field("Issued At", &out.issued_at);
     if let Some(ref t) = out.expiration_time {
         field("Expires", t);
     }

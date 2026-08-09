@@ -14,13 +14,12 @@
 //!     "example.com",
 //!     "GwAF45zjfyGzUbd3i3hXxzGeuchzEZXwpRYHZM5912F1",
 //!     "https://example.com/login",
-//!     "1",
 //!     "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d",
+//!     siwx::nonce::generate_default(),
 //! )?;
-//! let _text = Ed25519Verifier::format_message(&message);
-//! // let pubkey: [u8; 32] = ...; // Ed25519 public key
-//! // let sig_bytes: [u8; 64] = ...; // Ed25519 signature
-//! // Ed25519Verifier::new(pubkey).verify(&message, &sig_bytes).await?;
+//! let text = Ed25519Verifier::format_message(&message);
+//! // let sig_bytes: [u8; 64] = ...; // Ed25519 signature from wallet
+//! // Ed25519Verifier::new().verify(&message, &text, &sig_bytes).await?;
 //! # Ok(())
 //! # }
 //! ```
@@ -77,7 +76,7 @@ mod tests {
             "GwAF45zjfyGzUbd3i3hXxzGeuchzEZXwpRYHZM5912F1",
             "https://example.com",
             "1",
-            "1",
+            "testnonce12345678",
         )
         .expect("valid");
         let text = Ed25519Verifier::format_message(&msg);

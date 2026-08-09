@@ -1,6 +1,4 @@
-//! CAIP-122 signing-string rendering ([`SiwxMessage::to_sign_string`] + [`Display`]).
-
-use std::fmt;
+//! CAIP-122 signing-string rendering ([`SiwxMessage::to_sign_string`]).
 
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
@@ -19,12 +17,23 @@ impl SiwxMessage {
     /// value via the [`Verifier::CHAIN_NAME`](crate::Verifier::CHAIN_NAME)
     /// associated constant.
     ///
+    /// Prefer [`crate::Verifier::format_message`] so the chain label cannot
+    /// drift from verification.
+    ///
     /// # Examples
     ///
     /// ```
     /// use siwx::SiwxMessage;
+    /// use time::macros::datetime;
     ///
-    /// let msg = SiwxMessage::new("example.com", "addr1", "https://example.com", "1", "1")?;
+    /// let msg = SiwxMessage::new(
+    ///     "example.com",
+    ///     "addr1",
+    ///     "https://example.com",
+    ///     "1",
+    ///     "testnonce12345678",
+    /// )?
+    /// .with_issued_at(datetime!(2021-09-30 16:25:24 UTC));
     /// let text = msg.to_sign_string("Ethereum");
     /// assert!(text.starts_with("example.com wants you to sign in with your Ethereum account:"));
     /// # Ok::<(), siwx::SiwxError>(())
@@ -51,13 +60,9 @@ impl SiwxMessage {
         push_tag(&mut out, URI_TAG, &self.uri);
         push_tag(&mut out, VERSION_TAG, &self.version);
         push_tag(&mut out, CHAIN_TAG, &self.chain_id);
+        push_tag(&mut out, NONCE_TAG, &self.nonce);
+        push_tag(&mut out, IAT_TAG, &fmt_ts(self.issued_at));
 
-        if let Some(ref n) = self.nonce {
-            push_tag(&mut out, NONCE_TAG, n);
-        }
-        if let Some(t) = self.issued_at {
-            push_tag(&mut out, IAT_TAG, &fmt_ts(t));
-        }
         if let Some(t) = self.expiration_time {
             push_tag(&mut out, EXP_TAG, &fmt_ts(t));
         }
@@ -84,14 +89,6 @@ impl SiwxMessage {
     }
 }
 
-/// Renders with a generic `"X"` chain name — for a proper signing string use
-/// [`SiwxMessage::to_sign_string`] with the chain-specific label.
-impl fmt::Display for SiwxMessage {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.to_sign_string("X"))
-    }
-}
-
 pub(crate) fn fmt_ts(t: OffsetDateTime) -> String {
     t.format(&Rfc3339).unwrap_or_else(|_| t.to_string())
 }
@@ -115,11 +112,11 @@ mod tests {
             "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
             "https://service.org/login",
             "1",
-            "1",
+            "32891756",
         )
         .expect("valid")
         .with_statement("I accept the ServiceOrg Terms of Service: https://service.org/tos")
-        .with_nonce("32891756")
+        .expect("statement")
         .with_issued_at(datetime!(2021-09-30 16:25:24 UTC))
         .with_resources([
             "ipfs://bafybeiemxf5abjwjbikoz4mc3a3dla6ual3jsgpdr4cjr3oz3evfyavhwq/",
@@ -150,18 +147,14 @@ Resources:
             "service.org",
             "GwAF45zjfyGzUbd3i3hXxzGeuchzEZXwpRYHZM5912F1",
             "https://service.org/login",
-            "1",
             "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d",
+            "testnonce12345678",
         )
-        .expect("valid");
+        .expect("valid")
+        .with_issued_at(datetime!(2021-09-30 16:25:24 UTC));
         let text = msg.to_sign_string("Solana");
         assert!(text.starts_with("service.org wants you to sign in with your Solana account:"));
         assert!(text.contains("Chain ID: 5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d"));
-    }
-
-    #[test]
-    fn display_uses_generic_x_label() {
-        let msg = SiwxMessage::new("d.com", "a", "https://d.com", "1", "1").expect("valid");
-        assert!(msg.to_string().contains("sign in with your X account:"));
+        assert!(text.contains("Nonce: testnonce12345678"));
     }
 }

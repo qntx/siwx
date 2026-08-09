@@ -1,11 +1,13 @@
+//! EIP-1271 smart-contract signature verification (feature `eip1271`).
+
 use alloy::network::Ethereum;
 use alloy::primitives::{Address, FixedBytes, eip191_hash_message};
 use alloy::providers::{DynProvider, Provider, ProviderBuilder};
 use alloy::sol;
-use siwx::{SiwxError, SiwxMessage, Verifier};
+use siwx::{SiwxError, SiwxMessage};
 use tokio::sync::OnceCell;
 
-use crate::{CHAIN_NAME, parse_address};
+use crate::parse_address;
 
 /// EIP-1271 magic value returned by `isValidSignature` on success.
 const EIP1271_MAGIC: FixedBytes<4> = FixedBytes([0x16, 0x26, 0xBA, 0x7E]);
@@ -17,24 +19,15 @@ sol! {
     }
 }
 
-/// EIP-1271 smart-contract signature verifier.
-///
-/// Calls `isValidSignature(hash, signature)` on the contract at
-/// `message.address` and checks the returned magic value. The underlying
-/// RPC provider is connected lazily on first use and cached for subsequent
-/// calls.
-///
-/// Requires an Ethereum JSON-RPC endpoint.
+/// EIP-1271 smart-contract signature verifier (internal).
 #[derive(Debug)]
-pub struct Eip1271Verifier {
+pub(crate) struct Eip1271Verifier {
     rpc_url: String,
     provider: OnceCell<DynProvider>,
 }
 
 impl Eip1271Verifier {
-    /// Create a new verifier targeting the given RPC URL.
-    #[must_use]
-    pub fn new(rpc_url: impl Into<String>) -> Self {
+    pub(crate) fn new(rpc_url: impl Into<String>) -> Self {
         Self {
             rpc_url: rpc_url.into(),
             provider: OnceCell::new(),
@@ -54,16 +47,16 @@ impl Eip1271Verifier {
             })
             .await
     }
-}
 
-impl Verifier for Eip1271Verifier {
-    const CHAIN_NAME: &'static str = CHAIN_NAME;
-
-    async fn verify(&self, message: &SiwxMessage, signature: &[u8]) -> Result<(), SiwxError> {
+    pub(crate) async fn verify(
+        &self,
+        message: &SiwxMessage,
+        raw_message: &str,
+        signature: &[u8],
+    ) -> Result<(), SiwxError> {
         let contract_addr: Address = parse_address(&message.address)?;
 
-        let text = message.to_sign_string(CHAIN_NAME);
-        let hash = eip191_hash_message(text.as_bytes());
+        let hash = eip191_hash_message(raw_message.as_bytes());
 
         let provider = self.provider().await?;
         let contract = IERC1271::new(contract_addr, provider);

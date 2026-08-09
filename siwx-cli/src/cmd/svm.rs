@@ -34,10 +34,7 @@ impl SvmCommand {
         match &self.action {
             SvmAction::Message(args) => run_message::<Ed25519Verifier>(CHAIN_LABEL, args, json),
             SvmAction::Verify(args) => {
-                run_verify(CHAIN_LABEL, &args.common, json, |msg| {
-                    Ok(Ed25519Verifier::from_base58(&msg.address)?)
-                })
-                .await
+                run_verify(CHAIN_LABEL, &args.common, json, Ed25519Verifier::new()).await
             }
         }
     }
