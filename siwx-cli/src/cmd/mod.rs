@@ -107,17 +107,23 @@ pub(crate) struct VerifyArgs {
     #[arg(long)]
     pub signature: String,
 
-    /// Expected domain binding (defaults to domain in the message).
+    /// Expected domain binding (required unless `--trust-message-bindings`).
     #[arg(long)]
     pub domain: Option<String>,
 
-    /// Expected nonce binding (defaults to nonce in the message).
+    /// Expected nonce binding (required unless `--trust-message-bindings`).
     #[arg(long)]
     pub nonce: Option<String>,
 
-    /// Expected chain id binding (optional).
+    /// Expected chain id binding (optional; recommended for multi-chain).
     #[arg(long)]
     pub chain_id: Option<String>,
+
+    /// Use domain/nonce (and chain id if present) from the message itself.
+    ///
+    /// Debug-only: does not prove the server issued the challenge.
+    #[arg(long)]
+    pub trust_message_bindings: bool,
 }
 
 #[derive(Args)]
@@ -197,6 +203,7 @@ pub(crate) fn run_message<V: Verifier>(
     args: &MessageArgs,
     json: bool,
 ) -> CmdResult {
+    V::validate_address(&args.address)?;
     let msg = args.build()?;
     let text = V::format_message(&msg);
     let out = MessageOutput::new(chain_label, text, &msg);
@@ -216,17 +223,7 @@ pub(crate) async fn run_verify<V: Verifier>(
     let sig = decode_hex_signature(&args.signature)?;
     let provisional: SiwxMessage = args.message.parse()?;
 
-    let mut opts = AuthOpts::new(
-        args.domain
-            .clone()
-            .unwrap_or_else(|| provisional.domain.clone()),
-        args.nonce
-            .clone()
-            .unwrap_or_else(|| provisional.nonce.clone()),
-    );
-    if let Some(ref chain_id) = args.chain_id {
-        opts = opts.with_chain_id(chain_id);
-    }
+    let opts = build_auth_opts(args, &provisional)?;
 
     let auth = authenticate(&verifier, &args.message, &sig, &opts).await?;
 
@@ -243,6 +240,39 @@ pub(crate) async fn run_verify<V: Verifier>(
         render_verify(&out, false)?;
     }
     Ok(())
+}
+
+fn build_auth_opts(args: &VerifyArgs, message: &SiwxMessage) -> Result<AuthOpts, BoxedError> {
+    let (domain, nonce) = if args.trust_message_bindings {
+        (
+            args.domain
+                .clone()
+                .unwrap_or_else(|| message.domain.clone()),
+            args.nonce.clone().unwrap_or_else(|| message.nonce.clone()),
+        )
+    } else {
+        let domain = args.domain.clone().ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "missing --domain (or pass --trust-message-bindings for debug)",
+            )
+        })?;
+        let nonce = args.nonce.clone().ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "missing --nonce (or pass --trust-message-bindings for debug)",
+            )
+        })?;
+        (domain, nonce)
+    };
+
+    let mut opts = AuthOpts::new(domain, nonce);
+    if let Some(ref chain_id) = args.chain_id {
+        opts = opts.with_chain_id(chain_id);
+    } else if args.trust_message_bindings {
+        opts = opts.with_chain_id(&message.chain_id);
+    }
+    Ok(opts)
 }
 
 pub(crate) fn decode_hex_signature(s: &str) -> Result<Vec<u8>, BoxedError> {

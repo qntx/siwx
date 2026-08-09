@@ -28,7 +28,10 @@ use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
 use crate::SiwxError;
-use crate::message::{SiwxMessage, VERSION, check_domain, check_nonce_shape, check_statement};
+use crate::message::{
+    MAX_MESSAGE_BYTES, MAX_RESOURCES, SiwxMessage, VERSION, check_domain, check_nonce_shape,
+    check_statement,
+};
 
 pub(crate) const PREAMBLE_MID: &str = " wants you to sign in with your ";
 pub(crate) const PREAMBLE_TAIL: &str = " account:";
@@ -59,6 +62,12 @@ impl FromStr for SiwxMessage {
     type Err = SiwxError;
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
+        if input.len() > MAX_MESSAGE_BYTES {
+            return Err(SiwxError::InvalidFormat(format!(
+                "message exceeds maximum size of {MAX_MESSAGE_BYTES} bytes"
+            )));
+        }
+
         let mut lines = input.split('\n').peekable();
 
         let (domain, _chain_name) = parse_preamble(next(&mut lines, "preamble")?)?;
@@ -187,6 +196,11 @@ fn take_resources(lines: &mut Lines<'_>) -> Result<Vec<String>, SiwxError> {
     lines.next();
     let mut resources = Vec::new();
     while lines.peek().is_some_and(|l| !l.is_empty() && *l != RES_TAG) {
+        if resources.len() >= MAX_RESOURCES {
+            return Err(SiwxError::invalid_format(format!(
+                "too many resources (max {MAX_RESOURCES})"
+            )));
+        }
         let line = next(lines, "resource item")?;
         let item = line
             .strip_prefix("- ")

@@ -102,6 +102,10 @@ impl Default for EvmVerifier {
 impl Verifier for EvmVerifier {
     const CHAIN_NAME: &'static str = CHAIN_NAME;
 
+    fn validate_address(address: &str) -> Result<(), SiwxError> {
+        validate_address(address)
+    }
+
     fn verify(
         &self,
         message: &SiwxMessage,
@@ -115,6 +119,10 @@ impl Verifier for EvmVerifier {
 #[cfg(feature = "eip1271")]
 impl Verifier for EvmVerifier {
     const CHAIN_NAME: &'static str = CHAIN_NAME;
+
+    fn validate_address(address: &str) -> Result<(), SiwxError> {
+        validate_address(address)
+    }
 
     async fn verify(
         &self,

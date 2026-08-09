@@ -81,13 +81,17 @@ The `--json` flag is **global** and must appear **before** the chain subcommand.
 
 ## Verify Flags
 
-| Flag          | Required | Description                                                       |
-|---------------|----------|-------------------------------------------------------------------|
-| `--message`   | ✓        | The raw CAIP-122 signing message text                             |
-| `--signature` | ✓        | Hex-encoded signature (0x prefix optional)                        |
-| `--domain`    |          | Expected domain binding (defaults to domain in the message)       |
-| `--nonce`     |          | Expected nonce binding (defaults to nonce in the message)         |
-| `--chain-id`  |          | Expected chain id binding (optional)                              |
+| Flag                       | Required | Description                                                          |
+|----------------------------|----------|----------------------------------------------------------------------|
+| `--message`                | ✓        | The raw CAIP-122 signing message text                                |
+| `--signature`              | ✓        | Hex-encoded signature (0x prefix optional)                           |
+| `--domain`                 | ✓*       | Expected domain binding                                              |
+| `--nonce`                  | ✓*       | Expected nonce binding                                               |
+| `--chain-id`               |          | Expected chain id binding (recommended multi-chain)                  |
+| `--trust-message-bindings` |          | Debug: use domain/nonce from the message if flags omitted            |
+| `--rpc`                    |          | EIP-1271 RPC URL (requires CLI feature `eip1271`)                    |
+
+\* Required unless `--trust-message-bindings` is set.
 
 ## Usage Examples
 
@@ -218,3 +222,4 @@ All errors in JSON mode return exit code 1 with:
 7. **Errors** in JSON mode return `{"error": "..."}` with exit code 1 (including failed verify).
 8. **Signature format**: Always hex-encoded, `0x` prefix is optional.
 9. **Canonical form**: verify requires the message string to match the library formatter bit-for-bit (no trailing newline).
+10. **Bindings**: production verify must pass server-issued `--domain` and `--nonce`; never rely on `--trust-message-bindings` in prod.

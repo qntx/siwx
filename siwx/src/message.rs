@@ -15,6 +15,12 @@ pub const VERSION: &str = "1";
 /// Minimum EIP-4361 nonce length.
 pub const MIN_NONCE_LEN: usize = 8;
 
+/// Maximum accepted signing-message size in bytes (denial-of-service bound).
+pub const MAX_MESSAGE_BYTES: usize = 16_384;
+
+/// Maximum number of entries in the `Resources` list.
+pub const MAX_RESOURCES: usize = 32;
+
 /// CAIP-122 Sign-In with X message.
 ///
 /// Chain-agnostic; chain-specific formatting and verification live in the

@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.5.0
+
+Hardening toward production-integrable verification.
+
+### Breaking
+
+- **`Verifier::validate_address`** — chain crates must implement shape checks;
+  `authenticate` calls it before verify.
+- **CLI `verify`** requires `--domain` and `--nonce` unless
+  `--trust-message-bindings` is set (debug self-binding).
+- Workspace version **0.5.0**.
+
+### Added
+
+- `MAX_MESSAGE_BYTES` / `MAX_RESOURCES` DoS bounds on parse and authenticate
+- `AuthOpts::with_max_issued_age` for issued-at freshness
+- CLI feature `eip1271` and `evm verify --rpc` (when enabled)
+- `SECURITY.md` threat-boundary notes
+- EIP-1271 magic / construction unit tests
+
 ## 0.4.0
 
 Breaking release focused on a single correct authentication path.
@@ -7,7 +27,7 @@ Breaking release focused on a single correct authentication path.
 ### Breaking
 
 - **`authenticate` is the recommended login entry point** — parse, validate,
-  require canonical form, then verify over the original message bytes.
+  require canonical form, and verify over the original message bytes.
 - **`Verifier::verify` now takes `raw_message: &str`** and must hash/verify those
   exact bytes (not a re-serialized form).
 - **`ValidateOpts` removed** — replaced by **`AuthOpts`** with required

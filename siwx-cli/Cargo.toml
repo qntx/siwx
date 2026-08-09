@@ -14,7 +14,7 @@ doc = false
 
 [dependencies]
 siwx.workspace = true
-siwx-evm.workspace = true
+siwx-evm = { workspace = true }
 siwx-svm.workspace = true
 clap.workspace = true
 colored.workspace = true
@@ -23,6 +23,11 @@ serde_json.workspace = true
 hex.workspace = true
 time.workspace = true
 tokio = { workspace = true, features = ["rt"] }
+
+[features]
+default = []
+## Enable EIP-1271 smart-contract verification via `--rpc` on `evm verify`.
+eip1271 = ["siwx-evm/eip1271"]
 
 [lints]
 workspace = true

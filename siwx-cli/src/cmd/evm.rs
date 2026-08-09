@@ -18,7 +18,7 @@ pub(crate) struct EvmCommand {
 pub(crate) enum EvmAction {
     /// Generate a CAIP-122 signing message for Ethereum.
     Message(Box<MessageArgs>),
-    /// Verify an EIP-191 signature over a CAIP-122 message.
+    /// Verify an EIP-191 signature (and EIP-1271 when built with `eip1271` + `--rpc`).
     Verify(EvmVerifyArgs),
 }
 
@@ -27,6 +27,11 @@ pub(crate) enum EvmAction {
 pub(crate) struct EvmVerifyArgs {
     #[command(flatten)]
     pub common: VerifyArgs,
+
+    /// JSON-RPC URL for EIP-1271 fallback (requires the `eip1271` feature).
+    #[cfg(feature = "eip1271")]
+    #[arg(long)]
+    pub rpc: Option<String>,
 }
 
 impl EvmCommand {
@@ -34,8 +39,19 @@ impl EvmCommand {
         match &self.action {
             EvmAction::Message(args) => run_message::<EvmVerifier>(CHAIN_LABEL, args, json),
             EvmAction::Verify(args) => {
-                run_verify(CHAIN_LABEL, &args.common, json, EvmVerifier::new()).await
+                let verifier = make_evm_verifier(args);
+                run_verify(CHAIN_LABEL, &args.common, json, verifier).await
             }
         }
     }
+}
+
+fn make_evm_verifier(args: &EvmVerifyArgs) -> EvmVerifier {
+    #[cfg(feature = "eip1271")]
+    if let Some(ref url) = args.rpc {
+        return EvmVerifier::with_rpc(url);
+    }
+    #[cfg(not(feature = "eip1271"))]
+    let _ = args;
+    EvmVerifier::new()
 }

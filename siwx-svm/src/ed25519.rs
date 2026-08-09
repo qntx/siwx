@@ -58,6 +58,10 @@ impl Ed25519Verifier {
 impl Verifier for Ed25519Verifier {
     const CHAIN_NAME: &'static str = CHAIN_NAME;
 
+    fn validate_address(address: &str) -> Result<(), SiwxError> {
+        crate::validate_address(address)
+    }
+
     fn verify(
         &self,
         message: &SiwxMessage,

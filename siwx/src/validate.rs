@@ -9,7 +9,8 @@ use crate::message::{SiwxMessage, VERSION, check_domain, check_nonce_shape, chec
 /// Binding and temporal options for authentication / validation.
 ///
 /// `domain` and `nonce` are **required** so callers cannot skip replay and
-/// origin binding by accident.
+/// origin binding by accident. Multi-chain deployments should also set
+/// [`Self::with_chain_id`].
 #[derive(Debug, Clone)]
 pub struct AuthOpts {
     /// Expected domain (must match `message.domain`).
@@ -20,6 +21,8 @@ pub struct AuthOpts {
     pub chain_id: Option<String>,
     /// The point in time to check against. Defaults to [`OffsetDateTime::now_utc`].
     pub timestamp: Option<OffsetDateTime>,
+    /// If set, reject when `now - issued_at` exceeds this duration.
+    pub max_issued_age: Option<time::Duration>,
 }
 
 impl AuthOpts {
@@ -31,6 +34,7 @@ impl AuthOpts {
             nonce: nonce.into(),
             chain_id: None,
             timestamp: None,
+            max_issued_age: None,
         }
     }
 
@@ -45,6 +49,14 @@ impl AuthOpts {
     #[must_use]
     pub const fn with_timestamp(mut self, t: OffsetDateTime) -> Self {
         self.timestamp = Some(t);
+        self
+    }
+
+    /// Reject messages whose `issued_at` is older than `age` relative to the
+    /// evaluation timestamp.
+    #[must_use]
+    pub const fn with_max_issued_age(mut self, age: time::Duration) -> Self {
+        self.max_issued_age = Some(age);
         self
     }
 }
@@ -80,7 +92,7 @@ impl SiwxMessage {
         self.check_domain_binding(&opts.domain)?;
         self.check_nonce_binding(&opts.nonce)?;
         self.check_chain_id_binding(opts.chain_id.as_deref())?;
-        self.check_temporal_window(opts.timestamp)?;
+        self.check_temporal_window(opts.timestamp, opts.max_issued_age)?;
         Ok(())
     }
 
@@ -143,7 +155,11 @@ impl SiwxMessage {
         Ok(())
     }
 
-    fn check_temporal_window(&self, at: Option<OffsetDateTime>) -> Result<(), SiwxError> {
+    fn check_temporal_window(
+        &self,
+        at: Option<OffsetDateTime>,
+        max_issued_age: Option<time::Duration>,
+    ) -> Result<(), SiwxError> {
         let now = at.unwrap_or_else(OffsetDateTime::now_utc);
         if let Some(exp) = self.expiration_time
             && now > exp
@@ -154,6 +170,12 @@ impl SiwxMessage {
             && now < nbf
         {
             return Err(SiwxError::NotYetValid);
+        }
+        if let Some(max_age) = max_issued_age {
+            let age = now - self.issued_at;
+            if age > max_age {
+                return Err(SiwxError::Expired);
+            }
         }
         Ok(())
     }
@@ -234,5 +256,15 @@ mod tests {
         let msg = base().with_expiration_time(datetime!(2020-01-01 0:00 UTC));
         let opts = opts_for(&msg).with_timestamp(datetime!(2019-01-01 0:00 UTC));
         msg.validate(&opts).expect("valid at earlier timestamp");
+    }
+
+    #[test]
+    fn max_issued_age_rejects_stale_message() {
+        let msg = base().with_issued_at(datetime!(2020-01-01 0:00 UTC));
+        let opts = opts_for(&msg)
+            .with_timestamp(datetime!(2020-01-02 0:00 UTC))
+            .with_max_issued_age(time::Duration::hours(1));
+        let err = msg.validate(&opts).unwrap_err();
+        assert!(matches!(err, SiwxError::Expired));
     }
 }

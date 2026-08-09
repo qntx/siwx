@@ -6,11 +6,12 @@ use crate::{SiwxError, SiwxMessage};
 ///
 /// Implementors live in companion crates (`siwx-evm`, `siwx-svm`, …).
 /// Verification is async to accommodate on-chain checks (e.g. EIP-1271);
-/// purely computational verifiers (EIP-191, Ed25519) simply wrap their
-/// synchronous logic in `async {}`.
+/// purely computational verifiers wrap synchronous work in
+/// [`std::future::ready`].
 ///
 /// # Contract
 ///
+/// * Implement [`Self::validate_address`] for chain address shape checks.
 /// * Hash / verify over **`raw_message` bytes** (the exact string the wallet
 ///   signed), not a re-serialized form of `message`.
 /// * Bind cryptographic identity to `message.address`.
@@ -20,13 +21,29 @@ use crate::{SiwxError, SiwxMessage};
 /// * Return other `Err` variants for malformed inputs.
 ///
 /// Prefer [`crate::authenticate`] over calling [`Self::verify`] directly so
-/// parse, field validation, and canonical-form checks run first.
+/// parse, field validation, address checks, and canonical-form checks run first.
 pub trait Verifier: Send + Sync {
     /// Ecosystem label embedded in the CAIP-122 preamble
     /// (`"{domain} wants you to sign in with your {CHAIN_NAME} account:"`).
     ///
     /// For example, `"Ethereum"` for EIP-155 chains, `"Solana"` for Solana.
     const CHAIN_NAME: &'static str;
+
+    /// Validate that `address` matches this chain's expected format.
+    ///
+    /// Called by [`crate::authenticate`] before signature verification.
+    /// Default accepts any non-empty address shape already enforced by the
+    /// message model; chain crates override with real checks.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SiwxError::InvalidAddress`] when the format is wrong.
+    fn validate_address(address: &str) -> Result<(), SiwxError> {
+        if address.is_empty() {
+            return Err(SiwxError::InvalidAddress("empty".into()));
+        }
+        Ok(())
+    }
 
     /// Verify `signature` over `raw_message`, binding identity to `message`.
     ///
