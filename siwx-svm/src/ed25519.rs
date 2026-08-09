@@ -1,3 +1,5 @@
+use std::future::Future;
+
 use ed25519_dalek::{Signature, Verifier as DalekVerifier, VerifyingKey};
 use siwx::{SiwxError, SiwxMessage, Verifier};
 
@@ -31,13 +33,8 @@ impl Ed25519Verifier {
         VerifyingKey::from_bytes(&arr)
             .map_err(|e| SiwxError::InvalidAddress(format!("invalid Ed25519 pubkey: {e}")))
     }
-}
 
-impl Verifier for Ed25519Verifier {
-    const CHAIN_NAME: &'static str = CHAIN_NAME;
-
-    async fn verify(
-        &self,
+    fn verify_sync(
         message: &SiwxMessage,
         raw_message: &str,
         signature: &[u8],
@@ -58,10 +55,22 @@ impl Verifier for Ed25519Verifier {
     }
 }
 
+impl Verifier for Ed25519Verifier {
+    const CHAIN_NAME: &'static str = CHAIN_NAME;
+
+    fn verify(
+        &self,
+        message: &SiwxMessage,
+        raw_message: &str,
+        signature: &[u8],
+    ) -> impl Future<Output = Result<(), SiwxError>> + Send {
+        std::future::ready(Self::verify_sync(message, raw_message, signature))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use ed25519_dalek::{Signer, SigningKey};
-    use siwx::Verifier as _;
     use time::macros::datetime;
 
     use super::*;

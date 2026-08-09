@@ -30,6 +30,9 @@
 mod eip1271;
 mod eip191;
 
+#[cfg(not(feature = "eip1271"))]
+use std::future::Future;
+
 use alloy::primitives::Address;
 use siwx::{SiwxError, SiwxMessage, Verifier};
 
@@ -95,6 +98,21 @@ impl Default for EvmVerifier {
     }
 }
 
+#[cfg(not(feature = "eip1271"))]
+impl Verifier for EvmVerifier {
+    const CHAIN_NAME: &'static str = CHAIN_NAME;
+
+    fn verify(
+        &self,
+        message: &SiwxMessage,
+        raw_message: &str,
+        signature: &[u8],
+    ) -> impl Future<Output = Result<(), SiwxError>> + Send {
+        std::future::ready(eip191::verify_sync(message, raw_message, signature))
+    }
+}
+
+#[cfg(feature = "eip1271")]
 impl Verifier for EvmVerifier {
     const CHAIN_NAME: &'static str = CHAIN_NAME;
 
@@ -104,19 +122,17 @@ impl Verifier for EvmVerifier {
         raw_message: &str,
         signature: &[u8],
     ) -> Result<(), SiwxError> {
-        let eip191_err = match eip191::verify_sync(message, raw_message, signature) {
-            Ok(()) => return Ok(()),
-            Err(e) => e,
-        };
-
-        #[cfg(feature = "eip1271")]
-        if let Some(rpc_url) = self.rpc_url.as_deref() {
-            return eip1271::Eip1271Verifier::new(rpc_url)
-                .verify(message, raw_message, signature)
-                .await;
+        match eip191::verify_sync(message, raw_message, signature) {
+            Ok(()) => Ok(()),
+            Err(eip191_err) => {
+                let Some(rpc_url) = self.rpc_url.as_deref() else {
+                    return Err(eip191_err);
+                };
+                eip1271::Eip1271Verifier::new(rpc_url)
+                    .verify(message, raw_message, signature)
+                    .await
+            }
         }
-
-        Err(eip191_err)
     }
 }
 

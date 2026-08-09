@@ -4,9 +4,7 @@ use iri_string::types::UriString;
 use time::OffsetDateTime;
 
 use crate::SiwxError;
-use crate::message::{
-    VERSION, check_domain, check_nonce_shape, check_statement, SiwxMessage,
-};
+use crate::message::{SiwxMessage, VERSION, check_domain, check_nonce_shape, check_statement};
 
 /// Binding and temporal options for authentication / validation.
 ///

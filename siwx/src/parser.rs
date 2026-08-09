@@ -28,9 +28,7 @@ use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
 use crate::SiwxError;
-use crate::message::{
-    VERSION, check_domain, check_nonce_shape, check_statement, SiwxMessage,
-};
+use crate::message::{SiwxMessage, VERSION, check_domain, check_nonce_shape, check_statement};
 
 pub(crate) const PREAMBLE_MID: &str = " wants you to sign in with your ";
 pub(crate) const PREAMBLE_TAIL: &str = " account:";
@@ -291,9 +289,15 @@ Issued At: 2021-09-30T16:25:24Z";
 
     #[test]
     fn minimal_with_required_fields() {
-        let msg = SiwxMessage::new("example.com", "addr1", "https://example.com", "1", "testnonce12345678")
-            .expect("valid")
-            .with_issued_at(datetime!(2021-09-30 16:25:24 UTC));
+        let msg = SiwxMessage::new(
+            "example.com",
+            "addr1",
+            "https://example.com",
+            "1",
+            "testnonce12345678",
+        )
+        .expect("valid")
+        .with_issued_at(datetime!(2021-09-30 16:25:24 UTC));
         let text = msg.to_sign_string("Ethereum");
         let parsed: SiwxMessage = text.parse().expect("parse");
         assert_eq!(parsed.domain, "example.com");

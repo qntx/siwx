@@ -42,31 +42,32 @@ pub async fn authenticate<V: Verifier>(
         ));
     }
 
-    verifier
-        .verify(&message, raw_message, signature)
-        .await?;
+    verifier.verify(&message, raw_message, signature).await?;
 
     Ok(Authenticated { message })
 }
 
 #[cfg(test)]
 mod tests {
+    use std::future::Future;
+
+    use time::macros::datetime;
+
     use super::*;
     use crate::SiwxError;
-    use time::macros::datetime;
 
     struct AcceptingVerifier;
 
     impl Verifier for AcceptingVerifier {
         const CHAIN_NAME: &'static str = "Ethereum";
 
-        async fn verify(
+        fn verify(
             &self,
             _message: &SiwxMessage,
             _raw_message: &str,
             _signature: &[u8],
-        ) -> Result<(), SiwxError> {
-            Ok(())
+        ) -> impl Future<Output = Result<(), SiwxError>> + Send {
+            std::future::ready(Ok(()))
         }
     }
 

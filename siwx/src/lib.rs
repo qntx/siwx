@@ -49,6 +49,6 @@ mod verifier;
 
 pub use auth::{Authenticated, authenticate};
 pub use error::SiwxError;
-pub use message::{MIN_NONCE_LEN, VERSION, SiwxMessage};
+pub use message::{MIN_NONCE_LEN, SiwxMessage, VERSION};
 pub use validate::AuthOpts;
 pub use verifier::Verifier;

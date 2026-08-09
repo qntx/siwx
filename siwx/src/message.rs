@@ -212,7 +212,10 @@ pub(crate) fn check_domain(domain: &str) -> Result<String, SiwxError> {
             "must not contain preamble marker".into(),
         ));
     }
-    if domain.chars().any(|c| c.is_control() || c == ' ' || c == '\n' || c == '\r') {
+    if domain
+        .chars()
+        .any(|c| c.is_control() || c == ' ' || c == '\n' || c == '\r')
+    {
         return Err(SiwxError::InvalidDomain(
             "must not contain whitespace or control characters".into(),
         ));
@@ -238,9 +241,7 @@ pub(crate) fn check_nonce_shape(nonce: &str) -> Result<String, SiwxError> {
         )));
     }
     if !nonce.chars().all(|c| c.is_ascii_alphanumeric()) {
-        return Err(SiwxError::InvalidNonce(
-            "must be ASCII alphanumeric".into(),
-        ));
+        return Err(SiwxError::InvalidNonce("must be ASCII alphanumeric".into()));
     }
     Ok(nonce.to_owned())
 }
