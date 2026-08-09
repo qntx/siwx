@@ -32,6 +32,10 @@ pub const MAX_RESOURCES: usize = 32;
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SiwxMessage {
+    /// Optional RFC 3986 scheme for the EIP-4361 preamble
+    /// (`"{scheme}://{domain} wants you…"`).
+    pub scheme: Option<String>,
+
     /// RFC 4501 `dnsauthority` requesting the signing.
     pub domain: String,
 
@@ -124,6 +128,7 @@ impl SiwxMessage {
         let nonce = check_nonce_shape(&nonce.into())?;
 
         Ok(Self {
+            scheme: None,
             domain,
             address,
             uri,
@@ -137,6 +142,17 @@ impl SiwxMessage {
             request_id: None,
             resources: Vec::new(),
         })
+    }
+
+    /// Set the optional preamble scheme (e.g. `"https"`).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SiwxError::InvalidFormat`] if the scheme is empty or contains
+    /// non-alphanumeric characters (plus `+`, `-`, `.`).
+    pub fn with_scheme(mut self, scheme: impl Into<String>) -> Result<Self, SiwxError> {
+        self.scheme = Some(check_scheme(&scheme.into())?);
+        Ok(self)
     }
 
     /// Set the human-readable statement.
@@ -207,6 +223,21 @@ pub(crate) fn non_empty(s: String, field: &str) -> Result<String, SiwxError> {
         )));
     }
     Ok(s)
+}
+
+pub(crate) fn check_scheme(scheme: &str) -> Result<String, SiwxError> {
+    if scheme.is_empty() {
+        return Err(SiwxError::InvalidFormat("empty scheme".into()));
+    }
+    if !scheme
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '+' || c == '-' || c == '.')
+    {
+        return Err(SiwxError::InvalidFormat(
+            "scheme must be ASCII alphanumeric, '+', '-', or '.'".into(),
+        ));
+    }
+    Ok(scheme.to_owned())
 }
 
 pub(crate) fn check_domain(domain: &str) -> Result<String, SiwxError> {

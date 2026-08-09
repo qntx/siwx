@@ -59,15 +59,25 @@ pub(crate) fn parse_address(s: &str) -> Result<Address, SiwxError> {
         .map_err(|e| SiwxError::InvalidAddress(e.to_string()))
 }
 
+/// How to resolve an RPC endpoint for EIP-1271.
+#[cfg(feature = "eip1271")]
+#[derive(Debug, Clone)]
+enum RpcConfig {
+    /// Single endpoint used for every `chain_id`.
+    Single(String),
+    /// Endpoint chosen by message `chain_id` (exact string match).
+    ByChain(std::collections::BTreeMap<String, String>),
+}
+
 /// Ethereum CAIP-122 verifier.
 ///
-/// Tries EIP-191 first. When built with the `eip1271` feature and constructed
-/// via [`Self::with_rpc`], falls back to EIP-1271 on EIP-191 failure.
+/// Tries EIP-191 first. When built with the `eip1271` feature and given RPC
+/// configuration, falls back to EIP-1271 on EIP-191 failure.
 #[derive(Debug, Clone)]
 #[cfg_attr(not(feature = "eip1271"), derive(Copy))]
 pub struct EvmVerifier {
     #[cfg(feature = "eip1271")]
-    rpc_url: Option<String>,
+    rpc: Option<RpcConfig>,
 }
 
 impl EvmVerifier {
@@ -76,18 +86,50 @@ impl EvmVerifier {
     pub const fn new() -> Self {
         Self {
             #[cfg(feature = "eip1271")]
-            rpc_url: None,
+            rpc: None,
         }
     }
 
-    /// Create a verifier with RPC for EIP-1271 fallback.
+    /// Create a verifier with a single RPC URL for EIP-1271 fallback.
     ///
-    /// Requires the `eip1271` feature.
+    /// Requires the `eip1271` feature. The same URL is used for every
+    /// `message.chain_id` — caller must ensure it matches the message chain.
     #[cfg(feature = "eip1271")]
     #[must_use]
     pub fn with_rpc(url: impl Into<String>) -> Self {
         Self {
-            rpc_url: Some(url.into()),
+            rpc: Some(RpcConfig::Single(url.into())),
+        }
+    }
+
+    /// Create a verifier that selects the RPC URL by `message.chain_id`.
+    ///
+    /// Requires the `eip1271` feature. If the message `chain_id` is missing
+    /// from the map, verification fails with a clear error (no silent wrong-chain RPC).
+    #[cfg(feature = "eip1271")]
+    #[must_use]
+    pub fn with_rpc_map(
+        map: impl IntoIterator<Item = (impl Into<String>, impl Into<String>)>,
+    ) -> Self {
+        let map = map.into_iter().map(|(k, v)| (k.into(), v.into())).collect();
+        Self {
+            rpc: Some(RpcConfig::ByChain(map)),
+        }
+    }
+
+    #[cfg(feature = "eip1271")]
+    fn rpc_url_for(&self, chain_id: &str) -> Result<Option<&str>, SiwxError> {
+        match self.rpc.as_ref() {
+            None => Ok(None),
+            Some(RpcConfig::Single(url)) => Ok(Some(url.as_str())),
+            Some(RpcConfig::ByChain(map)) => map.get(chain_id).map_or_else(
+                || {
+                    Err(SiwxError::VerificationFailed(format!(
+                        "no RPC configured for chain_id {chain_id}"
+                    )))
+                },
+                |url| Ok(Some(url.as_str())),
+            ),
         }
     }
 }
@@ -133,7 +175,7 @@ impl Verifier for EvmVerifier {
         match eip191::verify_sync(message, raw_message, signature) {
             Ok(()) => Ok(()),
             Err(eip191_err) => {
-                let Some(rpc_url) = self.rpc_url.as_deref() else {
+                let Some(rpc_url) = self.rpc_url_for(&message.chain_id)? else {
                     return Err(eip191_err);
                 };
                 eip1271::Eip1271Verifier::new(rpc_url)
@@ -173,5 +215,14 @@ mod tests {
         .expect("valid");
         let text = EvmVerifier::format_message(&msg);
         assert!(text.starts_with("example.com wants you to sign in with your Ethereum account:"));
+    }
+
+    #[cfg(feature = "eip1271")]
+    #[test]
+    fn rpc_map_requires_matching_chain_id() {
+        let v = EvmVerifier::with_rpc_map([("1", "https://eth.example")]);
+        assert!(v.rpc_url_for("1").unwrap().is_some());
+        let err = v.rpc_url_for("137").unwrap_err();
+        assert!(matches!(err, SiwxError::VerificationFailed(_)));
     }
 }

@@ -10,15 +10,19 @@ Hardening toward production-integrable verification.
   `authenticate` calls it before verify.
 - **CLI `verify`** requires `--domain` and `--nonce` unless
   `--trust-message-bindings` is set (debug self-binding).
+- **`SiwxMessage.scheme`** field added (optional EIP-4361 preamble scheme).
 - Workspace version **0.5.0**.
 
 ### Added
 
 - `MAX_MESSAGE_BYTES` / `MAX_RESOURCES` DoS bounds on parse and authenticate
 - `AuthOpts::with_max_issued_age` for issued-at freshness
+- Optional `scheme://` preamble (`with_scheme` / parser / formatter)
 - CLI feature `eip1271` and `evm verify --rpc` (when enabled)
+- `EvmVerifier::with_rpc_map` for chain_id → RPC selection (`eip1271`)
 - `SECURITY.md` threat-boundary notes
 - EIP-1271 magic / construction unit tests
+- `deny.toml` license allow list
 
 ## 0.4.0
 
