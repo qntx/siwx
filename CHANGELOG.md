@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `siwx-evm` feature **`eip6492 = ["eip1271"]`** (default off): ERC-6492
+  counterfactual signatures via vendored wevm/ox deployless
+  `universalSignatureValidatorBytecode`. Magic suffix is checked before
+  EIP-191; no RPC for the message chain returns `EIP-6492 requires RPC`.
+- `siwx-cli` feature **`eip6492`** (implies `eip1271`) forwards to
+  `siwx-evm/eip6492` so `evm verify --rpc-chain-id` / `--rpc` can validate
+  wrapped signatures.
+
 ## 0.5.0
 
 Hardening toward production-integrable verification.
@@ -28,9 +40,10 @@ Hardening toward production-integrable verification.
 
 ### Library vs product residuals
 
-Session/JWT, nonce store, EIP-6492, and live-RPC 1271 e2e remain **out of
-library scope** (see SECURITY.md). 0.5 claims a production-integrable
-**verification library**, not a full hosted auth stack.
+Session/JWT, nonce store, and live-RPC 1271/6492 e2e remain **out of
+library scope** (see SECURITY.md). ERC-6492 is implemented behind feature
+`eip6492` (default off). 0.5 claims a production-integrable **verification
+library**, not a full hosted auth stack.
 
 ## 0.4.0
 

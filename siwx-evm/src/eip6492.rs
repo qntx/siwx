@@ -37,7 +37,7 @@ pub(crate) fn has_magic_suffix(signature: &[u8]) -> bool {
 mod rpc {
     use std::time::Duration;
 
-    use alloy::network::{Ethereum, Network, TransactionBuilder};
+    use alloy::network::{Ethereum, Network};
     use alloy::primitives::{Address, B256, Bytes, eip191_hash_message};
     use alloy::providers::{DynProvider, Provider};
     use alloy::sol;
@@ -78,6 +78,19 @@ mod rpc {
         data
     }
 
+    /// Create-call request: `to` omitted, both `input` and `data` set (legacy RPC).
+    fn deployless_tx(
+        signer: Address,
+        hash: B256,
+        signature: &[u8],
+    ) -> <Ethereum as Network>::TransactionRequest {
+        let bytes = Bytes::from(deployless_calldata(signer, hash, signature));
+        let mut tx = <Ethereum as Network>::TransactionRequest::default();
+        tx.input.input = Some(bytes.clone());
+        tx.input.data = Some(bytes);
+        tx
+    }
+
     pub(crate) async fn verify(
         provider: &DynProvider,
         timeout: Duration,
@@ -85,18 +98,17 @@ mod rpc {
         raw_message: &str,
         signature: &[u8],
     ) -> Result<(), SiwxError> {
-        let signer = parse_eip55(&message.address)?;
+        let signer = parse_eip55(message.address())?;
         let rpc_chain = eip1271::timed(
             timeout,
             async { provider.get_chain_id().await },
             "eth_chainId",
         )
         .await?;
-        eip1271::assert_rpc_chain_id(&message.chain_id, rpc_chain)?;
+        eip1271::assert_rpc_chain_id(message.chain_id(), rpc_chain)?;
 
         let hash = eip191_hash_message(raw_message.as_bytes());
-        let data = deployless_calldata(signer, hash, signature);
-        let tx = <Ethereum as Network>::TransactionRequest::default().with_input(data);
+        let tx = deployless_tx(signer, hash, signature);
 
         let result = eip1271::timed(timeout, async { provider.call(tx).await }, "eth_call").await?;
         if eth_call_bool(result.as_ref())? {
@@ -110,29 +122,68 @@ mod rpc {
 
     #[cfg(test)]
     mod rpc_unit_tests {
-        use alloy::primitives::{Address, B256};
+        use alloy::primitives::{Address, B256, U256};
 
-        use super::{BYTECODE, BYTECODE_LEN, deployless_calldata};
+        use super::{BYTECODE, BYTECODE_LEN, deployless_calldata, deployless_tx};
+
+        fn abi_word(args: &[u8], index: usize) -> &[u8] {
+            let start = index.saturating_mul(32);
+            args.get(start..start.saturating_add(32))
+                .expect("constructor ABI word")
+        }
+
+        fn u256_word(value: u64) -> [u8; 32] {
+            U256::from(value).to_be_bytes::<32>()
+        }
 
         #[test]
-        fn vendored_bytecode_is_solc_initcode() {
+        fn vendored_bytecode_is_deployless_constructor() {
             assert_eq!(BYTECODE.len(), BYTECODE_LEN, "bytecode length");
             assert!(
-                BYTECODE.starts_with(&[0x60, 0x80]),
-                "solc initcode prefix 0x6080"
+                BYTECODE
+                    .windows(5)
+                    .any(|w| w == [0x60, 0x01, 0x60, 0x1f, 0xf3]),
+                "constructor must return(31,1): PUSH1 1 / PUSH1 31 / RETURN"
+            );
+            assert!(
+                BYTECODE.windows(4).any(|w| w == [0x61, 0x06, 0x94, 0x38]),
+                "constructor size must be PUSH2 0x0694 CODESIZE"
             );
         }
 
         #[test]
-        fn deployless_calldata_is_bytecode_then_args() {
-            let data = deployless_calldata(Address::ZERO, B256::ZERO, &[0u8; 65]);
+        fn deployless_calldata_is_bytecode_then_abi_encode() {
+            let sig = [0u8; 65];
+            let data = deployless_calldata(Address::ZERO, B256::ZERO, &sig);
             assert!(
                 data.starts_with(&BYTECODE),
                 "calldata must start with ox bytecode"
             );
+            let args = data.get(BYTECODE.len()..).expect("constructor args");
+            assert_eq!(abi_word(args, 0), Address::ZERO.into_word().as_slice());
+            assert_eq!(abi_word(args, 1), B256::ZERO.as_slice());
+            assert_eq!(
+                abi_word(args, 2),
+                u256_word(0x60).as_slice(),
+                "bytes tail offset must be 0x60"
+            );
+            assert_eq!(
+                abi_word(args, 3),
+                u256_word(u64::try_from(sig.len()).expect("sig len")),
+                "bytes length"
+            );
+        }
+
+        #[test]
+        fn deployless_tx_omits_to_and_sets_input_and_data() {
+            let tx = deployless_tx(Address::ZERO, B256::ZERO, &[0u8; 65]);
+            assert!(tx.to.is_none(), "eth_call to must be omitted");
+            let input = tx.input.input.as_ref().expect("input");
+            let data = tx.input.data.as_ref().expect("data");
+            assert_eq!(input, data, "legacy RPC data must match input");
             assert!(
-                data.len() > BYTECODE.len(),
-                "constructor args must be appended"
+                input.starts_with(&BYTECODE),
+                "payload must start with ox bytecode"
             );
         }
     }
@@ -267,6 +318,28 @@ mod tests {
         assert!(
             !err.to_string().contains("65 bytes"),
             "must not fall through to EIP-191, got: {err}"
+        );
+    }
+
+    #[cfg(all(feature = "eip1271", not(feature = "eip6492")))]
+    #[tokio::test]
+    async fn magic_suffix_without_feature_with_rpc_is_not_enabled() {
+        let message = sample_message();
+        let text = EvmVerifier::format_message(&message);
+        let err = EvmVerifier::with_rpc_for_chain(1, "http://127.0.0.1:1")
+            .verify(&message, &text, &magic_signature())
+            .await
+            .expect_err("6492 without feature even with RPC");
+        assert!(
+            matches!(
+                err,
+                SiwxError::InvalidSignature { ref reason } if reason == "EIP-6492 not enabled"
+            ),
+            "must not fall through to 1271, got {err:?}"
+        );
+        assert!(
+            !err.to_string().contains("http"),
+            "must not reach RPC, got: {err}"
         );
     }
 

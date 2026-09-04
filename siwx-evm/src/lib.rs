@@ -221,7 +221,7 @@ impl EvmVerifier {
         raw_message: &str,
         signature: &[u8],
     ) -> Result<(), SiwxError> {
-        let Some(endpoint) = self.endpoint_for(&message.chain_id) else {
+        let Some(endpoint) = self.endpoint_for(message.chain_id()) else {
             return Err(eip6492::requires_rpc());
         };
         let provider = self.provider_for(endpoint).await?;

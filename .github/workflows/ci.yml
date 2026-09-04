@@ -16,3 +16,21 @@ jobs:
       contents: read
     with:
       submodules: true
+
+  # `--all-features` compiles out `not_enabled`. These rows gate magic-before-191
+  # on default and `eip1271`-only builds.
+  eip6492-off:
+    name: EIP-6492 cfg-off
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Default features (no eip6492)
+        run: cargo test -p siwx-evm --lib eip6492
+      - name: eip1271 only (no eip6492)
+        run: cargo test -p siwx-evm --lib eip6492 --features eip1271

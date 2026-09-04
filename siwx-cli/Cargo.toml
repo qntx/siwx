@@ -28,6 +28,8 @@ tokio = { workspace = true, features = ["rt"] }
 default = []
 ## Enable EIP-1271 smart-contract verification via `--rpc-chain-id` / `--rpc` on `evm verify`.
 eip1271 = ["siwx-evm/eip1271"]
+## Enable ERC-6492 counterfactual verification (implies `eip1271` RPC flags).
+eip6492 = ["eip1271", "siwx-evm/eip6492"]
 
 [lints]
 workspace = true

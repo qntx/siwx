@@ -2,7 +2,7 @@ wevm/ox universalSignatureValidatorBytecode (deployless constructor initcode)
 https://github.com/wevm/ox
 commit: ef203862dc792d2e460313e7af33b6a5016f3acb
 file: src/erc6492/SignatureErc6492.ts
-license: MIT
+license: MIT (full permission notice in LICENSE)
 copyright: Copyright (c) 2024-present weth, LLC
 
 This is the deployless constructor bytecode (`data = bytecode || abi.encode(signer, hash, signature)`, `to` omitted).

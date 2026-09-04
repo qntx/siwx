@@ -70,12 +70,12 @@ mod tests {
 
     fn assert_matches_fields(name: &str, parsed: &SiwxMessage, fields: &Value) {
         assert_eq!(
-            parsed.scheme.as_deref(),
+            parsed.scheme(),
             optional_str(fields, "scheme"),
             "{name}: scheme"
         );
         assert_eq!(
-            parsed.domain,
+            parsed.domain(),
             required_str(name, fields, "domain"),
             "{name}: domain"
         );
@@ -84,14 +84,14 @@ mod tests {
             required_str(name, fields, "address"),
             "{name}: address"
         );
-        assert_eq!(parsed.uri, required_str(name, fields, "uri"), "{name}: uri");
+        assert_eq!(parsed.uri(), required_str(name, fields, "uri"), "{name}: uri");
         assert_eq!(
-            parsed.nonce,
+            parsed.nonce(),
             required_str(name, fields, "nonce"),
             "{name}: nonce"
         );
         assert_eq!(
-            parsed.issued_at.as_str(),
+            parsed.issued_at_raw(),
             required_str(name, fields, "issuedAt"),
             "{name}: issuedAt"
         );
@@ -101,12 +101,12 @@ mod tests {
             "{name}: chainId"
         );
         assert_eq!(
-            parsed.statement.as_deref(),
+            parsed.statement(),
             optional_str(fields, "statement"),
             "{name}: statement"
         );
         assert_eq!(
-            parsed.resources,
+            parsed.resources(),
             expected_resources(fields),
             "{name}: resources"
         );

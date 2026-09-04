@@ -310,26 +310,26 @@ mod tests {
                 raw,
                 "format(parse(raw)) == raw"
             );
-            prop_assert_eq!(parsed.issued_at.as_str(), fields.issued_at.as_str(), "issued_at_raw");
+            prop_assert_eq!(parsed.issued_at_raw(), fields.issued_at.as_str(), "issued_at_raw");
             prop_assert_eq!(
-                parsed.expiration_time.as_ref().map(Timestamp::as_str),
+                parsed.expiration_time_raw(),
                 fields.expiration_time.as_deref(),
                 "expiration raw"
             );
             prop_assert_eq!(
-                parsed.not_before.as_ref().map(Timestamp::as_str),
+                parsed.not_before_raw(),
                 fields.not_before.as_deref(),
                 "not_before raw"
             );
-            prop_assert_eq!(parsed.statement, fields.statement, "statement");
-            prop_assert_eq!(parsed.uri, fields.uri, "uri");
-            prop_assert_eq!(parsed.domain, fields.domain, "domain");
+            prop_assert_eq!(parsed.statement(), fields.statement.as_deref(), "statement");
+            prop_assert_eq!(parsed.uri(), fields.uri, "uri");
+            prop_assert_eq!(parsed.domain(), fields.domain, "domain");
             prop_assert_eq!(parsed.address(), fields.address, "address");
-            prop_assert_eq!(parsed.nonce, fields.nonce, "nonce");
-            prop_assert_eq!(parsed.scheme, fields.scheme, "scheme");
+            prop_assert_eq!(parsed.nonce(), fields.nonce, "nonce");
+            prop_assert_eq!(parsed.scheme(), fields.scheme.as_deref(), "scheme");
             prop_assert_eq!(parsed.chain_id(), fields.chain_id, "chain_id");
-            prop_assert_eq!(parsed.request_id, fields.request_id, "request_id");
-            prop_assert_eq!(parsed.resources, fields.resources, "resources");
+            prop_assert_eq!(parsed.request_id(), fields.request_id.as_deref(), "request_id");
+            prop_assert_eq!(parsed.resources(), fields.resources, "resources");
         }
     }
 }

@@ -29,7 +29,7 @@ Construct, parse, validate, and verify wallet authentication messages across any
 | Crate | | Description |
 | --- | --- | --- |
 | **[`siwx`](siwx/)** | [![crates.io][siwx-crate]][siwx-crate-url] [![docs.rs][siwx-doc]][siwx-doc-url] | Core data model, parser, validator, `Verifier` trait |
-| **[`siwx-evm`](siwx-evm/)** | [![crates.io][evm-crate]][evm-crate-url] [![docs.rs][evm-doc]][evm-doc-url] | EIP-191 + EIP-1271 verification — Ethereum, Polygon, Arbitrum, … |
+| **[`siwx-evm`](siwx-evm/)** | [![crates.io][evm-crate]][evm-crate-url] [![docs.rs][evm-doc]][evm-doc-url] | EIP-191 + optional EIP-1271 / EIP-6492 — Ethereum, Polygon, Arbitrum, … |
 | **[`siwx-svm`](siwx-svm/)** | [![crates.io][svm-crate]][svm-crate-url] [![docs.rs][svm-doc]][svm-doc-url] | Ed25519 verification — Solana |
 | **[`siwx-cli`](siwx-cli/)** | [![crates.io][cli-crate]][cli-crate-url] | CLI tool for message generation, parsing, and verification |
 
@@ -96,7 +96,8 @@ use siwx_evm::EvmVerifier;
 //   expected_nonce:  String        — nonce your backend issued in step 1
 
 // Parse → validate (domain/nonce bind) → chain name bind → address shape → chain-id shape → verify original bytes.
-// Enable feature `eip1271` and use `EvmVerifier::with_rpc_for_chain(...)` for contract wallets.
+// Enable feature `eip1271` (`eip6492` for counterfactual accounts) and
+// `EvmVerifier::with_rpc_for_chain(...)` for contract wallets.
 // Multi-chain: also call `.with_chain_id(...)` on AuthOpts.
 let auth = authenticate(
     &EvmVerifier::new(),
@@ -239,7 +240,7 @@ pub trait Verifier: Send + Sync {
 
 | Verifier | Crate | Signature Type | Async |
 | --- | --- | --- | --- |
-| `EvmVerifier` | `siwx-evm` | EIP-191; optional EIP-1271 (`eip1271` feature + RPC) | Yes |
+| `EvmVerifier` | `siwx-evm` | EIP-191; optional EIP-1271 (`eip1271` + RPC); optional EIP-6492 (`eip6492` + RPC) | Yes |
 | `Ed25519Verifier` | `siwx-svm` | Ed25519 (pubkey from `message.address()`) | No |
 
 ### Extending to New Chains
@@ -277,7 +278,9 @@ impl Verifier for MyChainVerifier {
 | --- | --- | --- |
 | `serde` | `siwx` | `Serialize` / `Deserialize` for `SiwxMessage` |
 | `eip1271` | `siwx-evm` | Smart-contract signature verification via RPC (`EvmVerifier::with_rpc_for_chain` / `with_rpc_map`) |
+| `eip6492` | `siwx-evm` | ERC-6492 counterfactual signatures (`eip6492 = ["eip1271"]`, default off) |
 | `eip1271` | `siwx-cli` | Enables `siwx evm verify --rpc-chain-id <id> --rpc <url>` (forwards to `siwx-evm/eip1271`) |
+| `eip6492` | `siwx-cli` | Forwards to `siwx-evm/eip6492` (implies `eip1271` RPC flags) |
 
 See [SECURITY.md](SECURITY.md) for production integration boundaries (nonce store, RPC trust).
 
@@ -291,6 +294,7 @@ See [SECURITY.md](SECURITY.md) for production integration boundaries (nonce stor
 | [EIP-4361](https://eips.ethereum.org/EIPS/eip-4361) | Sign-In with Ethereum — the EVM namespace profile |
 | [EIP-191](https://eips.ethereum.org/EIPS/eip-191) | Ethereum personal message signatures |
 | [EIP-1271](https://eips.ethereum.org/EIPS/eip-1271) | Smart contract signature validation |
+| [EIP-6492](https://eips.ethereum.org/EIPS/eip-6492) | Counterfactual / predeploy smart-account signatures |
 
 ## License
 
