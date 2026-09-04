@@ -45,9 +45,14 @@ const MAX_CHAIN_ID_LEN: usize = 44;
 /// Validate that `address` is a base58 Ed25519 verifying key.
 ///
 /// Requires a successful 32-byte decode **and**
-/// [`ed25519_dalek::VerifyingKey::from_bytes`]. The 32-zero identity
-/// (`11111111111111111111111111111111`) and off-curve encodings (Solana PDAs)
-/// are [`SiwxError::InvalidAddress`].
+/// [`ed25519_dalek::VerifyingKey::from_bytes`]. Off-curve encodings (Solana
+/// PDAs) fail `from_bytes`.
+///
+/// Among weak / small-order keys, **only** the 32-zero System Program identity
+/// (`11111111111111111111111111111111`) is special-cased. Other torsion points
+/// (including Edwards identity `[1, 0, ...]`) pass. Signature checks use RFC 8032
+/// [`ed25519_dalek::Verifier::verify`], not
+/// [`ed25519_dalek::VerifyingKey::verify_strict`].
 ///
 /// # Errors
 ///
@@ -224,6 +229,17 @@ mod tests {
             ),
             "colon"
         );
+        for id in ["mainnet.1", "main net", "solana/mainnet"] {
+            assert!(
+                matches!(
+                    validate_chain_id(id),
+                    Err(SiwxError::InvalidChainId {
+                        reason: ChainIdReason::BadCharset
+                    })
+                ),
+                "{id}"
+            );
+        }
     }
 
     #[test]
@@ -264,6 +280,62 @@ mod tests {
         assert!(
             text.starts_with("example.com wants you to sign in with your Solana account:"),
             "{text}"
+        );
+    }
+
+    fn solana_raw(address: &str, chain_id: &str) -> (String, AuthOpts) {
+        let msg = SiwxMessage::new(
+            "example.com",
+            address,
+            "https://example.com",
+            chain_id,
+            "testnonce12345678",
+        )
+        .expect("valid");
+        let opts = AuthOpts::new(&msg.domain, &msg.nonce);
+        (Ed25519Verifier::format_message(&msg), opts)
+    }
+
+    #[tokio::test]
+    async fn authenticate_rejects_identity_address_before_verify() {
+        let identity = bs58::encode([0u8; 32]).into_string();
+        let (raw, opts) = solana_raw(&identity, MAINNET_GENESIS_HASH);
+        let err = authenticate(&Ed25519Verifier::new(), &raw, &[], &opts)
+            .await
+            .expect_err("identity");
+        assert!(
+            matches!(err, SiwxError::InvalidAddress { .. }),
+            "empty sig must not reach verify, got {err:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn authenticate_rejects_off_curve_address_before_verify() {
+        let addr = bs58::encode([2u8; 32]).into_string();
+        let (raw, opts) = solana_raw(&addr, MAINNET_GENESIS_HASH);
+        let err = authenticate(&Ed25519Verifier::new(), &raw, &[], &opts)
+            .await
+            .expect_err("off-curve");
+        assert!(
+            matches!(err, SiwxError::InvalidAddress { .. }),
+            "empty sig must not reach verify, got {err:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn authenticate_rejects_colon_chain_id_before_verify() {
+        let (raw, opts) = solana_raw(ON_CURVE_ADDR, "solana:mainnet");
+        let err = authenticate(&Ed25519Verifier::new(), &raw, &[], &opts)
+            .await
+            .expect_err("solana:mainnet");
+        assert!(
+            matches!(
+                err,
+                SiwxError::InvalidChainId {
+                    reason: ChainIdReason::BadCharset
+                }
+            ),
+            "empty sig must not reach verify, got {err:?}"
         );
     }
 

@@ -12,8 +12,9 @@ use crate::{CHAIN_NAME, NAMESPACE};
 /// no RPC needed.
 ///
 /// Uses [`ed25519_dalek::Verifier::verify`] (RFC 8032 canonical `s`), not
-/// [`ed25519_dalek::VerifyingKey::verify_strict`]. Small-order keys are not
-/// rejected at verify time.
+/// [`ed25519_dalek::VerifyingKey::verify_strict`]. Address validation
+/// special-cases only the 32-zero System Program identity; other torsion
+/// points pass and are verified with `verify`.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Ed25519Verifier;
 

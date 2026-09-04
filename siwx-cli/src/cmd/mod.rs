@@ -204,6 +204,7 @@ pub(crate) fn run_message<V: Verifier>(
     json: bool,
 ) -> CmdResult {
     V::validate_address(&args.address)?;
+    V::validate_chain_id(&args.chain_id)?;
     let msg = args.build()?;
     let text = V::format_message(&msg);
     let out = MessageOutput::new(chain_label, text, &msg);
