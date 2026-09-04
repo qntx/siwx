@@ -3,7 +3,7 @@ use std::future::Future;
 use ed25519_dalek::{Signature, Verifier as DalekVerifier, VerifyingKey};
 use siwx::{SiwxError, SiwxMessage, Verifier};
 
-use crate::CHAIN_NAME;
+use crate::{CHAIN_NAME, NAMESPACE};
 
 /// Ed25519 signature verifier for Solana.
 ///
@@ -66,6 +66,7 @@ impl Ed25519Verifier {
 
 impl Verifier for Ed25519Verifier {
     const CHAIN_NAME: &'static str = CHAIN_NAME;
+    const NAMESPACE: &'static str = NAMESPACE;
 
     fn validate_address(address: &str) -> Result<(), SiwxError> {
         crate::validate_address(address)

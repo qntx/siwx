@@ -1,6 +1,6 @@
 use std::future::Future;
 
-use crate::{SiwxError, SiwxMessage};
+use crate::{ChainIdReason, SiwxError, SiwxMessage};
 
 /// Chain-specific signature verifier.
 ///
@@ -12,6 +12,7 @@ use crate::{SiwxError, SiwxMessage};
 /// # Contract
 ///
 /// * Implement [`Self::validate_address`] for chain address shape checks.
+/// * Override [`Self::validate_chain_id`] for namespace chain-id rules.
 /// * Hash / verify over **`raw_message` bytes** (the exact string the wallet
 ///   signed), not a re-serialized form of `message`.
 /// * Bind cryptographic identity to `message.address`.
@@ -21,13 +22,17 @@ use crate::{SiwxError, SiwxMessage};
 /// * Return other `Err` variants for malformed inputs.
 ///
 /// Prefer [`crate::authenticate`] over calling [`Self::verify`] directly so
-/// parse, field validation, chain-name binding, and address checks run first.
+/// parse, field validation, chain-name binding, and address / chain-id checks
+/// run first.
 pub trait Verifier: Send + Sync {
     /// Ecosystem label embedded in the CAIP-122 preamble
     /// (`"{domain} wants you to sign in with your {CHAIN_NAME} account:"`).
     ///
     /// For example, `"Ethereum"` for EIP-155 chains, `"Solana"` for Solana.
     const CHAIN_NAME: &'static str;
+
+    /// CAIP-2 namespace, e.g. `"eip155"` / `"solana"`.
+    const NAMESPACE: &'static str;
 
     /// Validate that `address` matches this chain's expected format.
     ///
@@ -42,6 +47,24 @@ pub trait Verifier: Send + Sync {
         if address.is_empty() {
             return Err(SiwxError::InvalidAddress {
                 reason: "empty".into(),
+            });
+        }
+        Ok(())
+    }
+
+    /// Validate that `chain_id` matches this namespace's profile.
+    ///
+    /// Called by [`crate::authenticate`] after [`Self::validate_address`].
+    /// Default rejects only the empty string; chain crates override (EVM
+    /// decimal / SVM charset).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SiwxError::InvalidChainId`] when the format is wrong.
+    fn validate_chain_id(chain_id: &str) -> Result<(), SiwxError> {
+        if chain_id.is_empty() {
+            return Err(SiwxError::InvalidChainId {
+                reason: ChainIdReason::Empty,
             });
         }
         Ok(())

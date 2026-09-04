@@ -96,7 +96,7 @@ use siwx_evm::EvmVerifier;
 //   expected_nonce:  String        — nonce your backend issued in step 1
 
 // Parse → validate (domain/nonce bind) → chain name bind → address shape → verify original bytes.
-// Enable feature `eip1271` and use `EvmVerifier::with_rpc(...)` for contract wallets.
+// Enable feature `eip1271` and use `EvmVerifier::with_rpc_for_chain(...)` for contract wallets.
 // Multi-chain: also call `.with_chain_id(...)` on AuthOpts.
 let auth = authenticate(
     &EvmVerifier::new(),
@@ -219,6 +219,8 @@ pub trait Verifier: Send + Sync {
     /// Ecosystem label embedded in the CAIP-122 preamble — e.g. "Ethereum",
     /// "Solana". Required, so new chains can never ship without one.
     const CHAIN_NAME: &'static str;
+    /// CAIP-2 namespace, e.g. "eip155" / "solana".
+    const NAMESPACE: &'static str;
 
     /// Verify `signature` over `raw_message` (exact wallet bytes), binding
     /// identity to `message.address`.
@@ -252,6 +254,7 @@ pub struct MyChainVerifier;
 
 impl Verifier for MyChainVerifier {
     const CHAIN_NAME: &'static str = "MyChain";
+    const NAMESPACE: &'static str = "mychain";
 
     async fn verify(
         &self,
@@ -273,8 +276,8 @@ impl Verifier for MyChainVerifier {
 | Feature | Crate | Description |
 | --- | --- | --- |
 | `serde` | `siwx` | `Serialize` / `Deserialize` for `SiwxMessage` |
-| `eip1271` | `siwx-evm` | Smart-contract signature verification via RPC (`EvmVerifier::with_rpc`) |
-| `eip1271` | `siwx-cli` | Enables `siwx evm verify --rpc <url>` (forwards to `siwx-evm/eip1271`) |
+| `eip1271` | `siwx-evm` | Smart-contract signature verification via RPC (`EvmVerifier::with_rpc_for_chain` / `with_rpc_map`) |
+| `eip1271` | `siwx-cli` | Enables `siwx evm verify --rpc-chain-id <id> --rpc <url>` (forwards to `siwx-evm/eip1271`) |
 
 See [SECURITY.md](SECURITY.md) for production integration boundaries (nonce store, RPC trust).
 

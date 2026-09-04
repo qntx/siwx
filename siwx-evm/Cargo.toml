@@ -16,13 +16,16 @@ tokio = { workspace = true, features = ["sync"], optional = true }
 
 [dev-dependencies]
 tokio.workspace = true
-time = { version = "0.3", features = ["macros"] }
+time = { version = "0.3", features = ["macros", "parsing"] }
+serde_json.workspace = true
+siwx.workspace = true
 
 [features]
 default = []
 ## Enable EIP-1271 smart-contract signature verification (RPC).
 eip1271 = [
     "dep:tokio",
+    "tokio/time",
     "alloy/contract",
     "alloy/provider-http",
     "alloy/network",

@@ -3,7 +3,7 @@
 use alloy::primitives::{Signature, eip191_hash_message};
 use siwx::{SiwxError, SiwxMessage};
 
-use crate::parse_address;
+use crate::parse_eip55;
 
 /// Synchronous EIP-191 verification used by [`crate::EvmVerifier`].
 pub(crate) fn verify_sync(
@@ -21,8 +21,15 @@ pub(crate) fn verify_sync(
     }
 
     let alloy_sig = Signature::try_from(signature).map_err(|e| SiwxError::InvalidSignature {
-        reason: format!("bad signature encoding: {e}"),
+        reason: format!("bad encoding: {e}"),
     })?;
+
+    // recover_address_from_prehash accepts high-s; EIP-2 requires low-s.
+    if alloy_sig.normalize_s().is_some() {
+        return Err(SiwxError::InvalidSignature {
+            reason: "high-s (EIP-2)".into(),
+        });
+    }
 
     let hash = eip191_hash_message(raw_message.as_bytes());
 
@@ -32,7 +39,7 @@ pub(crate) fn verify_sync(
         }
     })?;
 
-    let expected = parse_address(&message.address)?;
+    let expected = parse_eip55(&message.address)?;
 
     if recovered != expected {
         return Err(SiwxError::VerificationFailed {
@@ -80,7 +87,7 @@ mod tests {
     #[tokio::test]
     async fn authenticate_eoa_fixture_end_to_end() {
         let signer = fixture_signer();
-        let addr = format!("{:?}", signer.address());
+        let addr = signer.address().to_string();
 
         let message = SiwxMessage::new(
             FIXTURE_DOMAIN,
@@ -124,7 +131,7 @@ mod tests {
     #[tokio::test]
     async fn authenticate_eoa_rejects_wrong_bound_nonce() {
         let signer = fixture_signer();
-        let addr = format!("{:?}", signer.address());
+        let addr = signer.address().to_string();
         let message = SiwxMessage::new(
             FIXTURE_DOMAIN,
             &addr,
@@ -154,7 +161,7 @@ mod tests {
             "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
                 .parse()
                 .expect("valid key");
-        let addr = format!("{:?}", signer.address());
+        let addr = signer.address().to_string();
 
         let message = sample_message(&addr);
         let text = EvmVerifier::format_message(&message);
@@ -203,7 +210,7 @@ mod tests {
             "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
                 .parse()
                 .expect("valid key");
-        let addr = format!("{:?}", signer.address());
+        let addr = signer.address().to_string();
 
         let message = sample_message(&addr);
         let text = EvmVerifier::format_message(&message);
@@ -216,5 +223,39 @@ mod tests {
             .await
             .unwrap_err();
         assert!(matches!(err, SiwxError::VerificationFailed { .. }));
+    }
+
+    #[tokio::test]
+    async fn eip191_rejects_high_s() {
+        use alloy::primitives::{Signature, U256};
+
+        let signer: PrivateKeySigner =
+            "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+                .parse()
+                .expect("valid key");
+        let addr = signer.address().to_string();
+        let message = sample_message(&addr);
+        let text = EvmVerifier::format_message(&message);
+        let sig = signer.sign_message(text.as_bytes()).await.expect("signing");
+        let low = Signature::try_from(sig.as_bytes().as_slice()).expect("sig");
+        assert!(low.normalize_s().is_none(), "fixture must be low-s");
+        let n: U256 = "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
+            .parse()
+            .expect("n");
+        let high = Signature::new(low.r(), n - low.s(), !low.v());
+        assert!(high.normalize_s().is_some(), "constructed high-s");
+
+        let err = EvmVerifier::new()
+            .verify(&message, &text, &high.as_bytes())
+            .await
+            .unwrap_err();
+        assert!(
+            matches!(err, SiwxError::InvalidSignature { .. }),
+            "got {err:?}"
+        );
+        assert!(
+            err.to_string().contains("high-s"),
+            "error must name high-s: {err}"
+        );
     }
 }

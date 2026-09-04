@@ -24,11 +24,13 @@ pub struct Authenticated {
 ///    uri / chain id / request id, temporal window).
 /// 4. Require [`SiwxMessage::chain_name`] == [`Verifier::CHAIN_NAME`].
 /// 5. [`Verifier::validate_address`] for chain-specific address shape.
-/// 6. [`Verifier::verify`] over the original `raw_message` bytes.
+/// 6. [`Verifier::validate_chain_id`] for namespace chain-id shape.
+/// 7. [`Verifier::verify`] over the original `raw_message` bytes.
 ///
 /// # Errors
 ///
-/// Returns parse, validation, chain-name, address, or verification errors.
+/// Returns parse, validation, chain-name, address, chain-id, or verification
+/// errors.
 pub async fn authenticate<V: Verifier>(
     verifier: &V,
     raw_message: &str,
@@ -51,6 +53,7 @@ pub async fn authenticate<V: Verifier>(
         });
     }
     V::validate_address(&message.address)?;
+    V::validate_chain_id(&message.chain_id)?;
 
     verifier.verify(&message, raw_message, signature).await?;
 
@@ -66,12 +69,13 @@ mod tests {
     use time::macros::datetime;
 
     use super::*;
-    use crate::{FormatReason, SiwxError};
+    use crate::{ChainIdReason, FormatReason, SiwxError};
 
     struct AcceptingVerifier;
 
     impl Verifier for AcceptingVerifier {
         const CHAIN_NAME: &'static str = "Ethereum";
+        const NAMESPACE: &'static str = "eip155";
 
         fn verify(
             &self,
@@ -91,6 +95,7 @@ mod tests {
 
     impl Verifier for RecordingVerifier {
         const CHAIN_NAME: &'static str = "Ethereum";
+        const NAMESPACE: &'static str = "eip155";
 
         fn verify(
             &self,
@@ -100,6 +105,31 @@ mod tests {
         ) -> impl Future<Output = Result<(), SiwxError>> + Send {
             self.verify_calls.fetch_add(1, Ordering::SeqCst);
             *self.last_raw.lock().expect("last_raw mutex") = Some(raw_message.to_owned());
+            std::future::ready(Ok(()))
+        }
+    }
+
+    struct RejectingChainId {
+        verify_calls: AtomicUsize,
+    }
+
+    impl Verifier for RejectingChainId {
+        const CHAIN_NAME: &'static str = "Ethereum";
+        const NAMESPACE: &'static str = "eip155";
+
+        fn validate_chain_id(_chain_id: &str) -> Result<(), SiwxError> {
+            Err(SiwxError::InvalidChainId {
+                reason: ChainIdReason::NotDecimal,
+            })
+        }
+
+        fn verify(
+            &self,
+            _message: &SiwxMessage,
+            _raw_message: &str,
+            _signature: &[u8],
+        ) -> impl Future<Output = Result<(), SiwxError>> + Send {
+            self.verify_calls.fetch_add(1, Ordering::SeqCst);
             std::future::ready(Ok(()))
         }
     }
@@ -235,6 +265,48 @@ mod tests {
             verifier.verify_calls.load(Ordering::SeqCst),
             0,
             "verify must not run on missing chain name"
+        );
+    }
+
+    #[test]
+    fn default_validate_chain_id_rejects_empty() {
+        let err = AcceptingVerifier::validate_chain_id("").expect_err("empty");
+        assert!(
+            matches!(
+                err,
+                SiwxError::InvalidChainId {
+                    reason: ChainIdReason::Empty
+                }
+            ),
+            "got {err:?}"
+        );
+        AcceptingVerifier::validate_chain_id("1").expect("non-empty default ok");
+    }
+
+    #[tokio::test]
+    async fn authenticate_rejects_invalid_chain_id_before_verify() {
+        let msg = sample_msg();
+        let raw = msg.to_sign_string("Ethereum");
+        let opts = AuthOpts::new(&msg.domain, &msg.nonce);
+        let verifier = RejectingChainId {
+            verify_calls: AtomicUsize::new(0),
+        };
+        let err = authenticate(&verifier, &raw, &[], &opts)
+            .await
+            .expect_err("chain id rejected");
+        assert!(
+            matches!(
+                err,
+                SiwxError::InvalidChainId {
+                    reason: ChainIdReason::NotDecimal
+                }
+            ),
+            "got {err:?}"
+        );
+        assert_eq!(
+            verifier.verify_calls.load(Ordering::SeqCst),
+            0,
+            "verify must not run on invalid chain id"
         );
     }
 

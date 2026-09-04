@@ -32,6 +32,9 @@ use siwx::SiwxError;
 /// Human-readable chain label embedded in the CAIP-122 preamble.
 pub const CHAIN_NAME: &str = "Solana";
 
+/// CAIP-2 namespace for Solana.
+pub const NAMESPACE: &str = "solana";
+
 /// Validate that `address` is a valid base58-encoded Solana public key (32
 /// bytes decoded).
 ///
@@ -68,6 +71,12 @@ mod tests {
     fn validate_address_rejects_bad_formats() {
         assert!(validate_address("not-valid").is_err());
         assert!(validate_address("").is_err());
+    }
+
+    #[test]
+    fn namespace_is_solana() {
+        assert_eq!(Ed25519Verifier::NAMESPACE, "solana");
+        assert_eq!(NAMESPACE, "solana");
     }
 
     #[test]

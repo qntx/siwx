@@ -3265,6 +3265,7 @@ name = "siwx-evm"
 version = "0.5.0"
 dependencies = [
  "alloy",
+ "serde_json",
  "siwx",
  "time",
  "tokio",
