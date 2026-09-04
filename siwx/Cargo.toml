@@ -19,6 +19,7 @@ serde = { workspace = true, optional = true }
 [dev-dependencies]
 time = { version = "0.3", features = ["parsing", "formatting", "macros"] }
 tokio = { workspace = true }
+serde_json.workspace = true
 
 [features]
 default = []

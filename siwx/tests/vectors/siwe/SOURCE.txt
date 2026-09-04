@@ -1,0 +1,11 @@
+Official SpruceID SIWE test vectors.
+
+Repository: https://github.com/spruceid/siwe
+Commit:     911f6f2c73ef24deac73fec2f6b84930721d2fb4
+Path:       test/
+
+Vendored:
+  parsing_positive.json
+  parsing_negative.json
+  verification_positive.json  (for later verify harness; not executed here)
+  verification_negative.json  (for later verify harness; not executed here)

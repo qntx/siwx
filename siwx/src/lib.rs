@@ -53,5 +53,7 @@ pub use message::{
     MAX_MESSAGE_BYTES, MAX_REQUEST_ID_BYTES, MAX_RESOURCES, MAX_STATEMENT_BYTES, MAX_URI_BYTES,
     MIN_NONCE_LEN, SiwxMessage, Timestamp, VERSION,
 };
+#[cfg(test)]
+use serde_json as _;
 pub use validate::AuthOpts;
 pub use verifier::Verifier;
