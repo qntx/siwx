@@ -655,6 +655,22 @@ mod tests {
     }
 
     #[test]
+    fn with_resources_rejects_too_many() {
+        let resources = (0..=MAX_RESOURCES).map(|i| format!("https://r{i}.example"));
+        let err = SiwxMessage::new("d.com", "a", "https://d.com", "1", "testnonce12345678")
+            .expect("valid")
+            .with_resources(resources)
+            .unwrap_err();
+        assert!(matches!(
+            err,
+            SiwxError::TooManyResources {
+                count: 33,
+                max: MAX_RESOURCES
+            }
+        ));
+    }
+
+    #[test]
     fn builder_chains_all_setters() {
         let msg = SiwxMessage::new("d.com", "a", "https://d.com", "1", "testnonce12345678")
             .expect("valid")

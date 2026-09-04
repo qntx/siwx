@@ -178,8 +178,6 @@ pub enum FormatReason {
     CrLf,
     /// Preamble missing ` wants you to sign in with your `.
     MissingPreamble,
-    /// Preamble chain label was empty.
-    EmptyChainName,
     /// Preamble missing ` account:` suffix.
     MissingAccountSuffix,
     /// Input ended before a required line.
@@ -220,7 +218,6 @@ impl fmt::Display for FormatReason {
         match self {
             Self::CrLf => f.write_str("CR not allowed"),
             Self::MissingPreamble => f.write_str("missing preamble marker"),
-            Self::EmptyChainName => f.write_str("empty chain name"),
             Self::MissingAccountSuffix => f.write_str("missing account suffix"),
             Self::UnexpectedEof => f.write_str("unexpected end of input"),
             Self::ExpectedBlankLine => f.write_str("expected blank line"),

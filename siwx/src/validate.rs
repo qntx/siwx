@@ -33,8 +33,12 @@ pub struct AuthOpts {
 impl AuthOpts {
     /// Create opts that bind `domain` and `nonce`.
     ///
-    /// Default clock skew is 60 seconds. Scheme, URI, chain id, and request id
-    /// are unbound until set with the corresponding `with_*` builders.
+    /// Default clock skew is 60 seconds and applies to `expiration_time`,
+    /// `not_before`, and `max_issued_age` even when [`Self::with_timestamp`]
+    /// injects the evaluation instant. Official SIWE verify harnesses that
+    /// inject JSON `time` must also call [`Self::with_clock_skew`] with
+    /// `time::Duration::ZERO`. Scheme, URI, chain id, and request id are
+    /// unbound until set with the corresponding `with_*` builders.
     #[must_use]
     pub fn new(domain: impl Into<String>, nonce: impl Into<String>) -> Self {
         Self {
@@ -79,6 +83,11 @@ impl AuthOpts {
     }
 
     /// Override the temporal evaluation point (tests / clock injection).
+    ///
+    /// Does not change clock skew: the default 60s leeway still applies to
+    /// `expiration_time`, `not_before`, and `max_issued_age`. Official SIWE
+    /// verify harnesses that inject JSON `time` must also call
+    /// [`Self::with_clock_skew`] with `time::Duration::ZERO`.
     #[must_use]
     pub const fn with_timestamp(mut self, t: OffsetDateTime) -> Self {
         self.timestamp = Some(t);
@@ -433,6 +442,30 @@ mod tests {
     }
 
     #[test]
+    fn scheme_unbound_when_message_has_scheme() {
+        let msg = base().with_scheme("https").expect("scheme");
+        msg.validate(&opts_for(&msg))
+            .expect("unbound scheme must not reject a preamble scheme");
+    }
+
+    #[test]
+    fn scheme_mismatch_some_vs_some() {
+        let msg = base().with_scheme("https").expect("scheme");
+        let opts = opts_for(&msg).with_scheme("http");
+        let err = msg.validate(&opts).unwrap_err();
+        assert!(
+            matches!(
+                err,
+                SiwxError::SchemeMismatch {
+                    expected: Some(ref expected),
+                    actual: Some(ref actual),
+                } if expected == "http" && actual == "https"
+            ),
+            "got {err:?}"
+        );
+    }
+
+    #[test]
     fn uri_mismatch_is_rejected() {
         let msg = base();
         let opts = opts_for(&msg).with_uri("https://other.com");
@@ -469,6 +502,13 @@ mod tests {
         let msg = base().with_request_id("rid-1").expect("request_id");
         let opts = opts_for(&msg).with_request_id("rid-1");
         msg.validate(&opts).expect("matching request_id");
+    }
+
+    #[test]
+    fn request_id_unbound_when_message_has_id() {
+        let msg = base().with_request_id("rid-1").expect("request_id");
+        msg.validate(&opts_for(&msg))
+            .expect("unbound request_id must not reject a message request id");
     }
 
     #[test]
