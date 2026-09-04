@@ -286,6 +286,13 @@ mod tests {
     proptest! {
         #![proptest_config(ProptestConfig {
             cases: 128,
+            // SourceParallel walks for lib.rs/main.rs and misses siwx/src from tests/.
+            failure_persistence: Some(Box::new(
+                proptest::test_runner::FileFailurePersistence::Direct(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/tests/proptest-regressions.txt",
+                )),
+            )),
             ..ProptestConfig::default()
         })]
 
