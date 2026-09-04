@@ -95,6 +95,7 @@ mod tests {
         )
         .expect("valid")
         .with_issued_at(datetime!(2024-01-01 0:00 UTC))
+        .expect("issued_at")
     }
 
     #[tokio::test]

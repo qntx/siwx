@@ -159,16 +159,16 @@ impl MessageArgs {
             msg = msg.with_statement(s)?;
         }
         if let Some(ref exp) = self.expiration {
-            msg = msg.with_expiration_time(parse_time_or_duration(exp)?);
+            msg = msg.with_expiration_time(parse_time_or_duration(exp)?)?;
         }
         if let Some(ref nbf) = self.not_before {
-            msg = msg.with_not_before(parse_time_or_duration(nbf)?);
+            msg = msg.with_not_before(parse_time_or_duration(nbf)?)?;
         }
         if let Some(ref rid) = self.request_id {
-            msg = msg.with_request_id(rid);
+            msg = msg.with_request_id(rid)?;
         }
         if !self.resources.is_empty() {
-            msg = msg.with_resources(self.resources.clone());
+            msg = msg.with_resources(self.resources.clone())?;
         }
         Ok(msg)
     }
@@ -278,10 +278,6 @@ fn build_auth_opts(args: &VerifyArgs, message: &SiwxMessage) -> Result<AuthOpts,
 pub(crate) fn decode_hex_signature(s: &str) -> Result<Vec<u8>, BoxedError> {
     let s = s.strip_prefix("0x").unwrap_or(s);
     Ok(hex::decode(s)?)
-}
-
-pub(crate) fn fmt_ts(t: OffsetDateTime) -> String {
-    t.format(&Rfc3339).unwrap_or_else(|_| t.to_string())
 }
 
 fn parse_time_or_duration(s: &str) -> Result<OffsetDateTime, BoxedError> {

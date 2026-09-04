@@ -6,8 +6,6 @@ use colored::{ColoredString, Colorize};
 use serde::Serialize;
 use siwx::SiwxMessage;
 
-use crate::cmd::fmt_ts;
-
 /// Width reserved for field labels in the human-readable renderer.
 const LABEL_WIDTH: usize = 10;
 
@@ -39,9 +37,9 @@ impl MessageOutput {
             version: msg.version.clone(),
             chain_id: msg.chain_id.clone(),
             nonce: msg.nonce.clone(),
-            issued_at: fmt_ts(msg.issued_at),
-            expiration_time: msg.expiration_time.map(fmt_ts),
-            not_before: msg.not_before.map(fmt_ts),
+            issued_at: msg.issued_at.as_str().to_owned(),
+            expiration_time: msg.expiration_time.as_ref().map(|t| t.as_str().to_owned()),
+            not_before: msg.not_before.as_ref().map(|t| t.as_str().to_owned()),
         }
     }
 }
@@ -93,9 +91,9 @@ impl ParseOutput {
             chain_id: msg.chain_id.clone(),
             statement: msg.statement.clone(),
             nonce: Some(msg.nonce.clone()),
-            issued_at: Some(fmt_ts(msg.issued_at)),
-            expiration_time: msg.expiration_time.map(fmt_ts),
-            not_before: msg.not_before.map(fmt_ts),
+            issued_at: Some(msg.issued_at.as_str().to_owned()),
+            expiration_time: msg.expiration_time.as_ref().map(|t| t.as_str().to_owned()),
+            not_before: msg.not_before.as_ref().map(|t| t.as_str().to_owned()),
             request_id: msg.request_id.clone(),
             resources: msg.resources.clone(),
         }

@@ -27,7 +27,7 @@
 //!     siwx::nonce::generate_default(),
 //! )?
 //! .with_statement("I accept the Terms of Service")?
-//! .with_issued_at(datetime!(2024-01-01 0:00 UTC));
+//! .with_issued_at(datetime!(2024-01-01 0:00 UTC))?;
 //!
 //! msg.validate(&AuthOpts::new("example.com", &msg.nonce))?;
 //!
@@ -49,6 +49,9 @@ mod verifier;
 
 pub use auth::{Authenticated, authenticate};
 pub use error::SiwxError;
-pub use message::{MAX_MESSAGE_BYTES, MAX_RESOURCES, MIN_NONCE_LEN, SiwxMessage, VERSION};
+pub use message::{
+    MAX_MESSAGE_BYTES, MAX_REQUEST_ID_BYTES, MAX_RESOURCES, MAX_STATEMENT_BYTES, MAX_URI_BYTES,
+    MIN_NONCE_LEN, SiwxMessage, Timestamp, VERSION,
+};
 pub use validate::AuthOpts;
 pub use verifier::Verifier;

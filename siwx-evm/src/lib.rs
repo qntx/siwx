@@ -252,7 +252,8 @@ mod tests {
             "testnonce12345678",
         )
         .expect("valid")
-        .with_issued_at(datetime!(2024-01-01 0:00 UTC));
+        .with_issued_at(datetime!(2024-01-01 0:00 UTC))
+        .expect("issued_at");
         let text = EvmVerifier::format_message(&message);
         let sig = signer.sign_message(text.as_bytes()).await.expect("sign");
 
@@ -285,7 +286,8 @@ mod tests {
             "testnonce12345678",
         )
         .expect("valid")
-        .with_issued_at(datetime!(2024-01-01 0:00 UTC));
+        .with_issued_at(datetime!(2024-01-01 0:00 UTC))
+        .expect("issued_at");
         let text = EvmVerifier::format_message(&message);
         let err = EvmVerifier::new()
             .verify(&message, &text, &[0u8; 65])

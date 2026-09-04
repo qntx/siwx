@@ -64,6 +64,7 @@ mod tests {
         )
         .expect("valid message")
         .with_issued_at(datetime!(2024-01-01 0:00 UTC))
+        .expect("issued_at")
     }
 
     fn fixture_signer() -> PrivateKeySigner {
@@ -86,7 +87,8 @@ mod tests {
         .expect("valid message")
         .with_statement("Sign in to Example")
         .expect("statement")
-        .with_issued_at(datetime!(2024-06-01 12:00 UTC));
+        .with_issued_at(datetime!(2024-06-01 12:00 UTC))
+        .expect("issued_at");
 
         let raw = EvmVerifier::format_message(&message);
         assert!(
@@ -126,7 +128,8 @@ mod tests {
             FIXTURE_NONCE,
         )
         .expect("valid")
-        .with_issued_at(datetime!(2024-06-01 12:00 UTC));
+        .with_issued_at(datetime!(2024-06-01 12:00 UTC))
+        .expect("issued_at");
         let raw = EvmVerifier::format_message(&message);
         let sig = signer.sign_message(raw.as_bytes()).await.expect("sign");
 

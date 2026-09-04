@@ -1,10 +1,12 @@
 //! Field- and temporal-level validation of [`SiwxMessage`].
 
-use iri_string::types::UriString;
 use time::OffsetDateTime;
 
 use crate::SiwxError;
-use crate::message::{SiwxMessage, VERSION, check_domain, check_nonce_shape, check_statement};
+use crate::message::{
+    SiwxMessage, VERSION, check_domain, check_nonce_shape, check_request_id, check_resources,
+    check_scheme, check_statement, check_uri,
+};
 
 /// Binding and temporal options for authentication / validation.
 ///
@@ -97,6 +99,9 @@ impl SiwxMessage {
     }
 
     fn check_required_shapes(&self) -> Result<(), SiwxError> {
+        if let Some(ref scheme) = self.scheme {
+            check_scheme(scheme)?;
+        }
         check_domain(&self.domain)?;
         if self.address.is_empty() {
             return Err(SiwxError::InvalidAddress("empty".into()));
@@ -111,15 +116,15 @@ impl SiwxMessage {
             return Err(SiwxError::InvalidFormat("empty chain_id".into()));
         }
         check_nonce_shape(&self.nonce)?;
+        if let Some(ref rid) = self.request_id {
+            check_request_id(rid)?;
+        }
         Ok(())
     }
 
     fn check_uri_shapes(&self) -> Result<(), SiwxError> {
-        UriString::try_from(self.uri.as_str()).map_err(|e| SiwxError::InvalidUri(e.to_string()))?;
-        for r in &self.resources {
-            UriString::try_from(r.as_str())
-                .map_err(|e| SiwxError::InvalidUri(format!("invalid resource URI: {e}")))?;
-        }
+        check_uri(&self.uri)?;
+        check_resources(self.resources.iter())?;
         Ok(())
     }
 
@@ -161,18 +166,18 @@ impl SiwxMessage {
         max_issued_age: Option<time::Duration>,
     ) -> Result<(), SiwxError> {
         let now = at.unwrap_or_else(OffsetDateTime::now_utc);
-        if let Some(exp) = self.expiration_time
-            && now > exp
+        if let Some(ref exp) = self.expiration_time
+            && now > exp.datetime()
         {
             return Err(SiwxError::Expired);
         }
-        if let Some(nbf) = self.not_before
-            && now < nbf
+        if let Some(ref nbf) = self.not_before
+            && now < nbf.datetime()
         {
             return Err(SiwxError::NotYetValid);
         }
         if let Some(max_age) = max_issued_age {
-            let age = now - self.issued_at;
+            let age = now - self.issued_at.datetime();
             if age > max_age {
                 return Err(SiwxError::Expired);
             }
@@ -191,6 +196,7 @@ mod tests {
         SiwxMessage::new("d.com", "a", "https://d.com", "1", "testnonce12345678")
             .expect("valid")
             .with_issued_at(datetime!(2024-01-01 0:00 UTC))
+            .expect("issued_at")
     }
 
     fn opts_for(msg: &SiwxMessage) -> AuthOpts {
@@ -206,7 +212,9 @@ mod tests {
 
     #[test]
     fn expired_message_is_rejected() {
-        let msg = base().with_expiration_time(datetime!(2020-01-01 0:00 UTC));
+        let msg = base()
+            .with_expiration_time(datetime!(2020-01-01 0:00 UTC))
+            .expect("expiration");
         let opts = opts_for(&msg).with_timestamp(datetime!(2021-01-01 0:00 UTC));
         let err = msg.validate(&opts).unwrap_err();
         assert!(matches!(err, SiwxError::Expired));
@@ -214,7 +222,9 @@ mod tests {
 
     #[test]
     fn not_before_in_future_is_rejected() {
-        let msg = base().with_not_before(datetime!(2099-01-01 0:00 UTC));
+        let msg = base()
+            .with_not_before(datetime!(2099-01-01 0:00 UTC))
+            .expect("not_before");
         let opts = opts_for(&msg).with_timestamp(datetime!(2024-06-01 0:00 UTC));
         let err = msg.validate(&opts).unwrap_err();
         assert!(matches!(err, SiwxError::NotYetValid));
@@ -246,21 +256,30 @@ mod tests {
 
     #[test]
     fn invalid_resource_uri_is_rejected() {
-        let msg = base().with_resources(["not a valid uri ::: bad"]);
-        let err = msg.validate(&opts_for(&msg)).unwrap_err();
-        assert!(matches!(err, SiwxError::InvalidUri(_)));
+        let builder_err = base()
+            .with_resources(["not a valid uri ::: bad"])
+            .unwrap_err();
+        assert!(matches!(builder_err, SiwxError::InvalidUri(_)));
+        let mut msg = base();
+        msg.resources = vec!["not a valid uri ::: bad".into()];
+        let validate_err = msg.validate(&opts_for(&msg)).unwrap_err();
+        assert!(matches!(validate_err, SiwxError::InvalidUri(_)));
     }
 
     #[test]
     fn timestamp_override_changes_expiration_decision() {
-        let msg = base().with_expiration_time(datetime!(2020-01-01 0:00 UTC));
+        let msg = base()
+            .with_expiration_time(datetime!(2020-01-01 0:00 UTC))
+            .expect("expiration");
         let opts = opts_for(&msg).with_timestamp(datetime!(2019-01-01 0:00 UTC));
         msg.validate(&opts).expect("valid at earlier timestamp");
     }
 
     #[test]
     fn max_issued_age_rejects_stale_message() {
-        let msg = base().with_issued_at(datetime!(2020-01-01 0:00 UTC));
+        let msg = base()
+            .with_issued_at(datetime!(2020-01-01 0:00 UTC))
+            .expect("issued_at");
         let opts = opts_for(&msg)
             .with_timestamp(datetime!(2020-01-02 0:00 UTC))
             .with_max_issued_age(time::Duration::hours(1));
