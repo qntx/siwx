@@ -169,6 +169,15 @@ pub enum SiwxError {
         /// Verifier-specific failure detail (must not include RPC URLs).
         reason: String,
     },
+    /// RPC / transport failed (timeout, connect, empty `eth_call`).
+    ///
+    /// Crypto failure stays [`Self::VerificationFailed`]. Config such as
+    /// `"EIP-6492 requires RPC"` stays [`Self::InvalidSignature`].
+    #[error("backend error: {reason}")]
+    Backend {
+        /// Transport detail (must not include RPC URLs).
+        reason: String,
+    },
 }
 
 /// Why a SIWX message failed ABNF / layout parsing.
@@ -251,5 +260,18 @@ impl SiwxError {
     /// Convenience helper: creates [`SiwxError::InvalidFormat`].
     pub(crate) const fn invalid_format(reason: FormatReason) -> Self {
         Self::InvalidFormat { reason }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn backend_display_is_reason_only() {
+        let err = SiwxError::Backend {
+            reason: "RPC timeout".into(),
+        };
+        assert_eq!(err.to_string(), "backend error: RPC timeout");
     }
 }

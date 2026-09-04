@@ -199,7 +199,7 @@ pub(crate) use rpc::verify;
 #[cfg(any(test, feature = "eip6492"))]
 pub(crate) fn eth_call_bool(data: &[u8]) -> Result<bool, SiwxError> {
     let Some((last, rest)) = data.split_last() else {
-        return Err(SiwxError::VerificationFailed {
+        return Err(SiwxError::Backend {
             reason: "empty eth_call result".into(),
         });
     };
@@ -276,7 +276,7 @@ mod tests {
     fn eth_call_bool_rejects_empty_and_malformed() {
         assert!(matches!(
             eth_call_bool(&[]),
-            Err(SiwxError::VerificationFailed { ref reason }) if reason == "empty eth_call result"
+            Err(SiwxError::Backend { ref reason }) if reason == "empty eth_call result"
         ));
         assert!(matches!(
             eth_call_bool(&[2]),
@@ -392,10 +392,7 @@ mod tests {
             .verify(&message, &text, &magic_signature())
             .await
             .expect_err("connect fail");
-        assert!(
-            matches!(err, SiwxError::VerificationFailed { .. }),
-            "got {err:?}"
-        );
+        assert!(matches!(err, SiwxError::Backend { .. }), "got {err:?}");
         assert!(
             !err.to_string().contains("http"),
             "error must not include RPC URL: {err}"

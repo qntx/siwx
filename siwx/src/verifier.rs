@@ -19,6 +19,8 @@ use crate::{ChainIdReason, SiwxError, SiwxMessage};
 /// * Return `Ok(())` when the signature is **valid** for the given message.
 /// * Return `Err(SiwxError::VerificationFailed { .. })` when the signature is
 ///   **cryptographically invalid**.
+/// * Return `Err(SiwxError::Backend { .. })` for RPC timeout, connect, or
+///   empty `eth_call` (never include RPC URLs in `reason`).
 /// * Return other `Err` variants for malformed inputs.
 ///
 /// Prefer [`crate::authenticate`] over calling [`Self::verify`] directly so

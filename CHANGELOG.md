@@ -9,6 +9,13 @@
   including the 32-zero identity). Signature verification still uses RFC 8032
   `verify`, not `verify_strict`.
 
+### Added
+
+- **`SiwxError::Backend`**: RPC timeout, connect failure, and empty
+  `eth_call`. Crypto failure stays `VerificationFailed`.
+  `"EIP-6492 requires RPC"` / `"EIP-6492 not enabled"` stay
+  `InvalidSignature`. Reasons must not include RPC URLs.
+
 ## 0.6.0
 
 Breaking release. EIP-4361 ABNF-strict parse, original-byte verify, production

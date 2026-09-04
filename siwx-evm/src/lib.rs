@@ -188,10 +188,10 @@ impl EvmVerifier {
                 let connect = ProviderBuilder::new().connect(&url);
                 let built = tokio::time::timeout(timeout, connect)
                     .await
-                    .map_err(|_| SiwxError::VerificationFailed {
+                    .map_err(|_| SiwxError::Backend {
                         reason: "RPC timeout".into(),
                     })?
-                    .map_err(|_| SiwxError::VerificationFailed {
+                    .map_err(|_| SiwxError::Backend {
                         reason: "RPC connect failed".into(),
                     })?;
                 Ok(Provider::<Ethereum>::erased(built))
@@ -494,7 +494,7 @@ mod tests {
             .await
             .expect_err("1271 fallback after high-s");
         assert!(
-            matches!(err, SiwxError::VerificationFailed { .. }),
+            matches!(err, SiwxError::Backend { .. }),
             "high-s with RPC must not stay on InvalidSignature, got {err:?}"
         );
         assert!(
