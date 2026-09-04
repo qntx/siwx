@@ -1,0 +1,5 @@
+SpruceID siwe test vectors
+https://github.com/spruceid/siwe
+commit: 911f6f2c73ef24deac73fec2f6b84930721d2fb4
+files: verification_positive.json verification_negative.json
+license: Apache-2.0

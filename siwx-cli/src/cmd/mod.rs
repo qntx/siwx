@@ -55,7 +55,7 @@ pub(crate) enum Commands {
 /// Shared message-generation arguments.
 #[derive(Args)]
 pub(crate) struct MessageArgs {
-    /// RFC 4501 domain requesting the signing.
+    /// RFC 3986 authority requesting the signing.
     #[arg(long)]
     pub domain: String,
 
@@ -107,23 +107,25 @@ pub(crate) struct VerifyArgs {
     #[arg(long)]
     pub signature: String,
 
-    /// Expected domain binding (required unless `--trust-message-bindings`).
+    /// Expected domain binding (server-issued; required).
     #[arg(long)]
-    pub domain: Option<String>,
+    pub domain: String,
 
-    /// Expected nonce binding (required unless `--trust-message-bindings`).
+    /// Expected nonce binding (server-issued; required).
     #[arg(long)]
-    pub nonce: Option<String>,
+    pub nonce: String,
+
+    /// Expected URI binding (optional).
+    #[arg(long)]
+    pub uri: Option<String>,
+
+    /// Expected preamble scheme binding (optional).
+    #[arg(long)]
+    pub scheme: Option<String>,
 
     /// Expected chain id binding (optional; recommended for multi-chain).
     #[arg(long)]
     pub chain_id: Option<String>,
-
-    /// Use domain/nonce (and chain id if present) from the message itself.
-    ///
-    /// Debug-only: does not prove the server issued the challenge.
-    #[arg(long)]
-    pub trust_message_bindings: bool,
 }
 
 #[derive(Args)]
@@ -159,16 +161,16 @@ impl MessageArgs {
             msg = msg.with_statement(s)?;
         }
         if let Some(ref exp) = self.expiration {
-            msg = msg.with_expiration_time(parse_time_or_duration(exp)?);
+            msg = msg.with_expiration_time(parse_time_or_duration(exp)?)?;
         }
         if let Some(ref nbf) = self.not_before {
-            msg = msg.with_not_before(parse_time_or_duration(nbf)?);
+            msg = msg.with_not_before(parse_time_or_duration(nbf)?)?;
         }
         if let Some(ref rid) = self.request_id {
-            msg = msg.with_request_id(rid);
+            msg = msg.with_request_id(rid)?;
         }
         if !self.resources.is_empty() {
-            msg = msg.with_resources(self.resources.clone());
+            msg = msg.with_resources(self.resources.clone())?;
         }
         Ok(msg)
     }
@@ -204,6 +206,7 @@ pub(crate) fn run_message<V: Verifier>(
     json: bool,
 ) -> CmdResult {
     V::validate_address(&args.address)?;
+    V::validate_chain_id(&args.chain_id)?;
     let msg = args.build()?;
     let text = V::format_message(&msg);
     let out = MessageOutput::new(chain_label, text, &msg);
@@ -221,17 +224,15 @@ pub(crate) async fn run_verify<V: Verifier>(
     verifier: V,
 ) -> CmdResult {
     let sig = decode_hex_signature(&args.signature)?;
-    let provisional: SiwxMessage = args.message.parse()?;
-
-    let opts = build_auth_opts(args, &provisional)?;
+    let opts = build_auth_opts(args);
 
     let auth = authenticate(&verifier, &args.message, &sig, &opts).await?;
 
     let out = VerifyOutput {
         valid: true,
         chain: chain_label.to_owned(),
-        domain: auth.message.domain,
-        address: auth.message.address,
+        domain: auth.message().domain().to_owned(),
+        address: auth.address().to_owned(),
     };
 
     if json {
@@ -242,37 +243,18 @@ pub(crate) async fn run_verify<V: Verifier>(
     Ok(())
 }
 
-fn build_auth_opts(args: &VerifyArgs, message: &SiwxMessage) -> Result<AuthOpts, BoxedError> {
-    let (domain, nonce) = if args.trust_message_bindings {
-        (
-            args.domain
-                .clone()
-                .unwrap_or_else(|| message.domain.clone()),
-            args.nonce.clone().unwrap_or_else(|| message.nonce.clone()),
-        )
-    } else {
-        let domain = args.domain.clone().ok_or_else(|| {
-            std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                "missing --domain (or pass --trust-message-bindings for debug)",
-            )
-        })?;
-        let nonce = args.nonce.clone().ok_or_else(|| {
-            std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                "missing --nonce (or pass --trust-message-bindings for debug)",
-            )
-        })?;
-        (domain, nonce)
-    };
-
-    let mut opts = AuthOpts::new(domain, nonce);
+fn build_auth_opts(args: &VerifyArgs) -> AuthOpts {
+    let mut opts = AuthOpts::new(args.domain.as_str(), args.nonce.as_str());
+    if let Some(ref scheme) = args.scheme {
+        opts = opts.with_scheme(scheme);
+    }
+    if let Some(ref uri) = args.uri {
+        opts = opts.with_uri(uri);
+    }
     if let Some(ref chain_id) = args.chain_id {
         opts = opts.with_chain_id(chain_id);
-    } else if args.trust_message_bindings {
-        opts = opts.with_chain_id(&message.chain_id);
     }
-    Ok(opts)
+    opts
 }
 
 pub(crate) fn decode_hex_signature(s: &str) -> Result<Vec<u8>, BoxedError> {
@@ -280,13 +262,235 @@ pub(crate) fn decode_hex_signature(s: &str) -> Result<Vec<u8>, BoxedError> {
     Ok(hex::decode(s)?)
 }
 
-pub(crate) fn fmt_ts(t: OffsetDateTime) -> String {
-    t.format(&Rfc3339).unwrap_or_else(|_| t.to_string())
-}
-
 fn parse_time_or_duration(s: &str) -> Result<OffsetDateTime, BoxedError> {
     if let Ok(secs) = s.parse::<i64>() {
         return Ok(OffsetDateTime::now_utc() + time::Duration::seconds(secs));
     }
     Ok(OffsetDateTime::parse(s, &Rfc3339)?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn verify_args() -> VerifyArgs {
+        VerifyArgs {
+            message: String::new(),
+            signature: String::new(),
+            domain: "example.com".into(),
+            nonce: "n12345678".into(),
+            uri: None,
+            scheme: None,
+            chain_id: None,
+        }
+    }
+
+    #[test]
+    fn auth_opts_bind_required_domain_and_nonce() {
+        let msg = SiwxMessage::new(
+            "example.com",
+            "addr1",
+            "https://example.com",
+            "1",
+            "n12345678",
+        )
+        .expect("valid");
+        msg.validate(&build_auth_opts(&verify_args()))
+            .expect("domain/nonce bind");
+    }
+
+    #[test]
+    fn auth_opts_forward_optional_uri_scheme_chain_id() {
+        let args = VerifyArgs {
+            uri: Some("https://example.com/login".into()),
+            scheme: Some("https".into()),
+            chain_id: Some("1".into()),
+            ..verify_args()
+        };
+        let msg = SiwxMessage::new(
+            "example.com",
+            "addr1",
+            "https://example.com/login",
+            "1",
+            "n12345678",
+        )
+        .expect("valid")
+        .with_scheme("https")
+        .expect("scheme");
+        msg.validate(&build_auth_opts(&args))
+            .expect("optional bindings");
+    }
+
+    #[test]
+    fn auth_opts_uri_mismatch_is_rejected() {
+        let args = VerifyArgs {
+            uri: Some("https://other.example/login".into()),
+            ..verify_args()
+        };
+        let msg = SiwxMessage::new(
+            "example.com",
+            "addr1",
+            "https://example.com",
+            "1",
+            "n12345678",
+        )
+        .expect("valid");
+        let err = msg.validate(&build_auth_opts(&args)).expect_err("uri");
+        assert!(
+            matches!(err, siwx::SiwxError::UriMismatch { .. }),
+            "got {err:?}"
+        );
+    }
+
+    fn try_parse(args: &[&str]) -> Result<Cli, clap::Error> {
+        Cli::try_parse_from(args)
+    }
+
+    fn parse_err(args: &[&str]) -> clap::Error {
+        try_parse(args)
+            .map(|_cli| ())
+            .expect_err("expected clap error")
+    }
+
+    #[cfg(feature = "eip1271")]
+    fn parse_ok(args: &[&str]) -> Cli {
+        try_parse(args)
+            .map_err(|err| err.to_string())
+            .expect("expected clap parse to succeed")
+    }
+
+    #[test]
+    fn verify_requires_domain() {
+        let err = parse_err(&[
+            "siwx",
+            "evm",
+            "verify",
+            "--message",
+            "m",
+            "--signature",
+            "00",
+            "--nonce",
+            "n12345678",
+        ]);
+        assert_eq!(err.kind(), clap::error::ErrorKind::MissingRequiredArgument);
+        let rendered = err.to_string();
+        assert!(rendered.contains("--domain"), "{rendered}");
+    }
+
+    #[test]
+    fn verify_requires_nonce() {
+        let err = parse_err(&[
+            "siwx",
+            "svm",
+            "verify",
+            "--message",
+            "m",
+            "--signature",
+            "00",
+            "--domain",
+            "example.com",
+        ]);
+        assert_eq!(err.kind(), clap::error::ErrorKind::MissingRequiredArgument);
+        let rendered = err.to_string();
+        assert!(rendered.contains("--nonce"), "{rendered}");
+    }
+
+    #[test]
+    fn verify_rejects_trust_message_bindings() {
+        let err = parse_err(&[
+            "siwx",
+            "evm",
+            "verify",
+            "--message",
+            "m",
+            "--signature",
+            "00",
+            "--domain",
+            "example.com",
+            "--nonce",
+            "n12345678",
+            "--trust-message-bindings",
+        ]);
+        assert_eq!(err.kind(), clap::error::ErrorKind::UnknownArgument);
+        let rendered = err.to_string();
+        assert!(rendered.contains("trust-message-bindings"), "{rendered}");
+    }
+
+    #[cfg(feature = "eip1271")]
+    #[test]
+    fn verify_rpc_requires_rpc_chain_id() {
+        let err = parse_err(&[
+            "siwx",
+            "evm",
+            "verify",
+            "--message",
+            "m",
+            "--signature",
+            "00",
+            "--domain",
+            "example.com",
+            "--nonce",
+            "n12345678",
+            "--rpc",
+            "https://eth.example",
+        ]);
+        assert_eq!(err.kind(), clap::error::ErrorKind::MissingRequiredArgument);
+        let rendered = err.to_string();
+        assert!(rendered.contains("--rpc-chain-id"), "{rendered}");
+    }
+
+    #[cfg(feature = "eip1271")]
+    #[test]
+    fn verify_rpc_chain_id_requires_rpc() {
+        let err = parse_err(&[
+            "siwx",
+            "evm",
+            "verify",
+            "--message",
+            "m",
+            "--signature",
+            "00",
+            "--domain",
+            "example.com",
+            "--nonce",
+            "n12345678",
+            "--rpc-chain-id",
+            "1",
+        ]);
+        assert_eq!(err.kind(), clap::error::ErrorKind::MissingRequiredArgument);
+        let rendered = err.to_string();
+        assert!(rendered.contains("--rpc"), "{rendered}");
+    }
+
+    #[cfg(feature = "eip1271")]
+    #[test]
+    fn verify_rpc_pair_count_mismatch() {
+        let cli = parse_ok(&[
+            "siwx",
+            "evm",
+            "verify",
+            "--message",
+            "m",
+            "--signature",
+            "00",
+            "--domain",
+            "example.com",
+            "--nonce",
+            "n12345678",
+            "--rpc-chain-id",
+            "1",
+            "--rpc",
+            "https://eth.example",
+            "--rpc-chain-id",
+            "137",
+        ]);
+        let Commands::Evm(cmd) = cli.command else {
+            unreachable!("expected evm");
+        };
+        let evm::EvmAction::Verify(args) = cmd.action else {
+            unreachable!("expected verify");
+        };
+        let err = evm::make_evm_verifier(&args).expect_err("unequal counts");
+        assert!(err.to_string().contains("pairs"), "{err}");
+    }
 }

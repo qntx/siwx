@@ -9,26 +9,29 @@ description: >-
 
 # siwx CLI — CAIP-122 Sign-In with X Tool
 
-`siwx` is a single binary CLI for generating and verifying blockchain sign-in messages following the [CAIP-122](https://chainagnostic.org/CAIPs/caip-122) standard. Supports **Ethereum (EIP-191)** and **Solana (Ed25519)**.
+`siwx` is a single binary CLI for generating and verifying blockchain sign-in messages following the [CAIP-122](https://chainagnostic.org/CAIPs/caip-122) standard. Supports **Ethereum (EIP-191)** and **Solana (Ed25519)**. Optional EIP-1271 / EIP-6492 require build features and paired RPC flags.
 
 ## Installation
 
 **Shell** (macOS / Linux):
 
 ```sh
-curl -fsSL https://sh.qntx.fun/siwx | sh
+curl -fsSL https://sh.qntx.org/siwx | sh
 ```
 
 **PowerShell** (Windows):
 
 ```powershell
-irm https://sh.qntx.fun/siwx/ps | iex
+irm https://sh.qntx.org/siwx/ps | iex
 ```
 
 Or via Cargo:
 
 ```bash
 cargo install siwx-cli
+# EIP-1271 / EIP-6492 RPC flags:
+cargo install siwx-cli --features eip1271
+# or: cargo install siwx-cli --features eip6492
 ```
 
 ### Verify installation
@@ -67,10 +70,10 @@ The `--json` flag is **global** and must appear **before** the chain subcommand.
 
 | Flag            | Required | Description                                             |
 |-----------------|----------|---------------------------------------------------------|
-| `--domain`      | ✓        | RFC 4501 domain requesting the signing                  |
-| `--address`     | ✓        | Blockchain address (0x-hex for EVM, base58 for SVM)     |
+| `--domain`      | ✓        | RFC 3986 authority requesting the signing               |
+| `--address`     | ✓        | Blockchain address (EIP-55 0x-hex for EVM, base58 for SVM) |
 | `--uri`         | ✓        | RFC 3986 URI subject of the signing                     |
-| `--chain-id`    | ✓        | CAIP-2 chain identifier (e.g. "1" for Ethereum mainnet) |
+| `--chain-id`    | ✓        | CAIP-2 reference (e.g. `"1"` for Ethereum mainnet)      |
 | `--statement`   |          | Human-readable statement                                |
 | `--nonce`       |          | Nonce (auto-generated if omitted)                       |
 | `--expiration`  |          | Expiration (RFC 3339 timestamp or seconds from now)     |
@@ -78,20 +81,21 @@ The `--json` flag is **global** and must appear **before** the chain subcommand.
 | `--request-id`  |          | System-specific request ID                              |
 | `--resource`    |          | Resource URI (repeatable)                               |
 
-
 ## Verify Flags
 
-| Flag                       | Required | Description                                                          |
-|----------------------------|----------|----------------------------------------------------------------------|
-| `--message`                | ✓        | The raw CAIP-122 signing message text                                |
-| `--signature`              | ✓        | Hex-encoded signature (0x prefix optional)                           |
-| `--domain`                 | ✓*       | Expected domain binding                                              |
-| `--nonce`                  | ✓*       | Expected nonce binding                                               |
-| `--chain-id`               |          | Expected chain id binding (recommended multi-chain)                  |
-| `--trust-message-bindings` |          | Debug: use domain/nonce from the message if flags omitted            |
-| `--rpc`                    |          | EIP-1271 RPC URL (requires CLI feature `eip1271`)                    |
+| Flag             | Required | Description |
+|------------------|----------|-------------|
+| `--message`      | ✓        | Raw CAIP-122 signing message text (LF-only; trailing LF rejected) |
+| `--signature`    | ✓        | Hex-encoded signature (`0x` prefix optional) |
+| `--domain`       | ✓        | Expected domain binding (server-issued) |
+| `--nonce`        | ✓        | Expected nonce binding (server-issued) |
+| `--uri`          |          | Expected URI binding |
+| `--scheme`       |          | Expected preamble scheme binding |
+| `--chain-id`     |          | Expected chain id binding (recommended multi-chain) |
+| `--rpc-chain-id` |          | EIP-155 chain id; **pair** with `--rpc` (repeatable, order-matched; feature `eip1271`) |
+| `--rpc`          |          | EIP-1271 / EIP-6492 JSON-RPC URL; **pair** with `--rpc-chain-id` (same order; feature `eip1271`) |
 
-\* Required unless `--trust-message-bindings` is set.
+`--trust-message-bindings` does not exist. Bare `--rpc` without `--rpc-chain-id` (or the reverse) is rejected. Repeat pairs in matching order, e.g. `--rpc-chain-id 1 --rpc https://eth --rpc-chain-id 137 --rpc https://polygon`. Feature `eip6492` (default off) implies `eip1271`.
 
 ## Usage Examples
 
@@ -121,7 +125,22 @@ siwx --json svm message \
 ```bash
 siwx --json evm verify \
   --message "example.com wants you to sign in with your Ethereum account:..." \
-  --signature 0x1234abcd...
+  --signature 0x1234abcd... \
+  --domain example.com \
+  --nonce abc123def456
+```
+
+### Verify with EIP-1271 RPC pairs
+
+Requires `cargo install siwx-cli --features eip1271` (or `--features eip6492`).
+
+```bash
+siwx --json evm verify \
+  --message "..." \
+  --signature 0x... \
+  --domain example.com \
+  --nonce abc123def456 \
+  --rpc-chain-id 1 --rpc https://eth.example
 ```
 
 ### Verify a Solana Ed25519 signature (JSON)
@@ -129,7 +148,9 @@ siwx --json evm verify \
 ```bash
 siwx --json svm verify \
   --message "example.com wants you to sign in with your Solana account:..." \
-  --signature abcd1234...
+  --signature abcd1234... \
+  --domain example.com \
+  --nonce abc123def456
 ```
 
 ### Generate a nonce
@@ -221,5 +242,5 @@ All errors in JSON mode return exit code 1 with:
 6. **Verify reads address from message**: For SVM verify, the public key is derived from the address in the parsed message.
 7. **Errors** in JSON mode return `{"error": "..."}` with exit code 1 (including failed verify).
 8. **Signature format**: Always hex-encoded, `0x` prefix is optional.
-9. **Canonical form**: verify requires the message string to match the library formatter bit-for-bit (no trailing newline).
-10. **Bindings**: production verify must pass server-issued `--domain` and `--nonce`; never rely on `--trust-message-bindings` in prod.
+9. **Original bytes**: verify hashes the wallet-signed text. There is no canonical rewrite. Trailing LF is a parse error; `trim_end_matches('\n')` before verify if the client left one.
+10. **Bindings**: verify **must** pass server-issued `--domain` and `--nonce`. There is no `--trust-message-bindings`. Optional `--uri` / `--scheme` / `--chain-id`. RPC is `--rpc-chain-id` + `--rpc` pairs only.

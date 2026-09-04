@@ -21,3 +21,6 @@ target
 #.idea/
 
 /3rdparty
+
+# proptest FileFailurePersistence::Direct (created only on failure)
+siwx/tests/proptest-regressions.txt

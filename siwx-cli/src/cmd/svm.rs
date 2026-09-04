@@ -19,7 +19,7 @@ pub(crate) enum SvmAction {
     /// Generate a CAIP-122 signing message for Solana.
     Message(Box<MessageArgs>),
     /// Verify an Ed25519 signature over a CAIP-122 message.
-    Verify(SvmVerifyArgs),
+    Verify(Box<SvmVerifyArgs>),
 }
 
 /// SVM-specific verify arguments.

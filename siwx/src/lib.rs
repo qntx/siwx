@@ -5,12 +5,20 @@
 //! validation, and a [`Verifier`] trait for chain-specific signature
 //! verification.
 //!
-//! Prefer [`authenticate`] for backend login: it parses the raw signing
-//! string, validates fields (including domain/nonce binding), requires
-//! canonical form, then verifies the signature over the original bytes.
+//! Prefer [`authenticate`] for backend login (fail-fast):
+//! 1. size ≤ [`MAX_MESSAGE_BYTES`];
+//! 2. reject CR;
+//! 3. ABNF parse;
+//! 4. [`SiwxMessage::validate`] (`AuthOpts` domain/nonce required, clock skew 60s);
+//! 5. preamble `chain_name` == [`Verifier::CHAIN_NAME`];
+//! 6. [`Verifier::validate_address`];
+//! 7. [`Verifier::validate_chain_id`];
+//! 8. [`Verifier::verify`] over the original bytes.
+//!
+//! Trailing LF is rejected; trim before [`authenticate`] if a client leaves one.
 //!
 //! Chain-specific implementations live in companion crates:
-//! - `siwx-evm` — Ethereum (EIP-191 / EIP-1271)
+//! - `siwx-evm` — Ethereum (EIP-191 / EIP-1271 / EIP-6492)
 //! - `siwx-svm` — Solana (Ed25519)
 //!
 //! # Examples
@@ -27,9 +35,9 @@
 //!     siwx::nonce::generate_default(),
 //! )?
 //! .with_statement("I accept the Terms of Service")?
-//! .with_issued_at(datetime!(2024-01-01 0:00 UTC));
+//! .with_issued_at(datetime!(2024-01-01 0:00 UTC))?;
 //!
-//! msg.validate(&AuthOpts::new("example.com", &msg.nonce))?;
+//! msg.validate(&AuthOpts::new("example.com", msg.nonce()))?;
 //!
 //! let signing_text = msg.to_sign_string("Ethereum");
 //! assert!(signing_text.contains("Ethereum"));
@@ -48,7 +56,14 @@ mod validate;
 mod verifier;
 
 pub use auth::{Authenticated, authenticate};
-pub use error::SiwxError;
-pub use message::{MAX_MESSAGE_BYTES, MAX_RESOURCES, MIN_NONCE_LEN, SiwxMessage, VERSION};
+pub use error::{ChainIdReason, FormatReason, SiwxError};
+pub use message::{
+    MAX_MESSAGE_BYTES, MAX_REQUEST_ID_BYTES, MAX_RESOURCES, MAX_STATEMENT_BYTES, MAX_URI_BYTES,
+    MIN_NONCE_LEN, SiwxMessage, Timestamp, VERSION,
+};
+#[cfg(test)]
+use proptest as _;
+#[cfg(test)]
+use serde_json as _;
 pub use validate::AuthOpts;
 pub use verifier::Verifier;

@@ -1,8 +1,5 @@
 //! CAIP-122 signing-string rendering ([`SiwxMessage::to_sign_string`]).
 
-use time::OffsetDateTime;
-use time::format_description::well_known::Rfc3339;
-
 use crate::message::SiwxMessage;
 use crate::parser::{
     CHAIN_TAG, EXP_TAG, IAT_TAG, NBF_TAG, NONCE_TAG, PREAMBLE_MID, PREAMBLE_TAIL, RES_TAG, RID_TAG,
@@ -33,7 +30,7 @@ impl SiwxMessage {
     ///     "1",
     ///     "testnonce12345678",
     /// )?
-    /// .with_issued_at(datetime!(2021-09-30 16:25:24 UTC));
+    /// .with_issued_at(datetime!(2021-09-30 16:25:24 UTC))?;
     /// let text = msg.to_sign_string("Ethereum");
     /// assert!(text.starts_with("example.com wants you to sign in with your Ethereum account:"));
     /// # Ok::<(), siwx::SiwxError>(())
@@ -42,45 +39,44 @@ impl SiwxMessage {
     pub fn to_sign_string(&self, chain_name: &str) -> String {
         let mut out = String::with_capacity(512);
 
-        if let Some(ref scheme) = self.scheme {
+        if let Some(scheme) = self.scheme() {
             out.push_str(scheme);
             out.push_str("://");
         }
-        out.push_str(&self.domain);
+        out.push_str(self.domain());
         out.push_str(PREAMBLE_MID);
         out.push_str(chain_name);
         out.push_str(PREAMBLE_TAIL);
         out.push('\n');
-        out.push_str(&self.address);
+        out.push_str(self.address());
         out.push('\n');
-
         out.push('\n');
-        if let Some(ref stmt) = self.statement {
+        if let Some(stmt) = self.statement() {
             out.push_str(stmt);
             out.push('\n');
-            out.push('\n');
         }
+        out.push('\n');
 
-        push_tag(&mut out, URI_TAG, &self.uri);
-        push_tag(&mut out, VERSION_TAG, &self.version);
-        push_tag(&mut out, CHAIN_TAG, &self.chain_id);
-        push_tag(&mut out, NONCE_TAG, &self.nonce);
-        push_tag(&mut out, IAT_TAG, &fmt_ts(self.issued_at));
+        push_tag(&mut out, URI_TAG, self.uri());
+        push_tag(&mut out, VERSION_TAG, self.version());
+        push_tag(&mut out, CHAIN_TAG, self.chain_id());
+        push_tag(&mut out, NONCE_TAG, self.nonce());
+        push_tag(&mut out, IAT_TAG, self.issued_at_raw());
 
-        if let Some(t) = self.expiration_time {
-            push_tag(&mut out, EXP_TAG, &fmt_ts(t));
+        if let Some(t) = self.expiration_time_raw() {
+            push_tag(&mut out, EXP_TAG, t);
         }
-        if let Some(t) = self.not_before {
-            push_tag(&mut out, NBF_TAG, &fmt_ts(t));
+        if let Some(t) = self.not_before_raw() {
+            push_tag(&mut out, NBF_TAG, t);
         }
-        if let Some(ref rid) = self.request_id {
+        if let Some(rid) = self.request_id() {
             push_tag(&mut out, RID_TAG, rid);
         }
 
-        if !self.resources.is_empty() {
+        if !self.resources().is_empty() {
             out.push_str(RES_TAG);
             out.push('\n');
-            for r in &self.resources {
+            for r in self.resources() {
                 out.push_str("- ");
                 out.push_str(r);
                 out.push('\n');
@@ -91,10 +87,6 @@ impl SiwxMessage {
         out.truncate(trimmed_len);
         out
     }
-}
-
-pub(crate) fn fmt_ts(t: OffsetDateTime) -> String {
-    t.format(&Rfc3339).unwrap_or_else(|_| t.to_string())
 }
 
 fn push_tag(out: &mut String, tag: &str, value: &str) {
@@ -122,10 +114,12 @@ mod tests {
         .with_statement("I accept the ServiceOrg Terms of Service: https://service.org/tos")
         .expect("statement")
         .with_issued_at(datetime!(2021-09-30 16:25:24 UTC))
+        .expect("issued_at")
         .with_resources([
             "ipfs://bafybeiemxf5abjwjbikoz4mc3a3dla6ual3jsgpdr4cjr3oz3evfyavhwq/",
             "https://example.com/my-web2-claim.json",
-        ]);
+        ])
+        .expect("resources");
 
         let expected = "\
 service.org wants you to sign in with your Ethereum account:
@@ -155,7 +149,8 @@ Resources:
             "testnonce12345678",
         )
         .expect("valid")
-        .with_issued_at(datetime!(2021-09-30 16:25:24 UTC));
+        .with_issued_at(datetime!(2021-09-30 16:25:24 UTC))
+        .expect("issued_at");
         let text = msg.to_sign_string("Solana");
         assert!(text.starts_with("service.org wants you to sign in with your Solana account:"));
         assert!(text.contains("Chain ID: 5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d"));
@@ -174,12 +169,32 @@ Resources:
         .expect("valid")
         .with_scheme("https")
         .expect("scheme")
-        .with_issued_at(datetime!(2021-09-30 16:25:24 UTC));
+        .with_issued_at(datetime!(2021-09-30 16:25:24 UTC))
+        .expect("issued_at");
         let text = msg.to_sign_string("Ethereum");
         assert!(
             text.starts_with(
                 "https://example.com wants you to sign in with your Ethereum account:"
             )
+        );
+    }
+
+    #[test]
+    fn no_statement_emits_two_blank_lines_before_uri() {
+        let msg = SiwxMessage::new(
+            "example.com",
+            "addr1",
+            "https://example.com",
+            "1",
+            "testnonce12345678",
+        )
+        .expect("valid")
+        .with_issued_at(datetime!(2021-09-30 16:25:24 UTC))
+        .expect("issued_at");
+        let text = msg.to_sign_string("Ethereum");
+        assert!(
+            text.contains("addr1\n\n\nURI: https://example.com\n"),
+            "no-statement form must be address\\n\\n\\nURI:, got {text}"
         );
     }
 }

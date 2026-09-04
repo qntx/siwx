@@ -18,9 +18,12 @@ update:
 run:
     cargo run --release --all-features
 
-# Run all tests with all features enabled
+# Run all tests with all features enabled, then EIP-6492 cfg-off paths
+# (`not_enabled` is compiled out under --all-features).
 test:
     cargo test --workspace --all-features
+    cargo test -p siwx-evm --lib eip6492
+    cargo test -p siwx-evm --lib eip6492 --features eip1271
 
 # Run benchmarks with all features enabled
 bench:

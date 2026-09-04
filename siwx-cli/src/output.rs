@@ -6,8 +6,6 @@ use colored::{ColoredString, Colorize};
 use serde::Serialize;
 use siwx::SiwxMessage;
 
-use crate::cmd::fmt_ts;
-
 /// Width reserved for field labels in the human-readable renderer.
 const LABEL_WIDTH: usize = 10;
 
@@ -33,15 +31,15 @@ impl MessageOutput {
         Self {
             chain: chain.into(),
             message,
-            domain: msg.domain.clone(),
-            address: msg.address.clone(),
-            uri: msg.uri.clone(),
-            version: msg.version.clone(),
-            chain_id: msg.chain_id.clone(),
-            nonce: msg.nonce.clone(),
-            issued_at: fmt_ts(msg.issued_at),
-            expiration_time: msg.expiration_time.map(fmt_ts),
-            not_before: msg.not_before.map(fmt_ts),
+            domain: msg.domain().to_owned(),
+            address: msg.address().to_owned(),
+            uri: msg.uri().to_owned(),
+            version: msg.version().to_owned(),
+            chain_id: msg.chain_id().to_owned(),
+            nonce: msg.nonce().to_owned(),
+            issued_at: msg.issued_at_raw().to_owned(),
+            expiration_time: msg.expiration_time_raw().map(str::to_owned),
+            not_before: msg.not_before_raw().map(str::to_owned),
         }
     }
 }
@@ -86,18 +84,18 @@ pub(crate) struct ParseOutput {
 impl ParseOutput {
     pub(crate) fn from_message(msg: &SiwxMessage) -> Self {
         Self {
-            domain: msg.domain.clone(),
-            address: msg.address.clone(),
-            uri: msg.uri.clone(),
-            version: msg.version.clone(),
-            chain_id: msg.chain_id.clone(),
-            statement: msg.statement.clone(),
-            nonce: Some(msg.nonce.clone()),
-            issued_at: Some(fmt_ts(msg.issued_at)),
-            expiration_time: msg.expiration_time.map(fmt_ts),
-            not_before: msg.not_before.map(fmt_ts),
-            request_id: msg.request_id.clone(),
-            resources: msg.resources.clone(),
+            domain: msg.domain().to_owned(),
+            address: msg.address().to_owned(),
+            uri: msg.uri().to_owned(),
+            version: msg.version().to_owned(),
+            chain_id: msg.chain_id().to_owned(),
+            statement: msg.statement().map(str::to_owned),
+            nonce: Some(msg.nonce().to_owned()),
+            issued_at: Some(msg.issued_at_raw().to_owned()),
+            expiration_time: msg.expiration_time_raw().map(str::to_owned),
+            not_before: msg.not_before_raw().map(str::to_owned),
+            request_id: msg.request_id().map(str::to_owned),
+            resources: msg.resources().to_vec(),
         }
     }
 }

@@ -3,7 +3,7 @@
 use alloy::primitives::{Signature, eip191_hash_message};
 use siwx::{SiwxError, SiwxMessage};
 
-use crate::parse_address;
+use crate::parse_eip55;
 
 /// Synchronous EIP-191 verification used by [`crate::EvmVerifier`].
 pub(crate) fn verify_sync(
@@ -12,27 +12,39 @@ pub(crate) fn verify_sync(
     signature: &[u8],
 ) -> Result<(), SiwxError> {
     if signature.len() != 65 {
-        return Err(SiwxError::InvalidSignature(format!(
-            "EIP-191 signature must be 65 bytes, got {}",
-            signature.len()
-        )));
+        return Err(SiwxError::InvalidSignature {
+            reason: format!(
+                "EIP-191 signature must be 65 bytes, got {}",
+                signature.len()
+            ),
+        });
     }
 
-    let alloy_sig = Signature::try_from(signature)
-        .map_err(|e| SiwxError::InvalidSignature(format!("bad signature encoding: {e}")))?;
+    let alloy_sig = Signature::try_from(signature).map_err(|e| SiwxError::InvalidSignature {
+        reason: format!("bad encoding: {e}"),
+    })?;
+
+    // recover_address_from_prehash accepts high-s; EIP-2 requires low-s.
+    if alloy_sig.normalize_s().is_some() {
+        return Err(SiwxError::InvalidSignature {
+            reason: "high-s (EIP-2)".into(),
+        });
+    }
 
     let hash = eip191_hash_message(raw_message.as_bytes());
 
-    let recovered = alloy_sig
-        .recover_address_from_prehash(&hash)
-        .map_err(|e| SiwxError::VerificationFailed(format!("ECDSA recovery failed: {e}")))?;
+    let recovered = alloy_sig.recover_address_from_prehash(&hash).map_err(|e| {
+        SiwxError::VerificationFailed {
+            reason: format!("ECDSA recovery failed: {e}"),
+        }
+    })?;
 
-    let expected = parse_address(&message.address)?;
+    let expected = parse_eip55(message.address())?;
 
     if recovered != expected {
-        return Err(SiwxError::VerificationFailed(format!(
-            "recovered {recovered} != expected {expected}"
-        )));
+        return Err(SiwxError::VerificationFailed {
+            reason: format!("recovered {recovered} != expected {expected}"),
+        });
     }
 
     Ok(())
@@ -64,6 +76,7 @@ mod tests {
         )
         .expect("valid message")
         .with_issued_at(datetime!(2024-01-01 0:00 UTC))
+        .expect("issued_at")
     }
 
     fn fixture_signer() -> PrivateKeySigner {
@@ -74,7 +87,7 @@ mod tests {
     #[tokio::test]
     async fn authenticate_eoa_fixture_end_to_end() {
         let signer = fixture_signer();
-        let addr = format!("{:?}", signer.address());
+        let addr = signer.address().to_string();
 
         let message = SiwxMessage::new(
             FIXTURE_DOMAIN,
@@ -86,7 +99,8 @@ mod tests {
         .expect("valid message")
         .with_statement("Sign in to Example")
         .expect("statement")
-        .with_issued_at(datetime!(2024-06-01 12:00 UTC));
+        .with_issued_at(datetime!(2024-06-01 12:00 UTC))
+        .expect("issued_at");
 
         let raw = EvmVerifier::format_message(&message);
         assert!(
@@ -108,16 +122,16 @@ mod tests {
             .await
             .expect("authenticate must succeed on real EOA fixture");
 
-        assert_eq!(auth.message.domain, FIXTURE_DOMAIN);
-        assert_eq!(auth.message.nonce, FIXTURE_NONCE);
-        assert_eq!(auth.message.chain_id, FIXTURE_CHAIN);
-        assert_eq!(auth.message.address, addr);
+        assert_eq!(auth.message().domain(), FIXTURE_DOMAIN);
+        assert_eq!(auth.message().nonce(), FIXTURE_NONCE);
+        assert_eq!(auth.message().chain_id(), FIXTURE_CHAIN);
+        assert_eq!(auth.address(), addr);
     }
 
     #[tokio::test]
     async fn authenticate_eoa_rejects_wrong_bound_nonce() {
         let signer = fixture_signer();
-        let addr = format!("{:?}", signer.address());
+        let addr = signer.address().to_string();
         let message = SiwxMessage::new(
             FIXTURE_DOMAIN,
             &addr,
@@ -126,7 +140,8 @@ mod tests {
             FIXTURE_NONCE,
         )
         .expect("valid")
-        .with_issued_at(datetime!(2024-06-01 12:00 UTC));
+        .with_issued_at(datetime!(2024-06-01 12:00 UTC))
+        .expect("issued_at");
         let raw = EvmVerifier::format_message(&message);
         let sig = signer.sign_message(raw.as_bytes()).await.expect("sign");
 
@@ -137,7 +152,7 @@ mod tests {
         let err = authenticate(&EvmVerifier::new(), &raw, &sig.as_bytes(), &opts)
             .await
             .expect_err("nonce binding must fail");
-        assert!(matches!(err, SiwxError::InvalidNonce(_)));
+        assert!(matches!(err, SiwxError::NonceMismatch { .. }));
     }
 
     #[tokio::test]
@@ -146,7 +161,7 @@ mod tests {
             "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
                 .parse()
                 .expect("valid key");
-        let addr = format!("{:?}", signer.address());
+        let addr = signer.address().to_string();
 
         let message = sample_message(&addr);
         let text = EvmVerifier::format_message(&message);
@@ -175,7 +190,7 @@ mod tests {
             .verify(&message, &text, &sig_bytes)
             .await
             .unwrap_err();
-        assert!(matches!(err, SiwxError::VerificationFailed(_)));
+        assert!(matches!(err, SiwxError::VerificationFailed { .. }));
     }
 
     #[tokio::test]
@@ -186,7 +201,7 @@ mod tests {
             .verify(&message, &text, &[0u8; 32])
             .await
             .unwrap_err();
-        assert!(matches!(err, SiwxError::InvalidSignature(_)));
+        assert!(matches!(err, SiwxError::InvalidSignature { .. }));
     }
 
     #[tokio::test]
@@ -195,7 +210,7 @@ mod tests {
             "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
                 .parse()
                 .expect("valid key");
-        let addr = format!("{:?}", signer.address());
+        let addr = signer.address().to_string();
 
         let message = sample_message(&addr);
         let text = EvmVerifier::format_message(&message);
@@ -207,6 +222,40 @@ mod tests {
             .verify(&message, &tampered, &sig.as_bytes())
             .await
             .unwrap_err();
-        assert!(matches!(err, SiwxError::VerificationFailed(_)));
+        assert!(matches!(err, SiwxError::VerificationFailed { .. }));
+    }
+
+    #[tokio::test]
+    async fn eip191_rejects_high_s() {
+        use alloy::primitives::{Signature, U256};
+
+        let signer: PrivateKeySigner =
+            "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+                .parse()
+                .expect("valid key");
+        let addr = signer.address().to_string();
+        let message = sample_message(&addr);
+        let text = EvmVerifier::format_message(&message);
+        let sig = signer.sign_message(text.as_bytes()).await.expect("signing");
+        let low = Signature::try_from(sig.as_bytes().as_slice()).expect("sig");
+        assert!(low.normalize_s().is_none(), "fixture must be low-s");
+        let n: U256 = "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
+            .parse()
+            .expect("n");
+        let high = Signature::new(low.r(), n - low.s(), !low.v());
+        assert!(high.normalize_s().is_some(), "constructed high-s");
+
+        let err = EvmVerifier::new()
+            .verify(&message, &text, &high.as_bytes())
+            .await
+            .unwrap_err();
+        assert!(
+            matches!(err, SiwxError::InvalidSignature { .. }),
+            "got {err:?}"
+        );
+        assert!(
+            err.to_string().contains("high-s"),
+            "error must name high-s: {err}"
+        );
     }
 }

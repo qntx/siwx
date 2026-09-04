@@ -1,0 +1,12 @@
+Official SpruceID SIWE test vectors.
+
+Repository: https://github.com/spruceid/siwe
+Commit:     911f6f2c73ef24deac73fec2f6b84930721d2fb4
+Path:       test/
+License:    MIT OR Apache-2.0
+
+Vendored (git blob SHA):
+  parsing_positive.json       95ca7540c557455eeaa5442f4cc56ba3c428d25e
+  parsing_negative.json       8fd22cfc3a362ef50b58b357977b8afac54ad168
+  verification_positive.json  c4d38ba7e20bef5daa3193e7784ff1d382cf8eb5
+  verification_negative.json  3dd9206e54fcbc7f46f246af0ab131110819ad8b

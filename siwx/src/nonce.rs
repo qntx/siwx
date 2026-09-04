@@ -8,8 +8,6 @@ use crate::message::MIN_NONCE_LEN;
 /// Default nonce length (17 characters, matching the siwe reference suite).
 pub const DEFAULT_LEN: usize = 17;
 
-const ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
 /// Generates a random alphanumeric nonce of the given `len`.
 ///
 /// EIP-4361 requires ≥ [`MIN_NONCE_LEN`] characters. A length of 17 (matching
@@ -29,17 +27,11 @@ const ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01
 /// ```
 pub fn generate(len: usize) -> Result<String, SiwxError> {
     if len < MIN_NONCE_LEN {
-        return Err(SiwxError::InvalidNonce(format!(
-            "length must be at least {MIN_NONCE_LEN}, got {len}"
-        )));
+        return Err(SiwxError::InvalidNonce {
+            reason: format!("length must be at least {MIN_NONCE_LEN}, got {len}"),
+        });
     }
-    let mut rng = rand::rng();
-    Ok((0..len)
-        .map(|_| {
-            let idx = rng.random_range(..ALPHABET.len());
-            ALPHABET.get(idx).copied().unwrap_or(b'A') as char
-        })
-        .collect())
+    Ok(random_alnum(len))
 }
 
 /// Generates a random alphanumeric nonce with the [`DEFAULT_LEN`] of 17.
@@ -58,11 +50,17 @@ pub fn generate_default() -> String {
             "DEFAULT_LEN must be >= MIN_NONCE_LEN"
         );
     }
+    random_alnum(DEFAULT_LEN)
+}
+
+#[allow(clippy::indexing_slicing, reason = "idx in 0..62 indexes [u8; 62]")]
+fn random_alnum(len: usize) -> String {
+    const ALPHABET: &[u8; 62] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let mut rng = rand::rng();
-    (0..DEFAULT_LEN)
+    (0..len)
         .map(|_| {
-            let idx = rng.random_range(..ALPHABET.len());
-            ALPHABET.get(idx).copied().unwrap_or(b'A') as char
+            let idx = rng.random_range(0..62);
+            ALPHABET[idx] as char
         })
         .collect()
 }
@@ -92,11 +90,11 @@ mod tests {
     fn short_length_errors() {
         assert!(matches!(
             generate(0).unwrap_err(),
-            SiwxError::InvalidNonce(_)
+            SiwxError::InvalidNonce { .. }
         ));
         assert!(matches!(
             generate(7).unwrap_err(),
-            SiwxError::InvalidNonce(_)
+            SiwxError::InvalidNonce { .. }
         ));
     }
 }
