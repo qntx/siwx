@@ -8,8 +8,33 @@ use crate::{SiwxError, SiwxMessage};
 /// Successful authentication result.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Authenticated {
+    message: SiwxMessage,
+}
+
+impl Authenticated {
     /// Parsed and verified CAIP-122 message.
-    pub message: SiwxMessage,
+    #[must_use]
+    pub const fn message(&self) -> &SiwxMessage {
+        &self.message
+    }
+
+    /// Signer address from the verified message.
+    #[must_use]
+    pub fn address(&self) -> &str {
+        self.message.address()
+    }
+
+    /// CAIP-10 account id `{namespace}:{chain_id}:{address}`.
+    ///
+    /// Pass the CAIP-2 namespace explicitly (e.g. `"eip155"`, `"solana"`).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `namespace` or the message `chain_id` / `address`
+    /// fail CAIP-10 syntax.
+    pub fn caip10(&self, namespace: &str) -> Result<String, SiwxError> {
+        self.message.caip10(namespace)
+    }
 }
 
 /// Parse `raw_message`, validate fields, bind preamble chain name, then verify
@@ -52,8 +77,8 @@ pub async fn authenticate<V: Verifier>(
             actual: message.chain_name().map(str::to_owned),
         });
     }
-    V::validate_address(&message.address)?;
-    V::validate_chain_id(&message.chain_id)?;
+    V::validate_address(message.address())?;
+    V::validate_chain_id(message.chain_id())?;
 
     verifier.verify(&message, raw_message, signature).await?;
 
@@ -151,12 +176,14 @@ mod tests {
     async fn authenticate_accepts_self_generated_message() {
         let msg = sample_msg();
         let raw = AcceptingVerifier::format_message(&msg);
-        let opts = AuthOpts::new(&msg.domain, &msg.nonce);
+        let opts = AuthOpts::new(msg.domain(), msg.nonce());
         let auth = authenticate(&AcceptingVerifier, &raw, &[], &opts)
             .await
             .expect("should authenticate");
-        assert_eq!(auth.message.domain, "example.com");
-        assert_eq!(auth.message.chain_name(), Some("Ethereum"));
+        assert_eq!(auth.message().domain(), "example.com");
+        assert_eq!(auth.address(), "addr1");
+        assert_eq!(auth.message().chain_name(), Some("Ethereum"));
+        assert_eq!(auth.caip10("eip155").expect("caip10"), "eip155:1:addr1");
     }
 
     #[tokio::test]
@@ -164,7 +191,7 @@ mod tests {
         let msg = sample_msg();
         let mut raw = AcceptingVerifier::format_message(&msg);
         raw.push('\n');
-        let opts = AuthOpts::new(&msg.domain, &msg.nonce);
+        let opts = AuthOpts::new(msg.domain(), msg.nonce());
         let err = authenticate(&AcceptingVerifier, &raw, &[], &opts)
             .await
             .expect_err("trailing newline must fail parse");
@@ -183,7 +210,7 @@ mod tests {
     async fn authenticate_rejects_domain_mismatch() {
         let msg = sample_msg();
         let raw = AcceptingVerifier::format_message(&msg);
-        let opts = AuthOpts::new("other.com", &msg.nonce);
+        let opts = AuthOpts::new("other.com", msg.nonce());
         let err = authenticate(&AcceptingVerifier, &raw, &[], &opts)
             .await
             .expect_err("domain binding");
@@ -220,7 +247,7 @@ mod tests {
     async fn authenticate_rejects_solana_preamble_for_ethereum_verifier() {
         let msg = sample_msg();
         let raw = msg.to_sign_string("Solana");
-        let opts = AuthOpts::new(&msg.domain, &msg.nonce);
+        let opts = AuthOpts::new(msg.domain(), msg.nonce());
         let verifier = RecordingVerifier::default();
         let err = authenticate(&verifier, &raw, &[], &opts)
             .await
@@ -246,7 +273,7 @@ mod tests {
     async fn authenticate_rejects_missing_preamble_chain_name() {
         let msg = sample_msg();
         let raw = msg.to_sign_string("");
-        let opts = AuthOpts::new(&msg.domain, &msg.nonce);
+        let opts = AuthOpts::new(msg.domain(), msg.nonce());
         let verifier = RecordingVerifier::default();
         let err = authenticate(&verifier, &raw, &[], &opts)
             .await
@@ -287,7 +314,7 @@ mod tests {
     async fn authenticate_rejects_invalid_chain_id_before_verify() {
         let msg = sample_msg();
         let raw = msg.to_sign_string("Ethereum");
-        let opts = AuthOpts::new(&msg.domain, &msg.nonce);
+        let opts = AuthOpts::new(msg.domain(), msg.nonce());
         let verifier = RejectingChainId {
             verify_calls: AtomicUsize::new(0),
         };
@@ -337,13 +364,13 @@ mod tests {
         let reformatted = RecordingVerifier::format_message(&parsed);
         assert_ne!(reformatted, raw, "formatter omits empty Resources: footer");
         assert!(
-            parsed.resources.is_empty(),
+            parsed.resources().is_empty(),
             "empty Resources: must parse as no resources, got {:?}",
-            parsed.resources
+            parsed.resources()
         );
 
         let verifier = RecordingVerifier::default();
-        let opts = AuthOpts::new(&msg.domain, &msg.nonce);
+        let opts = AuthOpts::new(msg.domain(), msg.nonce());
         authenticate(&verifier, &raw, &[], &opts)
             .await
             .expect("original bytes must authenticate when format differs");

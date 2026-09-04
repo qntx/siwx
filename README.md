@@ -104,7 +104,7 @@ let auth = authenticate(
     &signature_bytes,
     &AuthOpts::new("example.com", expected_nonce).with_chain_id("1"),
 ).await?;
-// auth.message.address is the authenticated wallet
+// auth.address() is the authenticated wallet
 let _ = auth;
 ```
 
@@ -223,7 +223,7 @@ pub trait Verifier: Send + Sync {
     const NAMESPACE: &'static str;
 
     /// Verify `signature` over `raw_message` (exact wallet bytes), binding
-    /// identity to `message.address`.
+    /// identity to `message.address()`.
     fn verify(
         &self,
         message: &SiwxMessage,
@@ -240,7 +240,7 @@ pub trait Verifier: Send + Sync {
 | Verifier | Crate | Signature Type | Async |
 | --- | --- | --- | --- |
 | `EvmVerifier` | `siwx-evm` | EIP-191; optional EIP-1271 (`eip1271` feature + RPC) | Yes |
-| `Ed25519Verifier` | `siwx-svm` | Ed25519 (pubkey from `message.address`) | No |
+| `Ed25519Verifier` | `siwx-svm` | Ed25519 (pubkey from `message.address()`) | No |
 
 ### Extending to New Chains
 
@@ -262,7 +262,7 @@ impl Verifier for MyChainVerifier {
         raw_message: &str,
         signature: &[u8],
     ) -> Result<(), SiwxError> {
-        // Verify `signature` over `raw_message`, bind identity to message.address
+        // Verify `signature` over `raw_message`, bind identity to message.address()
         todo!()
     }
 }

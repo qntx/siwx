@@ -106,7 +106,7 @@ impl FromStr for SiwxMessage {
         let resources = take_resources(&mut lines)?;
         reject_trailing(&mut lines)?;
 
-        Ok(Self {
+        Ok(Self::from_parsed(
             scheme,
             domain,
             address,
@@ -121,7 +121,7 @@ impl FromStr for SiwxMessage {
             not_before,
             request_id,
             resources,
-        })
+        ))
     }
 }
 
@@ -295,7 +295,7 @@ mod tests {
         );
         assert_eq!(parsed.chain_name(), Some("Ethereum"));
         let mut expected = msg;
-        expected.chain_name = Some("Ethereum".into());
+        expected.set_chain_name(Some("Ethereum".into()));
         assert_eq!(parsed, expected);
     }
 
@@ -382,13 +382,10 @@ Issued At: 2021-09-30T16:25:24Z";
         .expect("issued_at");
         let text = msg.to_sign_string("Ethereum");
         let parsed: SiwxMessage = text.parse().expect("parse");
-        assert_eq!(parsed.domain, "example.com");
-        assert!(parsed.statement.is_none());
-        assert_eq!(parsed.nonce, "testnonce12345678");
-        assert_eq!(
-            parsed.issued_at.datetime(),
-            datetime!(2021-09-30 16:25:24 UTC)
-        );
+        assert_eq!(parsed.domain(), "example.com");
+        assert!(parsed.statement().is_none());
+        assert_eq!(parsed.nonce(), "testnonce12345678");
+        assert_eq!(parsed.issued_at(), datetime!(2021-09-30 16:25:24 UTC));
     }
 
     #[test]
@@ -420,11 +417,11 @@ Issued At: 2021-09-30T16:25:24Z";
         .expect("issued_at");
         let text = msg.to_sign_string("Ethereum");
         let parsed: SiwxMessage = text.parse().expect("parse");
-        assert_eq!(parsed.scheme.as_deref(), Some("https"));
-        assert_eq!(parsed.domain, "example.com");
+        assert_eq!(parsed.scheme(), Some("https"));
+        assert_eq!(parsed.domain(), "example.com");
         assert_eq!(parsed.chain_name(), Some("Ethereum"));
         let mut expected = msg;
-        expected.chain_name = Some("Ethereum".into());
+        expected.set_chain_name(Some("Ethereum".into()));
         assert_eq!(parsed, expected);
     }
 
@@ -459,14 +456,14 @@ Issued At: 2021-09-30T16:25:24Z";
     fn no_statement_double_blank() {
         let text = after_address("\n\n\n");
         let parsed: SiwxMessage = text.parse().expect("no statement");
-        assert!(parsed.statement.is_none());
+        assert!(parsed.statement().is_none());
     }
 
     #[test]
     fn with_statement_blank_lines() {
         let text = after_address("\n\nI accept the terms\n\n");
         let parsed: SiwxMessage = text.parse().expect("statement");
-        assert_eq!(parsed.statement.as_deref(), Some("I accept the terms"));
+        assert_eq!(parsed.statement(), Some("I accept the terms"));
     }
 
     #[test]

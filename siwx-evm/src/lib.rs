@@ -203,7 +203,7 @@ impl EvmVerifier {
         signature: &[u8],
         eip191_err: SiwxError,
     ) -> Result<(), SiwxError> {
-        let Some(endpoint) = self.endpoint_for(&message.chain_id) else {
+        let Some(endpoint) = self.endpoint_for(message.chain_id()) else {
             return Err(eip191_err);
         };
         let provider = self.provider_for(endpoint).await?;

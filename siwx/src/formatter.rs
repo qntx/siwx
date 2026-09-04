@@ -39,44 +39,44 @@ impl SiwxMessage {
     pub fn to_sign_string(&self, chain_name: &str) -> String {
         let mut out = String::with_capacity(512);
 
-        if let Some(ref scheme) = self.scheme {
+        if let Some(scheme) = self.scheme() {
             out.push_str(scheme);
             out.push_str("://");
         }
-        out.push_str(&self.domain);
+        out.push_str(self.domain());
         out.push_str(PREAMBLE_MID);
         out.push_str(chain_name);
         out.push_str(PREAMBLE_TAIL);
         out.push('\n');
-        out.push_str(&self.address);
+        out.push_str(self.address());
         out.push('\n');
         out.push('\n');
-        if let Some(ref stmt) = self.statement {
+        if let Some(stmt) = self.statement() {
             out.push_str(stmt);
             out.push('\n');
         }
         out.push('\n');
 
-        push_tag(&mut out, URI_TAG, &self.uri);
-        push_tag(&mut out, VERSION_TAG, &self.version);
-        push_tag(&mut out, CHAIN_TAG, &self.chain_id);
-        push_tag(&mut out, NONCE_TAG, &self.nonce);
-        push_tag(&mut out, IAT_TAG, self.issued_at.as_str());
+        push_tag(&mut out, URI_TAG, self.uri());
+        push_tag(&mut out, VERSION_TAG, self.version());
+        push_tag(&mut out, CHAIN_TAG, self.chain_id());
+        push_tag(&mut out, NONCE_TAG, self.nonce());
+        push_tag(&mut out, IAT_TAG, self.issued_at_raw());
 
-        if let Some(ref t) = self.expiration_time {
-            push_tag(&mut out, EXP_TAG, t.as_str());
+        if let Some(t) = self.expiration_time_raw() {
+            push_tag(&mut out, EXP_TAG, t);
         }
-        if let Some(ref t) = self.not_before {
-            push_tag(&mut out, NBF_TAG, t.as_str());
+        if let Some(t) = self.not_before_raw() {
+            push_tag(&mut out, NBF_TAG, t);
         }
-        if let Some(ref rid) = self.request_id {
+        if let Some(rid) = self.request_id() {
             push_tag(&mut out, RID_TAG, rid);
         }
 
-        if !self.resources.is_empty() {
+        if !self.resources().is_empty() {
             out.push_str(RES_TAG);
             out.push('\n');
-            for r in &self.resources {
+            for r in self.resources() {
                 out.push_str("- ");
                 out.push_str(r);
                 out.push('\n');

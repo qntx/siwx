@@ -15,7 +15,7 @@ use crate::{ChainIdReason, SiwxError, SiwxMessage};
 /// * Override [`Self::validate_chain_id`] for namespace chain-id rules.
 /// * Hash / verify over **`raw_message` bytes** (the exact string the wallet
 ///   signed), not a re-serialized form of `message`.
-/// * Bind cryptographic identity to `message.address`.
+/// * Bind cryptographic identity to [`SiwxMessage::address`].
 /// * Return `Ok(())` when the signature is **valid** for the given message.
 /// * Return `Err(SiwxError::VerificationFailed { .. })` when the signature is
 ///   **cryptographically invalid**.

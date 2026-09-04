@@ -39,7 +39,7 @@ pub(crate) fn verify_sync(
         }
     })?;
 
-    let expected = parse_eip55(&message.address)?;
+    let expected = parse_eip55(message.address())?;
 
     if recovered != expected {
         return Err(SiwxError::VerificationFailed {
@@ -122,10 +122,10 @@ mod tests {
             .await
             .expect("authenticate must succeed on real EOA fixture");
 
-        assert_eq!(auth.message.domain, FIXTURE_DOMAIN);
-        assert_eq!(auth.message.nonce, FIXTURE_NONCE);
-        assert_eq!(auth.message.chain_id, FIXTURE_CHAIN);
-        assert_eq!(auth.message.address, addr);
+        assert_eq!(auth.message().domain(), FIXTURE_DOMAIN);
+        assert_eq!(auth.message().nonce(), FIXTURE_NONCE);
+        assert_eq!(auth.message().chain_id(), FIXTURE_CHAIN);
+        assert_eq!(auth.address(), addr);
     }
 
     #[tokio::test]

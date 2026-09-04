@@ -135,59 +135,59 @@ impl<'de> serde::Deserialize<'de> for Timestamp {
 pub struct SiwxMessage {
     /// Optional RFC 3986 scheme for the EIP-4361 preamble
     /// (`"{scheme}://{domain} wants you…"`).
-    pub scheme: Option<String>,
+    scheme: Option<String>,
 
     /// RFC 4501 `dnsauthority` requesting the signing.
-    pub domain: String,
+    domain: String,
 
     /// Blockchain address performing the signing (CAIP-10 `account_address`
     /// segment — does **not** include the CAIP-2 chain id prefix).
-    pub address: String,
+    address: String,
 
     /// Human-readable assertion. When present, non-empty RFC 3986 `reserved` /
     /// `unreserved` / SP (no HT, CR, LF, other CTL, or non-ASCII).
-    pub statement: Option<String>,
+    statement: Option<String>,
 
     /// RFC 3986 URI referring to the resource that is the subject of the signing.
-    pub uri: String,
+    uri: String,
 
     /// Current version of the message (always [`VERSION`]).
-    pub version: String,
+    version: String,
 
     /// Chain identifier — the `reference` segment of a CAIP-2 chain id.
     ///
     /// For EIP-155 chains this is the decimal chain id (e.g. `"1"`).
     /// For Solana this is the genesis hash (e.g.
     /// `"5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d"`).
-    pub chain_id: String,
+    chain_id: String,
 
     /// Preamble chain label (`"Ethereum"`, `"Solana"`).
     ///
     /// Set by parse; [`Self::new`] leaves this `None`. Formatting still takes
     /// the verifier chain name as an argument, not this field.
     #[cfg_attr(feature = "serde", serde(default))]
-    pub chain_name: Option<String>,
+    chain_name: Option<String>,
 
     /// Randomised token to prevent replay attacks (≥ [`MIN_NONCE_LEN`] alphanumerics).
-    pub nonce: String,
+    nonce: String,
 
     /// ISO 8601 / RFC 3339 issuance time (original lexical form preserved).
-    pub issued_at: Timestamp,
+    issued_at: Timestamp,
 
     /// ISO 8601 / RFC 3339 expiration time.
     #[cfg_attr(feature = "serde", serde(default))]
-    pub expiration_time: Option<Timestamp>,
+    expiration_time: Option<Timestamp>,
 
     /// ISO 8601 / RFC 3339 earliest valid time.
     #[cfg_attr(feature = "serde", serde(default))]
-    pub not_before: Option<Timestamp>,
+    not_before: Option<Timestamp>,
 
     /// System-specific request identifier.
-    pub request_id: Option<String>,
+    request_id: Option<String>,
 
     /// List of RFC 3986 URI resources.
     #[cfg_attr(feature = "serde", serde(default))]
-    pub resources: Vec<String>,
+    resources: Vec<String>,
 }
 
 impl SiwxMessage {
@@ -213,7 +213,7 @@ impl SiwxMessage {
     ///     "1",
     ///     "testnonce12345678",
     /// )?;
-    /// assert_eq!(msg.version, "1");
+    /// assert_eq!(msg.version(), "1");
     /// # Ok::<(), siwx::SiwxError>(())
     /// ```
     pub fn new(
@@ -255,6 +255,45 @@ impl SiwxMessage {
             request_id: None,
             resources: Vec::new(),
         })
+    }
+
+    /// Assemble a message from ABNF-parsed, already-checked fields.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "mirrors the parsed CAIP-122 field set"
+    )]
+    pub(crate) const fn from_parsed(
+        scheme: Option<String>,
+        domain: String,
+        address: String,
+        statement: Option<String>,
+        uri: String,
+        version: String,
+        chain_id: String,
+        chain_name: Option<String>,
+        nonce: String,
+        issued_at: Timestamp,
+        expiration_time: Option<Timestamp>,
+        not_before: Option<Timestamp>,
+        request_id: Option<String>,
+        resources: Vec<String>,
+    ) -> Self {
+        Self {
+            scheme,
+            domain,
+            address,
+            statement,
+            uri,
+            version,
+            chain_id,
+            chain_name,
+            nonce,
+            issued_at,
+            expiration_time,
+            not_before,
+            request_id,
+            resources,
+        }
     }
 
     /// Set the optional preamble scheme (e.g. `"https"`).
@@ -385,6 +424,48 @@ impl SiwxMessage {
         Ok(self)
     }
 
+    /// Optional RFC 3986 scheme from the EIP-4361 preamble.
+    #[must_use]
+    pub fn scheme(&self) -> Option<&str> {
+        self.scheme.as_deref()
+    }
+
+    /// RFC 3986 authority requesting the signing.
+    #[must_use]
+    pub fn domain(&self) -> &str {
+        &self.domain
+    }
+
+    /// Blockchain address performing the signing (CAIP-10 `account_address`).
+    #[must_use]
+    pub fn address(&self) -> &str {
+        &self.address
+    }
+
+    /// Human-readable assertion, if present.
+    #[must_use]
+    pub fn statement(&self) -> Option<&str> {
+        self.statement.as_deref()
+    }
+
+    /// RFC 3986 URI that is the subject of the signing.
+    #[must_use]
+    pub fn uri(&self) -> &str {
+        &self.uri
+    }
+
+    /// Message version (always [`VERSION`]).
+    #[must_use]
+    pub fn version(&self) -> &str {
+        &self.version
+    }
+
+    /// CAIP-2 chain id `reference` segment.
+    #[must_use]
+    pub fn chain_id(&self) -> &str {
+        &self.chain_id
+    }
+
     /// Preamble chain label parsed from the signing string.
     ///
     /// [`Self::new`] leaves this unset. Parsing stores the label between
@@ -392,6 +473,97 @@ impl SiwxMessage {
     #[must_use]
     pub fn chain_name(&self) -> Option<&str> {
         self.chain_name.as_deref()
+    }
+
+    /// Anti-replay nonce.
+    #[must_use]
+    pub fn nonce(&self) -> &str {
+        &self.nonce
+    }
+
+    /// Issuance instant.
+    #[must_use]
+    pub const fn issued_at(&self) -> OffsetDateTime {
+        self.issued_at.datetime()
+    }
+
+    /// Original RFC 3339 lexical form of `issued-at`.
+    #[must_use]
+    pub fn issued_at_raw(&self) -> &str {
+        self.issued_at.as_str()
+    }
+
+    /// Expiration instant, if set.
+    #[must_use]
+    pub fn expiration_time(&self) -> Option<OffsetDateTime> {
+        self.expiration_time.as_ref().map(Timestamp::datetime)
+    }
+
+    /// Original RFC 3339 lexical form of `expiration-time`, if set.
+    #[must_use]
+    pub fn expiration_time_raw(&self) -> Option<&str> {
+        self.expiration_time.as_ref().map(Timestamp::as_str)
+    }
+
+    /// Not-before instant, if set.
+    #[must_use]
+    pub fn not_before(&self) -> Option<OffsetDateTime> {
+        self.not_before.as_ref().map(Timestamp::datetime)
+    }
+
+    /// Original RFC 3339 lexical form of `not-before`, if set.
+    #[must_use]
+    pub fn not_before_raw(&self) -> Option<&str> {
+        self.not_before.as_ref().map(Timestamp::as_str)
+    }
+
+    /// System-specific request identifier, if set.
+    #[must_use]
+    pub fn request_id(&self) -> Option<&str> {
+        self.request_id.as_deref()
+    }
+
+    /// RFC 3986 URI resources.
+    #[must_use]
+    pub fn resources(&self) -> &[String] {
+        &self.resources
+    }
+
+    /// CAIP-10 account id `{namespace}:{chain_id}:{address}`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `namespace`, `chain_id`, or `address` fail CAIP-10
+    /// syntax (`[-a-z0-9]{3,8}`, `[-_a-zA-Z0-9]{1,32}`, `[-.%a-zA-Z0-9]{1,128}`).
+    pub fn caip10(&self, namespace: &str) -> Result<String, SiwxError> {
+        if !is_caip2_namespace(namespace) {
+            return Err(SiwxError::InvalidAddress {
+                reason: "CAIP-10 namespace must be [-a-z0-9]{3,8}".into(),
+            });
+        }
+        if !is_caip2_reference(&self.chain_id) {
+            return Err(SiwxError::InvalidChainId {
+                reason: ChainIdReason::BadCharset,
+            });
+        }
+        if !is_caip10_address(&self.address) {
+            return Err(SiwxError::InvalidAddress {
+                reason: "CAIP-10 address must be [-.%a-zA-Z0-9]{1,128}".into(),
+            });
+        }
+        let chain_id = self.chain_id.as_str();
+        let address = self.address.as_str();
+        Ok(format!("{namespace}:{chain_id}:{address}"))
+    }
+
+    #[cfg(test)]
+    pub(crate) fn set_chain_name(&mut self, chain_name: Option<String>) {
+        self.chain_name = chain_name;
+    }
+
+    #[cfg(test)]
+    pub(crate) fn set_resources_unchecked(&mut self, resources: Vec<String>) {
+        self.resources = resources;
     }
 }
 
@@ -518,6 +690,24 @@ pub(crate) fn check_nonce_shape(nonce: &str) -> Result<String, SiwxError> {
     Ok(nonce.to_owned())
 }
 
+fn is_caip2_namespace(s: &str) -> bool {
+    (3..=8).contains(&s.len())
+        && s.bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
+}
+
+fn is_caip2_reference(s: &str) -> bool {
+    (1..=32).contains(&s.len())
+        && s.bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
+}
+
+fn is_caip10_address(s: &str) -> bool {
+    (1..=128).contains(&s.len())
+        && s.bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'.' | b'%'))
+}
+
 const fn has_rfc3339_timezone(s: &str) -> bool {
     match s.as_bytes() {
         [.., b'Z' | b'z'] => true,
@@ -632,7 +822,7 @@ mod tests {
     fn new_sets_version_one() {
         let msg = SiwxMessage::new("d.com", "a", "https://d.com", "1", "testnonce12345678")
             .expect("valid");
-        assert_eq!(msg.version, VERSION);
+        assert_eq!(msg.version(), VERSION);
         assert!(
             msg.chain_name().is_none(),
             "builder must leave chain_name unset"
@@ -680,10 +870,10 @@ mod tests {
             .expect("request_id")
             .with_resources(["https://r.com"])
             .expect("resources");
-        assert_eq!(msg.statement.as_deref(), Some("hi"));
-        assert_eq!(msg.nonce, "testnonce12345678");
-        assert_eq!(msg.request_id.as_deref(), Some("rid"));
-        assert_eq!(msg.resources, ["https://r.com"]);
+        assert_eq!(msg.statement(), Some("hi"));
+        assert_eq!(msg.nonce(), "testnonce12345678");
+        assert_eq!(msg.request_id(), Some("rid"));
+        assert_eq!(msg.resources(), ["https://r.com"]);
     }
 
     #[test]
@@ -758,7 +948,7 @@ mod tests {
         let err = base.clone().with_scheme("1http").unwrap_err();
         assert!(matches!(err, SiwxError::InvalidScheme { .. }));
         let https = base.with_scheme("https").expect("alpha scheme");
-        assert_eq!(https.scheme.as_deref(), Some("https"));
+        assert_eq!(https.scheme(), Some("https"));
     }
 
     #[test]
@@ -793,6 +983,86 @@ mod tests {
         let formatted = msg.to_sign_string("Ethereum");
         let reparsed: SiwxMessage = formatted.parse().expect("parse");
         assert_eq!(reparsed.to_sign_string("Ethereum"), formatted);
-        assert_eq!(reparsed.issued_at.as_str(), raw_ts);
+        assert_eq!(reparsed.issued_at_raw(), raw_ts);
+        assert_eq!(reparsed.issued_at(), datetime!(2021-09-30 16:25:24 UTC));
+    }
+
+    #[test]
+    fn caip10_formats_eip155_account() {
+        let msg = SiwxMessage::new(
+            "d.com",
+            "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+            "https://d.com",
+            "1",
+            "testnonce12345678",
+        )
+        .expect("valid");
+        assert_eq!(
+            msg.caip10("eip155").expect("caip10"),
+            "eip155:1:0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+        );
+    }
+
+    #[test]
+    fn caip10_rejects_bad_namespace_and_overlong_reference() {
+        let msg = SiwxMessage::new("d.com", "a", "https://d.com", "1", "testnonce12345678")
+            .expect("valid");
+        assert!(matches!(
+            msg.caip10("EIP155").unwrap_err(),
+            SiwxError::InvalidAddress { .. }
+        ));
+        let long = SiwxMessage::new(
+            "d.com",
+            "a",
+            "https://d.com",
+            "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d",
+            "testnonce12345678",
+        )
+        .expect("valid");
+        assert!(matches!(
+            long.caip10("solana").unwrap_err(),
+            SiwxError::InvalidChainId {
+                reason: ChainIdReason::BadCharset
+            }
+        ));
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn serde_preserves_field_names_and_timestamp_originals() {
+        let raw_ts = "2021-09-30T16:25:24.000Z";
+        let exp_ts = "2021-10-01T00:00:00.000Z";
+        let msg = SiwxMessage::new("d.com", "a", "https://d.com", "1", "testnonce12345678")
+            .expect("valid")
+            .with_issued_at_raw(raw_ts)
+            .expect("issued_at")
+            .with_expiration_time_raw(exp_ts)
+            .expect("expiration");
+        let json = serde_json::to_value(&msg).expect("serialize");
+        assert_eq!(
+            json.get("issued_at").and_then(serde_json::Value::as_str),
+            Some(raw_ts),
+            "times must keep original strings"
+        );
+        assert_eq!(
+            json.get("expiration_time")
+                .and_then(serde_json::Value::as_str),
+            Some(exp_ts),
+            "expiration_time field name and original string"
+        );
+        assert_eq!(
+            json.get("domain").and_then(serde_json::Value::as_str),
+            Some("d.com"),
+            "domain field name"
+        );
+        assert_eq!(
+            json.get("chain_id").and_then(serde_json::Value::as_str),
+            Some("1"),
+            "chain_id field name"
+        );
+        let back: SiwxMessage = serde_json::from_value(json).expect("deserialize");
+        assert_eq!(back.issued_at_raw(), raw_ts);
+        assert_eq!(back.expiration_time_raw(), Some(exp_ts));
+        assert_eq!(back.domain(), "d.com");
     }
 }

@@ -230,8 +230,8 @@ pub(crate) async fn run_verify<V: Verifier>(
     let out = VerifyOutput {
         valid: true,
         chain: chain_label.to_owned(),
-        domain: auth.message.domain,
-        address: auth.message.address,
+        domain: auth.message().domain().to_owned(),
+        address: auth.address().to_owned(),
     };
 
     if json {
@@ -247,8 +247,10 @@ fn build_auth_opts(args: &VerifyArgs, message: &SiwxMessage) -> Result<AuthOpts,
         (
             args.domain
                 .clone()
-                .unwrap_or_else(|| message.domain.clone()),
-            args.nonce.clone().unwrap_or_else(|| message.nonce.clone()),
+                .unwrap_or_else(|| message.domain().to_owned()),
+            args.nonce
+                .clone()
+                .unwrap_or_else(|| message.nonce().to_owned()),
         )
     } else {
         let domain = args.domain.clone().ok_or_else(|| {
@@ -270,7 +272,7 @@ fn build_auth_opts(args: &VerifyArgs, message: &SiwxMessage) -> Result<AuthOpts,
     if let Some(ref chain_id) = args.chain_id {
         opts = opts.with_chain_id(chain_id);
     } else if args.trust_message_bindings {
-        opts = opts.with_chain_id(&message.chain_id);
+        opts = opts.with_chain_id(message.chain_id());
     }
     Ok(opts)
 }

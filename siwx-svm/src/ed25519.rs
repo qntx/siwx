@@ -8,7 +8,7 @@ use crate::{CHAIN_NAME, NAMESPACE};
 /// Ed25519 signature verifier for Solana.
 ///
 /// Verifies a 64-byte Ed25519 signature over the raw message bytes using the
-/// public key derived from `message.address` (base58). Fully synchronous —
+/// public key derived from [`SiwxMessage::address`] (base58). Fully synchronous —
 /// no RPC needed.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Ed25519Verifier;
@@ -16,7 +16,7 @@ pub struct Ed25519Verifier;
 impl Ed25519Verifier {
     /// Create a Solana Ed25519 verifier.
     ///
-    /// The verifying key is always taken from `message.address` at verify
+    /// The verifying key is always taken from [`SiwxMessage::address`] at verify
     /// time — callers cannot inject a separate public key.
     #[must_use]
     pub const fn new() -> Self {
@@ -54,7 +54,7 @@ impl Ed25519Verifier {
             })?;
         let sig = Signature::from_bytes(&sig_arr);
 
-        let verifying_key = Self::verifying_key_from_address(&message.address)?;
+        let verifying_key = Self::verifying_key_from_address(message.address())?;
 
         verifying_key
             .verify(raw_message.as_bytes(), &sig)

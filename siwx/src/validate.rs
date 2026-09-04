@@ -54,28 +54,28 @@ impl AuthOpts {
         }
     }
 
-    /// Require `message.scheme` to equal `scheme`.
+    /// Require [`SiwxMessage::scheme`] to equal `scheme`.
     #[must_use]
     pub fn with_scheme(mut self, scheme: impl Into<String>) -> Self {
         self.scheme = Some(scheme.into());
         self
     }
 
-    /// Require `message.uri` to equal `uri`.
+    /// Require [`SiwxMessage::uri`] to equal `uri`.
     #[must_use]
     pub fn with_uri(mut self, uri: impl Into<String>) -> Self {
         self.uri = Some(uri.into());
         self
     }
 
-    /// Require `message.chain_id` to equal `chain_id`.
+    /// Require [`SiwxMessage::chain_id`] to equal `chain_id`.
     #[must_use]
     pub fn with_chain_id(mut self, chain_id: impl Into<String>) -> Self {
         self.chain_id = Some(chain_id.into());
         self
     }
 
-    /// Require `message.request_id` to equal `id`.
+    /// Require [`SiwxMessage::request_id`] to equal `id`.
     #[must_use]
     pub fn with_request_id(mut self, id: impl Into<String>) -> Self {
         self.request_id = Some(id.into());
@@ -135,14 +135,14 @@ impl SiwxMessage {
     /// ```
     pub fn validate(&self, opts: &AuthOpts) -> Result<(), SiwxError> {
         self.check_required_shapes()?;
-        check_uri(&self.uri)?;
-        if let Some(ref s) = self.statement {
+        check_uri(self.uri())?;
+        if let Some(s) = self.statement() {
             check_statement(s)?;
         }
-        if let Some(ref rid) = self.request_id {
+        if let Some(rid) = self.request_id() {
             check_request_id(rid)?;
         }
-        check_resources(self.resources.iter())?;
+        check_resources(self.resources())?;
         self.check_domain_binding(&opts.domain)?;
         self.check_nonce_binding(&opts.nonce)?;
         self.check_scheme_binding(opts.scheme.as_deref())?;
@@ -154,44 +154,44 @@ impl SiwxMessage {
     }
 
     fn check_required_shapes(&self) -> Result<(), SiwxError> {
-        if let Some(ref scheme) = self.scheme {
+        if let Some(scheme) = self.scheme() {
             check_scheme(scheme)?;
         }
-        check_domain(&self.domain)?;
-        if self.address.is_empty() {
+        check_domain(self.domain())?;
+        if self.address().is_empty() {
             return Err(SiwxError::InvalidAddress {
                 reason: "empty".into(),
             });
         }
-        if self.version != VERSION {
+        if self.version() != VERSION {
             return Err(SiwxError::InvalidFormat {
                 reason: FormatReason::VersionNotOne,
             });
         }
-        if self.chain_id.is_empty() {
+        if self.chain_id().is_empty() {
             return Err(SiwxError::InvalidChainId {
                 reason: ChainIdReason::Empty,
             });
         }
-        check_nonce_shape(&self.nonce)?;
+        check_nonce_shape(self.nonce())?;
         Ok(())
     }
 
     fn check_domain_binding(&self, expected: &str) -> Result<(), SiwxError> {
-        if expected != self.domain {
+        if expected != self.domain() {
             return Err(SiwxError::DomainMismatch {
                 expected: expected.to_owned(),
-                actual: self.domain.clone(),
+                actual: self.domain().to_owned(),
             });
         }
         Ok(())
     }
 
     fn check_nonce_binding(&self, expected: &str) -> Result<(), SiwxError> {
-        if expected != self.nonce {
+        if expected != self.nonce() {
             return Err(SiwxError::NonceMismatch {
                 expected: expected.to_owned(),
-                actual: self.nonce.clone(),
+                actual: self.nonce().to_owned(),
             });
         }
         Ok(())
@@ -199,11 +199,11 @@ impl SiwxMessage {
 
     fn check_scheme_binding(&self, expected: Option<&str>) -> Result<(), SiwxError> {
         if let Some(expected) = expected
-            && self.scheme.as_deref() != Some(expected)
+            && self.scheme() != Some(expected)
         {
             return Err(SiwxError::SchemeMismatch {
                 expected: Some(expected.to_owned()),
-                actual: self.scheme.clone(),
+                actual: self.scheme().map(str::to_owned),
             });
         }
         Ok(())
@@ -211,11 +211,11 @@ impl SiwxMessage {
 
     fn check_uri_binding(&self, expected: Option<&str>) -> Result<(), SiwxError> {
         if let Some(expected) = expected
-            && expected != self.uri
+            && expected != self.uri()
         {
             return Err(SiwxError::UriMismatch {
                 expected: expected.to_owned(),
-                actual: self.uri.clone(),
+                actual: self.uri().to_owned(),
             });
         }
         Ok(())
@@ -223,11 +223,11 @@ impl SiwxMessage {
 
     fn check_chain_id_binding(&self, expected: Option<&str>) -> Result<(), SiwxError> {
         if let Some(expected) = expected
-            && expected != self.chain_id
+            && expected != self.chain_id()
         {
             return Err(SiwxError::ChainIdMismatch {
                 expected: expected.to_owned(),
-                actual: self.chain_id.clone(),
+                actual: self.chain_id().to_owned(),
             });
         }
         Ok(())
@@ -235,11 +235,11 @@ impl SiwxMessage {
 
     fn check_request_id_binding(&self, expected: Option<&str>) -> Result<(), SiwxError> {
         if let Some(expected) = expected
-            && self.request_id.as_deref() != Some(expected)
+            && self.request_id() != Some(expected)
         {
             return Err(SiwxError::RequestIdMismatch {
                 expected: Some(expected.to_owned()),
-                actual: self.request_id.clone(),
+                actual: self.request_id().map(str::to_owned),
             });
         }
         Ok(())
@@ -248,18 +248,18 @@ impl SiwxMessage {
     fn check_temporal_window(&self, opts: &AuthOpts) -> Result<(), SiwxError> {
         let now = opts.timestamp.unwrap_or_else(OffsetDateTime::now_utc);
         let skew = opts.clock_skew;
-        if let Some(ref exp) = self.expiration_time
-            && now > exp.datetime() + skew
+        if let Some(exp) = self.expiration_time()
+            && now > exp + skew
         {
             return Err(SiwxError::Expired);
         }
-        if let Some(ref nbf) = self.not_before
-            && now + skew < nbf.datetime()
+        if let Some(nbf) = self.not_before()
+            && now + skew < nbf
         {
             return Err(SiwxError::NotYetValid);
         }
         if let Some(max_age) = opts.max_issued_age {
-            let issued = self.issued_at.datetime();
+            let issued = self.issued_at();
             if issued <= now + skew && (now - issued) - skew > max_age {
                 return Err(SiwxError::StaleIssuedAt);
             }
@@ -282,7 +282,7 @@ mod tests {
     }
 
     fn opts_for(msg: &SiwxMessage) -> AuthOpts {
-        AuthOpts::new(&msg.domain, &msg.nonce)
+        AuthOpts::new(msg.domain(), msg.nonce())
     }
 
     #[test]
@@ -378,7 +378,7 @@ mod tests {
     #[test]
     fn domain_mismatch_is_rejected() {
         let msg = base();
-        let opts = AuthOpts::new("good.com", &msg.nonce);
+        let opts = AuthOpts::new("good.com", msg.nonce());
         let err = msg.validate(&opts).unwrap_err();
         assert!(
             matches!(
@@ -395,7 +395,7 @@ mod tests {
     #[test]
     fn nonce_mismatch_is_rejected() {
         let msg = base();
-        let opts = AuthOpts::new(&msg.domain, "othernonce12345678");
+        let opts = AuthOpts::new(msg.domain(), "othernonce12345678");
         let err = msg.validate(&opts).unwrap_err();
         assert!(matches!(err, SiwxError::NonceMismatch { .. }));
     }
@@ -518,7 +518,7 @@ mod tests {
             .unwrap_err();
         assert!(matches!(builder_err, SiwxError::InvalidUri { .. }));
         let mut msg = base();
-        msg.resources = vec!["not a valid uri ::: bad".into()];
+        msg.set_resources_unchecked(vec!["not a valid uri ::: bad".into()]);
         let validate_err = msg.validate(&opts_for(&msg)).unwrap_err();
         assert!(matches!(validate_err, SiwxError::InvalidUri { .. }));
     }

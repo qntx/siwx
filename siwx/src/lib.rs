@@ -29,7 +29,7 @@
 //! .with_statement("I accept the Terms of Service")?
 //! .with_issued_at(datetime!(2024-01-01 0:00 UTC))?;
 //!
-//! msg.validate(&AuthOpts::new("example.com", &msg.nonce))?;
+//! msg.validate(&AuthOpts::new("example.com", msg.nonce()))?;
 //!
 //! let signing_text = msg.to_sign_string("Ethereum");
 //! assert!(signing_text.contains("Ethereum"));

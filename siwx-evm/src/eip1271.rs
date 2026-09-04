@@ -63,7 +63,7 @@ pub(crate) async fn verify(
     raw_message: &str,
     signature: &[u8],
 ) -> Result<(), SiwxError> {
-    let contract_addr = parse_eip55(&message.address)?;
+    let contract_addr = parse_eip55(message.address())?;
     let rpc_chain = timed(
         timeout,
         async { provider.get_chain_id().await },
@@ -71,7 +71,7 @@ pub(crate) async fn verify(
     )
     .await?;
     // Wrong-chain contracts must not see isValidSignature.
-    assert_rpc_chain_id(&message.chain_id, rpc_chain)?;
+    assert_rpc_chain_id(message.chain_id(), rpc_chain)?;
 
     let hash = eip191_hash_message(raw_message.as_bytes());
     let contract = IERC1271::new(contract_addr, provider);
