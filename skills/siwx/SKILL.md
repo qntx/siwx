@@ -89,7 +89,8 @@ The `--json` flag is **global** and must appear **before** the chain subcommand.
 | `--nonce`                  | ✓*       | Expected nonce binding                                               |
 | `--chain-id`               |          | Expected chain id binding (recommended multi-chain)                  |
 | `--trust-message-bindings` |          | Debug: use domain/nonce from the message if flags omitted            |
-| `--rpc`                    |          | EIP-1271 RPC URL (requires CLI feature `eip1271`)                    |
+| `--rpc-chain-id`           |          | EIP-155 chain id; required pair with `--rpc` (repeatable, order-matched; feature `eip1271`) |
+| `--rpc`                    |          | EIP-1271 JSON-RPC URL; required pair with `--rpc-chain-id` (same order; feature `eip1271`) |
 
 \* Required unless `--trust-message-bindings` is set.
 

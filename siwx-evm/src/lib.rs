@@ -465,5 +465,9 @@ mod tests {
             matches!(err, SiwxError::VerificationFailed { .. }),
             "high-s with RPC must not stay on InvalidSignature, got {err:?}"
         );
+        assert!(
+            !err.to_string().contains("http"),
+            "connect-failure error must not include RPC URL: {err}"
+        );
     }
 }

@@ -95,7 +95,7 @@ use siwx_evm::EvmVerifier;
 //   signature_bytes: &[u8]         — raw bytes returned by the wallet
 //   expected_nonce:  String        — nonce your backend issued in step 1
 
-// Parse → validate (domain/nonce bind) → chain name bind → address shape → verify original bytes.
+// Parse → validate (domain/nonce bind) → chain name bind → address shape → chain-id shape → verify original bytes.
 // Enable feature `eip1271` and use `EvmVerifier::with_rpc_for_chain(...)` for contract wallets.
 // Multi-chain: also call `.with_chain_id(...)` on AuthOpts.
 let auth = authenticate(
