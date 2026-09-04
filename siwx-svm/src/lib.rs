@@ -188,7 +188,7 @@ mod tests {
             "testnonce12345678",
         )
         .expect("valid");
-        assert_eq!(msg.chain_id, "mainnet", "must not map mainnet → genesis");
+        assert_eq!(msg.chain_id(), "mainnet", "must not map mainnet → genesis");
         let text = Ed25519Verifier::format_message(&msg);
         assert!(
             text.contains("Chain ID: mainnet"),
@@ -252,7 +252,7 @@ mod tests {
             "testnonce12345678",
         )
         .expect("valid");
-        assert_eq!(msg.chain_id, MAINNET_GENESIS_HASH);
+        assert_eq!(msg.chain_id(), MAINNET_GENESIS_HASH);
         let text = Ed25519Verifier::format_message(&msg);
         assert!(
             text.contains(&format!("Chain ID: {MAINNET_GENESIS_HASH}")),
@@ -292,7 +292,7 @@ mod tests {
             "testnonce12345678",
         )
         .expect("valid");
-        let opts = AuthOpts::new(&msg.domain, &msg.nonce);
+        let opts = AuthOpts::new(msg.domain(), msg.nonce());
         (Ed25519Verifier::format_message(&msg), opts)
     }
 
@@ -350,7 +350,7 @@ mod tests {
         )
         .expect("valid");
         let raw = msg.to_sign_string("Ethereum");
-        let opts = AuthOpts::new(&msg.domain, &msg.nonce);
+        let opts = AuthOpts::new(msg.domain(), msg.nonce());
         let err = authenticate(&Ed25519Verifier::new(), &raw, &[], &opts)
             .await
             .expect_err("Ethereum preamble");
