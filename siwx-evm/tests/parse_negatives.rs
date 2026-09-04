@@ -63,7 +63,7 @@ Resources:
     #[test]
     fn core_parse_accepts_non_checksum_address() {
         let parsed: SiwxMessage = ADDRESS_NOT_EIP55.parse().unwrap();
-        assert_eq!(parsed.address, "0xe5a12547fe4e872d192e3ececb76f2ce1aea4946");
+        assert_eq!(parsed.address(), "0xe5a12547fe4e872d192e3ececb76f2ce1aea4946");
     }
 
     #[test]
@@ -94,7 +94,7 @@ Resources:
     #[test]
     fn core_parse_accepts_non_decimal_chain_id() {
         let parsed: SiwxMessage = CHAIN_ID_NOT_DECIMAL.parse().unwrap();
-        assert_eq!(parsed.chain_id, "?");
+        assert_eq!(parsed.chain_id(), "?");
     }
 
     #[test]

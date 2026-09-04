@@ -80,7 +80,7 @@ mod tests {
             "{name}: domain"
         );
         assert_eq!(
-            parsed.address,
+            parsed.address(),
             required_str(name, fields, "address"),
             "{name}: address"
         );
@@ -96,7 +96,7 @@ mod tests {
             "{name}: issuedAt"
         );
         assert_eq!(
-            parsed.chain_id,
+            parsed.chain_id(),
             expected_chain_id(name, fields),
             "{name}: chainId"
         );

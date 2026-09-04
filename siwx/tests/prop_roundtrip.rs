@@ -324,10 +324,10 @@ mod tests {
             prop_assert_eq!(parsed.statement, fields.statement, "statement");
             prop_assert_eq!(parsed.uri, fields.uri, "uri");
             prop_assert_eq!(parsed.domain, fields.domain, "domain");
-            prop_assert_eq!(parsed.address, fields.address, "address");
+            prop_assert_eq!(parsed.address(), fields.address, "address");
             prop_assert_eq!(parsed.nonce, fields.nonce, "nonce");
             prop_assert_eq!(parsed.scheme, fields.scheme, "scheme");
-            prop_assert_eq!(parsed.chain_id, fields.chain_id, "chain_id");
+            prop_assert_eq!(parsed.chain_id(), fields.chain_id, "chain_id");
             prop_assert_eq!(parsed.request_id, fields.request_id, "request_id");
             prop_assert_eq!(parsed.resources, fields.resources, "resources");
         }
