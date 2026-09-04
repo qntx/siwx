@@ -10,6 +10,8 @@ use iri_string::validate::authority;
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
+#[cfg(feature = "serde")]
+use crate::error::FormatReason;
 use crate::error::{ChainIdReason, SiwxError};
 use crate::parser::PREAMBLE_MID;
 
@@ -122,6 +124,33 @@ impl<'de> serde::Deserialize<'de> for Timestamp {
     }
 }
 
+/// Application-JSON DTO. [`TryFrom`] runs the same `check_*` path as `new` / `FromStr`.
+#[cfg(feature = "serde")]
+#[derive(serde::Deserialize)]
+struct SiwxMessageDto {
+    #[serde(default)]
+    scheme: Option<String>,
+    domain: String,
+    address: String,
+    #[serde(default)]
+    statement: Option<String>,
+    uri: String,
+    version: String,
+    chain_id: String,
+    #[serde(default)]
+    chain_name: Option<String>,
+    nonce: String,
+    issued_at: Timestamp,
+    #[serde(default)]
+    expiration_time: Option<Timestamp>,
+    #[serde(default)]
+    not_before: Option<Timestamp>,
+    #[serde(default)]
+    request_id: Option<String>,
+    #[serde(default)]
+    resources: Vec<String>,
+}
+
 /// CAIP-122 Sign-In with X message.
 ///
 /// Chain-agnostic; chain-specific formatting and verification live in the
@@ -132,9 +161,11 @@ impl<'de> serde::Deserialize<'de> for Timestamp {
 /// [CAIP-122]: https://chainagnostic.org/CAIPs/caip-122
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "SiwxMessageDto"))]
 pub struct SiwxMessage {
     /// Optional RFC 3986 scheme for the EIP-4361 preamble
     /// (`"{scheme}://{domain} wants you…"`).
+    #[cfg_attr(feature = "serde", serde(default))]
     scheme: Option<String>,
 
     /// RFC 4501 `dnsauthority` requesting the signing.
@@ -146,6 +177,7 @@ pub struct SiwxMessage {
 
     /// Human-readable assertion. When present, non-empty RFC 3986 `reserved` /
     /// `unreserved` / SP (no HT, CR, LF, other CTL, or non-ASCII).
+    #[cfg_attr(feature = "serde", serde(default))]
     statement: Option<String>,
 
     /// RFC 3986 URI referring to the resource that is the subject of the signing.
@@ -183,11 +215,63 @@ pub struct SiwxMessage {
     not_before: Option<Timestamp>,
 
     /// System-specific request identifier.
+    #[cfg_attr(feature = "serde", serde(default))]
     request_id: Option<String>,
 
     /// List of RFC 3986 URI resources.
     #[cfg_attr(feature = "serde", serde(default))]
     resources: Vec<String>,
+}
+
+#[cfg(feature = "serde")]
+impl TryFrom<SiwxMessageDto> for SiwxMessage {
+    type Error = SiwxError;
+
+    fn try_from(dto: SiwxMessageDto) -> Result<Self, Self::Error> {
+        let scheme = dto.scheme.map(|s| check_scheme(&s)).transpose()?;
+        let domain = check_domain(&dto.domain)?;
+        if dto.address.is_empty() {
+            return Err(SiwxError::InvalidAddress {
+                reason: "empty".into(),
+            });
+        }
+        if let Some(ref statement) = dto.statement {
+            check_statement(statement)?;
+        }
+        let uri = check_uri(&dto.uri)?;
+        if dto.version != VERSION {
+            return Err(SiwxError::InvalidFormat {
+                reason: FormatReason::VersionNotOne,
+            });
+        }
+        if dto.chain_id.is_empty() {
+            return Err(SiwxError::InvalidChainId {
+                reason: ChainIdReason::Empty,
+            });
+        }
+        let nonce = check_nonce_shape(&dto.nonce)?;
+        let request_id = dto
+            .request_id
+            .map(|rid| check_request_id(&rid))
+            .transpose()?;
+        let resources = check_resources(dto.resources)?;
+        Ok(Self {
+            scheme,
+            domain,
+            address: dto.address,
+            statement: dto.statement,
+            uri,
+            version: dto.version,
+            chain_id: dto.chain_id,
+            chain_name: dto.chain_name,
+            nonce,
+            issued_at: dto.issued_at,
+            expiration_time: dto.expiration_time,
+            not_before: dto.not_before,
+            request_id,
+            resources,
+        })
+    }
 }
 
 impl SiwxMessage {
@@ -531,19 +615,23 @@ impl SiwxMessage {
 
     /// CAIP-10 account id `{namespace}:{chain_id}:{address}`.
     ///
+    /// `namespace` must match CAIP-2 `[-a-z0-9]{3,8}`. `address` must match
+    /// CAIP-10 `[-.%a-zA-Z0-9]{1,128}`.
+    ///
+    /// CAIP-2 / CAIP-10 specify `reference` as `[-_a-zA-Z0-9]{1,32}`. This
+    /// crate stores Solana genesis hashes as `chain_id` (43 characters, e.g.
+    /// `5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d`), which exceed that
+    /// bound, so `chain_id` is interpolated as stored and is **not** checked
+    /// against `{1,32}`.
+    ///
     /// # Errors
     ///
-    /// Returns an error if `namespace`, `chain_id`, or `address` fail CAIP-10
-    /// syntax (`[-a-z0-9]{3,8}`, `[-_a-zA-Z0-9]{1,32}`, `[-.%a-zA-Z0-9]{1,128}`).
+    /// Returns an error if `namespace` or `address` fail the charset checks
+    /// above.
     pub fn caip10(&self, namespace: &str) -> Result<String, SiwxError> {
         if !is_caip2_namespace(namespace) {
             return Err(SiwxError::InvalidAddress {
                 reason: "CAIP-10 namespace must be [-a-z0-9]{3,8}".into(),
-            });
-        }
-        if !is_caip2_reference(&self.chain_id) {
-            return Err(SiwxError::InvalidChainId {
-                reason: ChainIdReason::BadCharset,
             });
         }
         if !is_caip10_address(&self.address) {
@@ -694,12 +782,6 @@ fn is_caip2_namespace(s: &str) -> bool {
     (3..=8).contains(&s.len())
         && s.bytes()
             .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
-}
-
-fn is_caip2_reference(s: &str) -> bool {
-    (1..=32).contains(&s.len())
-        && s.bytes()
-            .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
 }
 
 fn is_caip10_address(s: &str) -> bool {
@@ -1004,27 +1086,31 @@ mod tests {
     }
 
     #[test]
-    fn caip10_rejects_bad_namespace_and_overlong_reference() {
+    fn caip10_rejects_bad_namespace() {
         let msg = SiwxMessage::new("d.com", "a", "https://d.com", "1", "testnonce12345678")
             .expect("valid");
         assert!(matches!(
             msg.caip10("EIP155").unwrap_err(),
             SiwxError::InvalidAddress { .. }
         ));
-        let long = SiwxMessage::new(
+    }
+
+    #[test]
+    fn caip10_formats_solana_genesis_hash() {
+        let chain_id = "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d";
+        let address = "GwAF45zjfyGzUbd3i3hXxzGeuchzEZXwpRYHZM5912F1";
+        let msg = SiwxMessage::new(
             "d.com",
-            "a",
+            address,
             "https://d.com",
-            "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d",
+            chain_id,
             "testnonce12345678",
         )
         .expect("valid");
-        assert!(matches!(
-            long.caip10("solana").unwrap_err(),
-            SiwxError::InvalidChainId {
-                reason: ChainIdReason::BadCharset
-            }
-        ));
+        assert_eq!(
+            msg.caip10("solana").expect("genesis hash is stored as-is"),
+            format!("solana:{chain_id}:{address}")
+        );
     }
 
     #[cfg(feature = "serde")]
@@ -1064,5 +1150,66 @@ mod tests {
         assert_eq!(back.issued_at_raw(), raw_ts);
         assert_eq!(back.expiration_time_raw(), Some(exp_ts));
         assert_eq!(back.domain(), "d.com");
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn serde_omitted_optionals_preserve_timestamp_originals() {
+        let raw_ts = "2021-09-30T16:25:24.000Z";
+        let exp_ts = "2021-10-01T00:00:00.000Z";
+        let nbf_ts = "2021-09-29T00:00:00.382Z";
+        let json = serde_json::json!({
+            "domain": "d.com",
+            "address": "a",
+            "uri": "https://d.com",
+            "version": "1",
+            "chain_id": "1",
+            "nonce": "testnonce12345678",
+            "issued_at": raw_ts,
+            "expiration_time": exp_ts,
+            "not_before": nbf_ts,
+        });
+        let msg: SiwxMessage = serde_json::from_value(json).expect("omit optionals");
+        assert_eq!(msg.scheme(), None, "omitted scheme");
+        assert_eq!(msg.statement(), None, "omitted statement");
+        assert_eq!(msg.request_id(), None, "omitted request_id");
+        assert!(msg.resources().is_empty(), "omitted resources");
+        assert_eq!(msg.chain_name(), None, "omitted chain_name");
+        assert_eq!(msg.issued_at_raw(), raw_ts, "issued_at original");
+        assert_eq!(
+            msg.expiration_time_raw(),
+            Some(exp_ts),
+            "expiration original"
+        );
+        assert_eq!(msg.not_before_raw(), Some(nbf_ts), "not_before original");
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn serde_rejects_fields_that_fail_check_star() {
+        let valid = serde_json::json!({
+            "domain": "d.com",
+            "address": "a",
+            "uri": "https://d.com",
+            "version": "1",
+            "chain_id": "1",
+            "nonce": "testnonce12345678",
+            "issued_at": "2021-09-30T16:25:24Z",
+        });
+
+        let cases = [
+            ("domain", serde_json::json!("")),
+            ("nonce", serde_json::json!("short")),
+            ("version", serde_json::json!("2")),
+            ("uri", serde_json::json!("not a valid uri ::: bad")),
+            ("resources", serde_json::json!(["not a valid uri ::: bad"])),
+        ];
+        for (key, bad) in cases {
+            let mut obj = valid.clone();
+            obj.as_object_mut()
+                .expect("object")
+                .insert(key.to_owned(), bad);
+            serde_json::from_value::<SiwxMessage>(obj).expect_err(key);
+        }
     }
 }

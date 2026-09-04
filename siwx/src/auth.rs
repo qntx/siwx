@@ -27,11 +27,13 @@ impl Authenticated {
     /// CAIP-10 account id `{namespace}:{chain_id}:{address}`.
     ///
     /// Pass the CAIP-2 namespace explicitly (e.g. `"eip155"`, `"solana"`).
+    /// See [`SiwxMessage::caip10`] for charset rules and the CAIP-2
+    /// `{1,32}` reference-length mismatch with Solana genesis hashes.
     ///
     /// # Errors
     ///
-    /// Returns an error if `namespace` or the message `chain_id` / `address`
-    /// fail CAIP-10 syntax.
+    /// Returns an error if `namespace` or `address` fail CAIP-10 charset
+    /// checks.
     pub fn caip10(&self, namespace: &str) -> Result<String, SiwxError> {
         self.message.caip10(namespace)
     }
