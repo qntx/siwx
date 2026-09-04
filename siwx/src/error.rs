@@ -209,7 +209,11 @@ pub enum ChainIdReason {
     LeadingZero,
     /// Cannot fit in `u64`.
     Overflow,
-    /// SVM: not `[-_a-zA-Z0-9]{1,32}`.
+    /// SVM: not `[-_a-zA-Z0-9]` of length 1..=44.
+    ///
+    /// CAIP-2 references are `{1,32}`. This product uses Solana genesis hashes
+    /// (base58 of 32 bytes, typically 43 characters, max 44), so siwx-svm does
+    /// not cap at 32.
     BadCharset,
 }
 

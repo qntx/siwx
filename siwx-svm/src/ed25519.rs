@@ -10,8 +10,36 @@ use crate::{CHAIN_NAME, NAMESPACE};
 /// Verifies a 64-byte Ed25519 signature over the raw message bytes using the
 /// public key derived from [`SiwxMessage::address`] (base58). Fully synchronous —
 /// no RPC needed.
+///
+/// Uses [`ed25519_dalek::Verifier::verify`] (RFC 8032 canonical `s`), not
+/// [`ed25519_dalek::VerifyingKey::verify_strict`]. Small-order keys are not
+/// rejected at verify time.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Ed25519Verifier;
+
+/// Decode `address` as a 32-byte Ed25519 verifying key.
+///
+/// Rejects the all-zero identity even though dalek 3 `from_bytes` accepts it.
+pub(crate) fn verifying_key_from_address(address: &str) -> Result<VerifyingKey, SiwxError> {
+    let bytes = bs58::decode(address)
+        .into_vec()
+        .map_err(|e| SiwxError::InvalidAddress {
+            reason: format!("invalid base58: {e}"),
+        })?;
+    let arr: [u8; 32] = bytes
+        .try_into()
+        .map_err(|v: Vec<u8>| SiwxError::InvalidAddress {
+            reason: format!("expected 32 bytes, got {}", v.len()),
+        })?;
+    if arr == [0u8; 32] {
+        return Err(SiwxError::InvalidAddress {
+            reason: "identity pubkey (32 zero bytes)".into(),
+        });
+    }
+    VerifyingKey::from_bytes(&arr).map_err(|e| SiwxError::InvalidAddress {
+        reason: format!("invalid Ed25519 pubkey: {e}"),
+    })
+}
 
 impl Ed25519Verifier {
     /// Create a Solana Ed25519 verifier.
@@ -21,22 +49,6 @@ impl Ed25519Verifier {
     #[must_use]
     pub const fn new() -> Self {
         Self
-    }
-
-    fn verifying_key_from_address(address: &str) -> Result<VerifyingKey, SiwxError> {
-        let bytes = bs58::decode(address)
-            .into_vec()
-            .map_err(|e| SiwxError::InvalidAddress {
-                reason: format!("invalid base58 pubkey: {e}"),
-            })?;
-        let arr: [u8; 32] = bytes
-            .try_into()
-            .map_err(|v: Vec<u8>| SiwxError::InvalidAddress {
-                reason: format!("Ed25519 pubkey must be 32 bytes, got {}", v.len()),
-            })?;
-        VerifyingKey::from_bytes(&arr).map_err(|e| SiwxError::InvalidAddress {
-            reason: format!("invalid Ed25519 pubkey: {e}"),
-        })
     }
 
     fn verify_sync(
@@ -54,8 +66,9 @@ impl Ed25519Verifier {
             })?;
         let sig = Signature::from_bytes(&sig_arr);
 
-        let verifying_key = Self::verifying_key_from_address(message.address())?;
+        let verifying_key = verifying_key_from_address(message.address())?;
 
+        // RFC 8032 `verify`, not `verify_strict` (small-order A/R).
         verifying_key
             .verify(raw_message.as_bytes(), &sig)
             .map_err(|e| SiwxError::VerificationFailed {
@@ -70,6 +83,10 @@ impl Verifier for Ed25519Verifier {
 
     fn validate_address(address: &str) -> Result<(), SiwxError> {
         crate::validate_address(address)
+    }
+
+    fn validate_chain_id(chain_id: &str) -> Result<(), SiwxError> {
+        crate::validate_chain_id(chain_id)
     }
 
     fn verify(
@@ -137,7 +154,10 @@ mod tests {
             .verify(&message, &text, &sig.to_bytes())
             .await
             .unwrap_err();
-        assert!(matches!(err, SiwxError::VerificationFailed { .. }));
+        assert!(
+            matches!(err, SiwxError::VerificationFailed { .. }),
+            "got {err:?}"
+        );
     }
 
     #[tokio::test]
@@ -152,7 +172,10 @@ mod tests {
             .verify(&message, &text, &[0u8; 32])
             .await
             .unwrap_err();
-        assert!(matches!(err, SiwxError::InvalidSignature { .. }));
+        assert!(
+            matches!(err, SiwxError::InvalidSignature { .. }),
+            "got {err:?}"
+        );
     }
 
     #[tokio::test]
@@ -170,11 +193,56 @@ mod tests {
             .verify(&message, &tampered, &sig.to_bytes())
             .await
             .unwrap_err();
-        assert!(matches!(err, SiwxError::VerificationFailed { .. }));
+        assert!(
+            matches!(err, SiwxError::VerificationFailed { .. }),
+            "got {err:?}"
+        );
     }
 
     #[test]
     fn verifying_key_from_address_rejects_invalid() {
-        assert!(Ed25519Verifier::verifying_key_from_address("!!!").is_err());
+        assert!(verifying_key_from_address("!!!").is_err(), "non-base58");
+        assert!(
+            verifying_key_from_address("11111111111111111111111111111111").is_err(),
+            "identity"
+        );
+    }
+
+    /// curve25519-dalek `EIGHT_TORSION[4]`: order-2 point. `from_bytes` succeeds
+    /// (`is_weak`), `verify_strict` rejects, RFC 8032 `verify` accepts.
+    const WEAK_PUBKEY: [u8; 32] = [
+        236, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+        255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 127,
+    ];
+
+    #[tokio::test]
+    async fn verify_accepts_weak_key_that_verify_strict_rejects() {
+        let vk = VerifyingKey::from_bytes(&WEAK_PUBKEY).expect("on-curve torsion");
+        assert!(vk.is_weak(), "fixture must be a small-order key");
+
+        // R = Edwards identity (y = 1), s = 0. Probe: `verify` ok on 4 zero bytes.
+        let mut sig_bytes = [0u8; 64];
+        sig_bytes[0] = 1;
+        let sig = Signature::from_bytes(&sig_bytes);
+        let raw = "\0\0\0\0";
+        assert!(
+            vk.verify(raw.as_bytes(), &sig).is_ok(),
+            "RFC 8032 verify accepts this small-order key"
+        );
+        assert!(
+            vk.verify_strict(raw.as_bytes(), &sig).is_err(),
+            "verify_strict rejects small-order A; this crate must not switch to it"
+        );
+
+        let addr = bs58::encode(WEAK_PUBKEY).into_string();
+        assert!(
+            crate::validate_address(&addr).is_ok(),
+            "weak keys other than 32-zero identity remain valid addresses"
+        );
+        let message = sample_message(&addr);
+        Ed25519Verifier::new()
+            .verify(&message, raw, &sig_bytes)
+            .await
+            .expect("Ed25519Verifier uses verify, not verify_strict");
     }
 }
