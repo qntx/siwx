@@ -58,9 +58,9 @@ pub async fn authenticate<V: Verifier>(
 #[cfg(test)]
 mod tests {
     use std::future::Future;
+    use std::sync::Mutex;
     use std::sync::atomic::{AtomicUsize, Ordering};
 
-    use time::format_description::well_known::Rfc3339;
     use time::macros::datetime;
 
     use super::*;
@@ -82,20 +82,22 @@ mod tests {
     }
 
     #[derive(Default)]
-    struct CountingVerifier {
+    struct RecordingVerifier {
         verify_calls: AtomicUsize,
+        last_raw: Mutex<Option<String>>,
     }
 
-    impl Verifier for CountingVerifier {
+    impl Verifier for RecordingVerifier {
         const CHAIN_NAME: &'static str = "Ethereum";
 
         fn verify(
             &self,
             _message: &SiwxMessage,
-            _raw_message: &str,
+            raw_message: &str,
             _signature: &[u8],
         ) -> impl Future<Output = Result<(), SiwxError>> + Send {
             self.verify_calls.fetch_add(1, Ordering::SeqCst);
+            *self.last_raw.lock().expect("last_raw mutex") = Some(raw_message.to_owned());
             std::future::ready(Ok(()))
         }
     }
@@ -167,7 +169,7 @@ mod tests {
         let msg = sample_msg();
         let raw = msg.to_sign_string("Solana");
         let opts = AuthOpts::new(&msg.domain, &msg.nonce);
-        let verifier = CountingVerifier::default();
+        let verifier = RecordingVerifier::default();
         let err = authenticate(&verifier, &raw, &[], &opts)
             .await
             .expect_err("chain name mismatch");
@@ -193,7 +195,7 @@ mod tests {
         let msg = sample_msg();
         let raw = msg.to_sign_string("");
         let opts = AuthOpts::new(&msg.domain, &msg.nonce);
-        let verifier = CountingVerifier::default();
+        let verifier = RecordingVerifier::default();
         let err = authenticate(&verifier, &raw, &[], &opts)
             .await
             .expect_err("missing chain name");
@@ -232,29 +234,40 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn authenticate_accepts_timestamp_original_not_rfc3339_reformat() {
-        let raw_ts = "2024-01-01T00:00:00.000Z";
-        let msg = sample_msg().with_issued_at_raw(raw_ts).expect("issued_at");
-        let raw = AcceptingVerifier::format_message(&msg);
-        let reformatted = msg.issued_at.datetime().format(&Rfc3339).expect("rfc3339");
-        assert_ne!(
-            reformatted, raw_ts,
-            "Rfc3339 reformat must differ from the .000Z original"
-        );
+    async fn authenticate_verifies_original_bytes_not_reformatted() {
+        let msg = sample_msg();
+        let mut raw = msg.to_sign_string("Ethereum");
+        raw.push_str("\nResources:");
+
+        let parsed: SiwxMessage = raw.parse().expect("empty Resources: footer parses");
+        let reformatted = RecordingVerifier::format_message(&parsed);
+        assert_ne!(reformatted, raw, "formatter omits empty Resources: footer");
         assert!(
-            raw.contains(raw_ts),
-            "raw must keep subsecond original, got {raw}"
+            parsed.resources.is_empty(),
+            "empty Resources: must parse as no resources, got {:?}",
+            parsed.resources
         );
 
-        let verifier = CountingVerifier::default();
+        let verifier = RecordingVerifier::default();
         let opts = AuthOpts::new(&msg.domain, &msg.nonce);
         authenticate(&verifier, &raw, &[], &opts)
             .await
-            .expect("original timestamp form must reach verify");
+            .expect("original bytes must authenticate when format differs");
         assert_eq!(
             verifier.verify_calls.load(Ordering::SeqCst),
             1,
-            "verify must run; authenticate must not reject format != raw"
+            "verify must run"
+        );
+        let captured = verifier.last_raw.lock().expect("last_raw mutex");
+        assert_eq!(
+            captured.as_deref(),
+            Some(raw.as_str()),
+            "verify must receive the original raw_message"
+        );
+        assert_ne!(
+            captured.as_deref(),
+            Some(reformatted.as_str()),
+            "verify must not receive the reformatted message"
         );
     }
 }

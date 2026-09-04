@@ -25,7 +25,7 @@ Those belong in the application that calls [`authenticate`](https://docs.rs/siwx
 
 | Input | Rule |
 |-------|------|
-| `raw_message` | Must match this library’s canonical formatter bit-for-bit |
+| `raw_message` | ABNF-parsed; preamble `chain_name` must equal `Verifier::CHAIN_NAME`; signature is verified over these original bytes |
 | `AuthOpts.domain` / `nonce` | Must come from **server** configuration / store, not the client alone |
 | RPC URL (`eip1271`) | **Server-configured only** — never take untrusted user URLs (SSRF) |
 | Signature | Untrusted; cryptographic verification only |
