@@ -48,10 +48,9 @@ const MAX_CHAIN_ID_LEN: usize = 44;
 /// [`ed25519_dalek::VerifyingKey::from_bytes`]. Off-curve encodings (Solana
 /// PDAs) fail `from_bytes`.
 ///
-/// Among weak / small-order keys, **only** the 32-zero System Program identity
-/// (`11111111111111111111111111111111`) is special-cased. Other torsion points
-/// (including Edwards identity `[1, 0, ...]`) pass. Signature checks use RFC 8032
-/// [`ed25519_dalek::Verifier::verify`], not
+/// Weak / small-order keys ([`ed25519_dalek::VerifyingKey::is_weak`]) are
+/// rejected, including the 32-zero System Program identity. Signature checks
+/// still use RFC 8032 [`ed25519_dalek::Verifier::verify`], not
 /// [`ed25519_dalek::VerifyingKey::verify_strict`].
 ///
 /// # Errors

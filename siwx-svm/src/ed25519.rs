@@ -13,14 +13,15 @@ use crate::{CHAIN_NAME, NAMESPACE};
 ///
 /// Uses [`ed25519_dalek::Verifier::verify`] (RFC 8032 canonical `s`), not
 /// [`ed25519_dalek::VerifyingKey::verify_strict`]. Address validation
-/// special-cases only the 32-zero System Program identity; other torsion
-/// points pass and are verified with `verify`.
+/// rejects [`VerifyingKey::is_weak`] keys (small-order, including the
+/// 32-zero identity).
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Ed25519Verifier;
 
 /// Decode `address` as a 32-byte Ed25519 verifying key.
 ///
-/// Rejects the all-zero identity even though dalek 3 `from_bytes` accepts it.
+/// Rejects [`VerifyingKey::is_weak`] keys after `from_bytes` (small-order,
+/// including the 32-zero identity dalek 3 otherwise accepts).
 pub(crate) fn verifying_key_from_address(address: &str) -> Result<VerifyingKey, SiwxError> {
     let bytes = bs58::decode(address)
         .into_vec()
@@ -32,14 +33,15 @@ pub(crate) fn verifying_key_from_address(address: &str) -> Result<VerifyingKey, 
         .map_err(|v: Vec<u8>| SiwxError::InvalidAddress {
             reason: format!("expected 32 bytes, got {}", v.len()),
         })?;
-    if arr == [0u8; 32] {
+    let vk = VerifyingKey::from_bytes(&arr).map_err(|e| SiwxError::InvalidAddress {
+        reason: format!("invalid Ed25519 pubkey: {e}"),
+    })?;
+    if vk.is_weak() {
         return Err(SiwxError::InvalidAddress {
-            reason: "identity pubkey (32 zero bytes)".into(),
+            reason: "weak/small-order pubkey".into(),
         });
     }
-    VerifyingKey::from_bytes(&arr).map_err(|e| SiwxError::InvalidAddress {
-        reason: format!("invalid Ed25519 pubkey: {e}"),
-    })
+    Ok(vk)
 }
 
 impl Ed25519Verifier {
@@ -210,18 +212,28 @@ mod tests {
     }
 
     /// curve25519-dalek `EIGHT_TORSION[4]`: order-2 point. `from_bytes` succeeds
-    /// (`is_weak`), `verify_strict` rejects, RFC 8032 `verify` accepts.
+    /// (`is_weak`). Address validation must reject it; signature checks still
+    /// use RFC 8032 `verify`, not `verify_strict`.
     const WEAK_PUBKEY: [u8; 32] = [
         236, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
         255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 127,
     ];
 
-    #[tokio::test]
-    async fn verify_accepts_weak_key_that_verify_strict_rejects() {
+    #[test]
+    fn validate_address_rejects_weak_pubkey() {
         let vk = VerifyingKey::from_bytes(&WEAK_PUBKEY).expect("on-curve torsion");
         assert!(vk.is_weak(), "fixture must be a small-order key");
+        let addr = bs58::encode(WEAK_PUBKEY).into_string();
+        let err = crate::validate_address(&addr).expect_err("weak key");
+        assert!(
+            matches!(err, SiwxError::InvalidAddress { .. }),
+            "got {err:?}"
+        );
+    }
 
-        // R = Edwards identity (y = 1), s = 0. Probe: `verify` ok on 4 zero bytes.
+    #[test]
+    fn signature_path_still_uses_verify_not_verify_strict() {
+        let vk = VerifyingKey::from_bytes(&WEAK_PUBKEY).expect("on-curve torsion");
         let mut sig_bytes = [0u8; 64];
         sig_bytes[0] = 1;
         let sig = Signature::from_bytes(&sig_bytes);
@@ -234,16 +246,5 @@ mod tests {
             vk.verify_strict(raw.as_bytes(), &sig).is_err(),
             "verify_strict rejects small-order A; this crate must not switch to it"
         );
-
-        let addr = bs58::encode(WEAK_PUBKEY).into_string();
-        assert!(
-            crate::validate_address(&addr).is_ok(),
-            "weak keys other than 32-zero identity remain valid addresses"
-        );
-        let message = sample_message(&addr);
-        Ed25519Verifier::new()
-            .verify(&message, raw, &sig_bytes)
-            .await
-            .expect("Ed25519Verifier uses verify, not verify_strict");
     }
 }

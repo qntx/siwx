@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.1
+
+### Breaking
+
+- **SVM addresses**: `validate_address` / verify reject
+  [`ed25519_dalek::VerifyingKey::is_weak`] keys (small-order torsion,
+  including the 32-zero identity). Signature verification still uses RFC 8032
+  `verify`, not `verify_strict`.
+
 ## 0.6.0
 
 Breaking release. EIP-4361 ABNF-strict parse, original-byte verify, production
