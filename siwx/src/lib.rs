@@ -54,6 +54,8 @@ pub use message::{
     MIN_NONCE_LEN, SiwxMessage, Timestamp, VERSION,
 };
 #[cfg(test)]
+use proptest as _;
+#[cfg(test)]
 use serde_json as _;
 pub use validate::AuthOpts;
 pub use verifier::Verifier;

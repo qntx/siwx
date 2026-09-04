@@ -1,6 +1,8 @@
 [workspace]
 members = ["siwx", "siwx-cli", "siwx-evm", "siwx-svm"]
 default-members = ["siwx"]
+# Isolated cargo-fuzz crate (nightly / libfuzzer). Not on stable CI.
+exclude = ["fuzz"]
 resolver = "3"
 
 [workspace.package]
