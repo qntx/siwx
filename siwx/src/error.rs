@@ -40,6 +40,15 @@ pub enum SiwxError {
     #[error("invalid message format: {0}")]
     InvalidFormat(String),
 
+    /// Preamble chain name does not match the verifier.
+    #[error("chain name mismatch: expected {expected}, got {actual:?}")]
+    ChainNameMismatch {
+        /// Chain name required by the verifier.
+        expected: String,
+        /// Preamble chain name from the parsed message.
+        actual: Option<String>,
+    },
+
     /// Signature bytes are malformed or the wrong length.
     #[error("invalid signature: {0}")]
     InvalidSignature(String),

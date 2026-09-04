@@ -70,9 +70,10 @@ impl FromStr for SiwxMessage {
 
         let mut lines = input.split('\n').peekable();
 
-        let (scheme, domain, _chain_name) = parse_preamble(next(&mut lines, "preamble")?)?;
+        let (scheme, domain, chain_name) = parse_preamble(next(&mut lines, "preamble")?)?;
         let scheme = scheme.map(|s| check_scheme(&s)).transpose()?;
         let domain = check_domain(&domain)?;
+        let chain_name = (!chain_name.is_empty()).then(|| chain_name.to_owned());
         let address = next(&mut lines, "address")?.to_owned();
         if address.is_empty() {
             return Err(SiwxError::InvalidAddress("empty".into()));
@@ -112,6 +113,7 @@ impl FromStr for SiwxMessage {
             uri,
             version,
             chain_id,
+            chain_name,
             nonce,
             issued_at,
             expiration_time,
@@ -133,9 +135,6 @@ fn parse_preamble(header: &str) -> Result<(Option<String>, String, &str), SiwxEr
     let chain_name = after_mid
         .strip_suffix(PREAMBLE_TAIL)
         .ok_or_else(|| SiwxError::invalid_format("missing 'account:' suffix"))?;
-    if chain_name.is_empty() {
-        return Err(SiwxError::invalid_format("empty chain name in preamble"));
-    }
     Ok((scheme, domain, chain_name))
 }
 
@@ -293,7 +292,15 @@ mod tests {
         let msg = sample();
         let text = msg.to_sign_string("Ethereum");
         let parsed: SiwxMessage = text.parse().expect("parse");
-        assert_eq!(parsed, msg);
+        assert_eq!(
+            parsed.to_sign_string("Ethereum"),
+            text,
+            "signing string must round-trip"
+        );
+        assert_eq!(parsed.chain_name(), Some("Ethereum"));
+        let mut expected = msg;
+        expected.chain_name = Some("Ethereum".into());
+        assert_eq!(parsed, expected);
     }
 
     #[test]
@@ -385,7 +392,37 @@ Issued At: 2021-09-30T16:25:24Z";
         let parsed: SiwxMessage = text.parse().expect("parse");
         assert_eq!(parsed.scheme.as_deref(), Some("https"));
         assert_eq!(parsed.domain, "example.com");
-        assert_eq!(parsed, msg);
+        assert_eq!(parsed.chain_name(), Some("Ethereum"));
+        let mut expected = msg;
+        expected.chain_name = Some("Ethereum".into());
+        assert_eq!(parsed, expected);
+    }
+
+    #[test]
+    fn parse_stores_preamble_chain_name() {
+        let text = sample().to_sign_string("Solana");
+        let parsed: SiwxMessage = text.parse().expect("parse");
+        assert_eq!(parsed.chain_name(), Some("Solana"));
+    }
+
+    #[test]
+    fn empty_preamble_chain_name_is_none() {
+        let text = "\
+example.com wants you to sign in with your  account:
+addr1
+
+
+URI: https://example.com
+Version: 1
+Chain ID: 1
+Nonce: testnonce12345678
+Issued At: 2021-09-30T16:25:24Z";
+        let parsed: SiwxMessage = text.parse().expect("empty chain name parses");
+        assert!(
+            parsed.chain_name().is_none(),
+            "empty preamble label must be None, got {:?}",
+            parsed.chain_name()
+        );
     }
 
     #[test]

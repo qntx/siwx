@@ -21,7 +21,7 @@ use crate::{SiwxError, SiwxMessage};
 /// * Return other `Err` variants for malformed inputs.
 ///
 /// Prefer [`crate::authenticate`] over calling [`Self::verify`] directly so
-/// parse, field validation, address checks, and canonical-form checks run first.
+/// parse, field validation, chain-name binding, and address checks run first.
 pub trait Verifier: Send + Sync {
     /// Ecosystem label embedded in the CAIP-122 preamble
     /// (`"{domain} wants you to sign in with your {CHAIN_NAME} account:"`).
@@ -48,8 +48,8 @@ pub trait Verifier: Send + Sync {
     /// Verify `signature` over `raw_message`, binding identity to `message`.
     ///
     /// `raw_message` must be the exact bytes the wallet signed.
-    /// [`crate::authenticate`] guarantees it matches
-    /// [`Self::format_message`] before calling this method.
+    /// [`crate::authenticate`] verifies those original bytes; it does not
+    /// re-serialize the parsed message before calling this method.
     fn verify(
         &self,
         message: &SiwxMessage,

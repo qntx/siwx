@@ -6,8 +6,8 @@
 //! verification.
 //!
 //! Prefer [`authenticate`] for backend login: it parses the raw signing
-//! string, validates fields (including domain/nonce binding), requires
-//! canonical form, then verifies the signature over the original bytes.
+//! string, validates fields (including domain/nonce binding), binds the
+//! preamble chain name, then verifies the signature over the original bytes.
 //!
 //! Chain-specific implementations live in companion crates:
 //! - `siwx-evm` — Ethereum (EIP-191 / EIP-1271)

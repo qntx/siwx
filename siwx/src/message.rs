@@ -157,6 +157,13 @@ pub struct SiwxMessage {
     /// `"5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d"`).
     pub chain_id: String,
 
+    /// Preamble chain label (`"Ethereum"`, `"Solana"`).
+    ///
+    /// Set by parse; [`Self::new`] leaves this `None`. Formatting still takes
+    /// the verifier chain name as an argument, not this field.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub chain_name: Option<String>,
+
     /// Randomised token to prevent replay attacks (≥ [`MIN_NONCE_LEN`] alphanumerics).
     pub nonce: String,
 
@@ -225,6 +232,7 @@ impl SiwxMessage {
             uri,
             version: VERSION.to_owned(),
             chain_id,
+            chain_name: None,
             nonce,
             statement: None,
             issued_at: Timestamp::from_datetime(OffsetDateTime::now_utc())?,
@@ -361,6 +369,15 @@ impl SiwxMessage {
     {
         self.resources = check_resources(resources.into_iter().map(Into::into))?;
         Ok(self)
+    }
+
+    /// Preamble chain label parsed from the signing string.
+    ///
+    /// [`Self::new`] leaves this unset. Parsing stores the label between
+    /// `with your ` and ` account:`.
+    #[must_use]
+    pub fn chain_name(&self) -> Option<&str> {
+        self.chain_name.as_deref()
     }
 }
 
@@ -597,6 +614,10 @@ mod tests {
         let msg = SiwxMessage::new("d.com", "a", "https://d.com", "1", "testnonce12345678")
             .expect("valid");
         assert_eq!(msg.version, VERSION);
+        assert!(
+            msg.chain_name().is_none(),
+            "builder must leave chain_name unset"
+        );
     }
 
     #[test]

@@ -1,4 +1,4 @@
-//! End-to-end authentication: parse → validate → canonical check → verify.
+//! End-to-end authentication: parse → validate → chain-name bind → verify.
 
 use crate::message::MAX_MESSAGE_BYTES;
 use crate::validate::AuthOpts;
@@ -12,8 +12,8 @@ pub struct Authenticated {
     pub message: SiwxMessage,
 }
 
-/// Parse `raw_message`, validate fields, require canonical form, then verify
-/// `signature` with `verifier`.
+/// Parse `raw_message`, validate fields, bind preamble chain name, then verify
+/// `signature` over the original `raw_message` bytes.
 ///
 /// This is the recommended entry point for backend login flows.
 ///
@@ -21,14 +21,13 @@ pub struct Authenticated {
 /// 1. Reject oversize input ([`MAX_MESSAGE_BYTES`]).
 /// 2. Parse `raw_message` into [`SiwxMessage`].
 /// 3. [`SiwxMessage::validate`] with `opts` (domain, nonce, optional chain id).
-/// 4. [`Verifier::validate_address`] for chain-specific address shape.
-/// 5. Reject if `raw_message` is not bit-identical to
-///    [`Verifier::format_message`] (also binds preamble chain name).
+/// 4. Require [`SiwxMessage::chain_name`] == [`Verifier::CHAIN_NAME`].
+/// 5. [`Verifier::validate_address`] for chain-specific address shape.
 /// 6. [`Verifier::verify`] over the original `raw_message` bytes.
 ///
 /// # Errors
 ///
-/// Returns parse, validation, address, canonical-form, or verification errors.
+/// Returns parse, validation, chain-name, address, or verification errors.
 pub async fn authenticate<V: Verifier>(
     verifier: &V,
     raw_message: &str,
@@ -43,14 +42,13 @@ pub async fn authenticate<V: Verifier>(
 
     let message: SiwxMessage = raw_message.parse()?;
     message.validate(opts)?;
-    V::validate_address(&message.address)?;
-
-    let canonical = V::format_message(&message);
-    if canonical != raw_message {
-        return Err(SiwxError::InvalidFormat(
-            "message is not in canonical form".into(),
-        ));
+    if message.chain_name() != Some(V::CHAIN_NAME) {
+        return Err(SiwxError::ChainNameMismatch {
+            expected: V::CHAIN_NAME.to_owned(),
+            actual: message.chain_name().map(str::to_owned),
+        });
     }
+    V::validate_address(&message.address)?;
 
     verifier.verify(&message, raw_message, signature).await?;
 
@@ -60,7 +58,9 @@ pub async fn authenticate<V: Verifier>(
 #[cfg(test)]
 mod tests {
     use std::future::Future;
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
+    use time::format_description::well_known::Rfc3339;
     use time::macros::datetime;
 
     use super::*;
@@ -81,6 +81,25 @@ mod tests {
         }
     }
 
+    #[derive(Default)]
+    struct CountingVerifier {
+        verify_calls: AtomicUsize,
+    }
+
+    impl Verifier for CountingVerifier {
+        const CHAIN_NAME: &'static str = "Ethereum";
+
+        fn verify(
+            &self,
+            _message: &SiwxMessage,
+            _raw_message: &str,
+            _signature: &[u8],
+        ) -> impl Future<Output = Result<(), SiwxError>> + Send {
+            self.verify_calls.fetch_add(1, Ordering::SeqCst);
+            std::future::ready(Ok(()))
+        }
+    }
+
     fn sample_msg() -> SiwxMessage {
         SiwxMessage::new(
             "example.com",
@@ -95,7 +114,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn authenticate_accepts_canonical_message() {
+    async fn authenticate_accepts_self_generated_message() {
         let msg = sample_msg();
         let raw = AcceptingVerifier::format_message(&msg);
         let opts = AuthOpts::new(&msg.domain, &msg.nonce);
@@ -103,18 +122,19 @@ mod tests {
             .await
             .expect("should authenticate");
         assert_eq!(auth.message.domain, "example.com");
+        assert_eq!(auth.message.chain_name(), Some("Ethereum"));
     }
 
     #[tokio::test]
-    async fn authenticate_rejects_non_canonical_raw() {
+    async fn authenticate_rejects_trailing_newline() {
         let msg = sample_msg();
         let mut raw = AcceptingVerifier::format_message(&msg);
         raw.push('\n');
         let opts = AuthOpts::new(&msg.domain, &msg.nonce);
         let err = authenticate(&AcceptingVerifier, &raw, &[], &opts)
             .await
-            .expect_err("trailing newline must fail canonical check");
-        assert!(matches!(err, SiwxError::InvalidFormat(_)));
+            .expect_err("trailing newline must fail parse");
+        assert!(matches!(err, SiwxError::InvalidFormat(_)), "got {err:?}");
     }
 
     #[tokio::test]
@@ -125,7 +145,7 @@ mod tests {
         let err = authenticate(&AcceptingVerifier, &raw, &[], &opts)
             .await
             .expect_err("domain binding");
-        assert!(matches!(err, SiwxError::InvalidDomain(_)));
+        assert!(matches!(err, SiwxError::InvalidDomain(_)), "got {err:?}");
     }
 
     #[tokio::test]
@@ -139,6 +159,102 @@ mod tests {
         )
         .await
         .expect_err("oversize");
-        assert!(matches!(err, SiwxError::InvalidFormat(_)));
+        assert!(matches!(err, SiwxError::InvalidFormat(_)), "got {err:?}");
+    }
+
+    #[tokio::test]
+    async fn authenticate_rejects_solana_preamble_for_ethereum_verifier() {
+        let msg = sample_msg();
+        let raw = msg.to_sign_string("Solana");
+        let opts = AuthOpts::new(&msg.domain, &msg.nonce);
+        let verifier = CountingVerifier::default();
+        let err = authenticate(&verifier, &raw, &[], &opts)
+            .await
+            .expect_err("chain name mismatch");
+        assert!(
+            matches!(
+                err,
+                SiwxError::ChainNameMismatch {
+                    ref expected,
+                    actual: Some(ref actual),
+                } if expected == "Ethereum" && actual == "Solana"
+            ),
+            "got {err:?}"
+        );
+        assert_eq!(
+            verifier.verify_calls.load(Ordering::SeqCst),
+            0,
+            "verify must not run on chain name mismatch"
+        );
+    }
+
+    #[tokio::test]
+    async fn authenticate_rejects_missing_preamble_chain_name() {
+        let msg = sample_msg();
+        let raw = msg.to_sign_string("");
+        let opts = AuthOpts::new(&msg.domain, &msg.nonce);
+        let verifier = CountingVerifier::default();
+        let err = authenticate(&verifier, &raw, &[], &opts)
+            .await
+            .expect_err("missing chain name");
+        assert!(
+            matches!(
+                err,
+                SiwxError::ChainNameMismatch {
+                    ref expected,
+                    actual: None,
+                } if expected == "Ethereum"
+            ),
+            "got {err:?}"
+        );
+        assert_eq!(
+            verifier.verify_calls.load(Ordering::SeqCst),
+            0,
+            "verify must not run on missing chain name"
+        );
+    }
+
+    #[test]
+    fn parsed_to_sign_string_equals_self_generated_raw() {
+        let msg = sample_msg();
+        let raw = msg.to_sign_string("Ethereum");
+        let parsed: SiwxMessage = raw.parse().expect("parse");
+        assert_eq!(
+            parsed.to_sign_string("Ethereum"),
+            raw,
+            "self-generated signing string must round-trip"
+        );
+        assert_eq!(parsed.chain_name(), Some("Ethereum"));
+        assert!(
+            msg.chain_name().is_none(),
+            "builder leaves chain_name unset"
+        );
+    }
+
+    #[tokio::test]
+    async fn authenticate_accepts_timestamp_original_not_rfc3339_reformat() {
+        let raw_ts = "2024-01-01T00:00:00.000Z";
+        let msg = sample_msg().with_issued_at_raw(raw_ts).expect("issued_at");
+        let raw = AcceptingVerifier::format_message(&msg);
+        let reformatted = msg.issued_at.datetime().format(&Rfc3339).expect("rfc3339");
+        assert_ne!(
+            reformatted, raw_ts,
+            "Rfc3339 reformat must differ from the .000Z original"
+        );
+        assert!(
+            raw.contains(raw_ts),
+            "raw must keep subsecond original, got {raw}"
+        );
+
+        let verifier = CountingVerifier::default();
+        let opts = AuthOpts::new(&msg.domain, &msg.nonce);
+        authenticate(&verifier, &raw, &[], &opts)
+            .await
+            .expect("original timestamp form must reach verify");
+        assert_eq!(
+            verifier.verify_calls.load(Ordering::SeqCst),
+            1,
+            "verify must run; authenticate must not reject format != raw"
+        );
     }
 }
