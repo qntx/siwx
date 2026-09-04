@@ -48,7 +48,7 @@ pub(crate) async fn timed<T, E>(
 ) -> Result<T, SiwxError> {
     tokio::time::timeout(timeout, fut)
         .await
-        .map_err(|_| SiwxError::VerificationFailed {
+        .map_err(|_| SiwxError::Backend {
             reason: format!("{what} timed out"),
         })?
         .map_err(|_| SiwxError::VerificationFailed {
@@ -141,6 +141,45 @@ mod tests {
                 }
             ),
             "got {leading:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn timed_timeout_is_backend() {
+        let err = timed(
+            Duration::from_millis(1),
+            async {
+                tokio::time::sleep(Duration::from_secs(1)).await;
+                Ok::<(), ()>(())
+            },
+            "eth_chainId",
+        )
+        .await
+        .expect_err("timeout");
+        assert!(
+            matches!(
+                err,
+                SiwxError::Backend { ref reason } if reason == "eth_chainId timed out"
+            ),
+            "got {err:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn timed_inner_error_is_verification_failed() {
+        let err = timed(
+            Duration::from_secs(1),
+            async { Err::<(), ()>(()) },
+            "isValidSignature",
+        )
+        .await
+        .expect_err("inner");
+        assert!(
+            matches!(
+                err,
+                SiwxError::VerificationFailed { ref reason } if reason == "isValidSignature failed"
+            ),
+            "got {err:?}"
         );
     }
 }
