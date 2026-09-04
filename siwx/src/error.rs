@@ -24,7 +24,7 @@ pub enum SiwxError {
     #[error("invalid nonce: {0}")]
     InvalidNonce(String),
 
-    /// The `statement` field contains a forbidden `\n` character.
+    /// The `statement` field is empty or not RFC 3986 reserved / unreserved / SP.
     #[error("invalid statement: {0}")]
     InvalidStatement(String),
 

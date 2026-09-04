@@ -140,7 +140,8 @@ pub struct SiwxMessage {
     /// segment — does **not** include the CAIP-2 chain id prefix).
     pub address: String,
 
-    /// Human-readable ASCII assertion. MUST NOT contain `\n`.
+    /// Human-readable assertion. When present, non-empty RFC 3986 `reserved` /
+    /// `unreserved` / SP (no HT, CR, LF, other CTL, or non-ASCII).
     pub statement: Option<String>,
 
     /// RFC 3986 URI referring to the resource that is the subject of the signing.
@@ -250,8 +251,8 @@ impl SiwxMessage {
     ///
     /// # Errors
     ///
-    /// Returns [`SiwxError::InvalidStatement`] if the value exceeds
-    /// [`MAX_STATEMENT_BYTES`] or contains characters outside RFC 3986
+    /// Returns [`SiwxError::InvalidStatement`] if the value is empty, exceeds
+    /// [`MAX_STATEMENT_BYTES`], or contains characters outside RFC 3986
     /// `reserved` / `unreserved` / SP.
     pub fn with_statement(mut self, statement: impl Into<String>) -> Result<Self, SiwxError> {
         let statement = statement.into();
@@ -412,6 +413,9 @@ pub(crate) fn check_domain(domain: &str) -> Result<String, SiwxError> {
 }
 
 pub(crate) fn check_statement(statement: &str) -> Result<(), SiwxError> {
+    if statement.is_empty() {
+        return Err(SiwxError::InvalidStatement("empty".into()));
+    }
     if statement.len() > MAX_STATEMENT_BYTES {
         return Err(SiwxError::InvalidStatement(format!(
             "exceeds maximum size of {MAX_STATEMENT_BYTES} bytes, got {}",
@@ -631,6 +635,15 @@ mod tests {
         let err = SiwxMessage::new("d.com", "a", "https://d.com", "1", "testnonce12345678")
             .expect("valid")
             .with_statement("bad\nline")
+            .unwrap_err();
+        assert!(matches!(err, SiwxError::InvalidStatement(_)));
+    }
+
+    #[test]
+    fn with_statement_rejects_empty() {
+        let err = SiwxMessage::new("d.com", "a", "https://d.com", "1", "testnonce12345678")
+            .expect("valid")
+            .with_statement("")
             .unwrap_err();
         assert!(matches!(err, SiwxError::InvalidStatement(_)));
     }
