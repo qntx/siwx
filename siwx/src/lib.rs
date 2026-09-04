@@ -5,9 +5,10 @@
 //! validation, and a [`Verifier`] trait for chain-specific signature
 //! verification.
 //!
-//! Prefer [`authenticate`] for backend login: it parses the raw signing
-//! string, validates fields (including domain/nonce binding), binds the
-//! preamble chain name, then verifies the signature over the original bytes.
+//! Prefer [`authenticate`] for backend login: size and CR checks, ABNF parse,
+//! domain/nonce validation (default clock skew 60s), preamble chain-name bind,
+//! then signature verification over the original bytes. Trailing LF is
+//! rejected; trim before [`authenticate`] if a client leaves one.
 //!
 //! Chain-specific implementations live in companion crates:
 //! - `siwx-evm` — Ethereum (EIP-191 / EIP-1271 / EIP-6492)

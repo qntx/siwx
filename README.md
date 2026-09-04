@@ -53,9 +53,9 @@ Construct, parse, validate, and verify wallet authentication messages across any
 CAIP-122 standardises **wallet-based authentication** across blockchains — the chain-agnostic successor to [EIP-4361 (SIWE)](https://eips.ethereum.org/EIPS/eip-4361). This SDK provides:
 
 - **Message construction** — build CAIP-122 challenge messages with a builder API
-- **Message parsing** — round-trip `FromStr` / `Display` for the human-readable signing format
-- **Temporal & domain validation** — expiration, not-before, domain binding, nonce binding
-- **Signature verification** — pluggable `Verifier` trait (with a `CHAIN_NAME` associated constant) and built-in EVM / Solana implementations
+- **Message parsing** — ABNF-strict `FromStr`; timestamps keep the original RFC 3339 string
+- **Temporal & domain validation** — `AuthOpts` requires domain and nonce; default clock skew 60s
+- **Signature verification** — pluggable `Verifier` trait (`CHAIN_NAME` / `NAMESPACE`) over original bytes
 - **CLI tool** — generate, parse, and verify messages from the command line with JSON output
 
 The core `siwx` crate is chain-agnostic; chain-specific logic is in companion crates.
@@ -86,6 +86,19 @@ let signing_input = EvmVerifier::format_message(&message);
 
 ### Verify signature (backend)
 
+`authenticate` is fail-fast. There is no canonical rewrite of the signed text.
+
+1. Size ≤ `MAX_MESSAGE_BYTES`
+2. Reject CR
+3. ABNF parse (`FromStr`)
+4. `message.validate(opts)` — `AuthOpts.domain` / `nonce` required; default `clock_skew` 60s
+5. Preamble `chain_name` == `Verifier::CHAIN_NAME`
+6. `validate_address` (EVM: EIP-55)
+7. `validate_chain_id`
+8. `verify` over the original `raw_message` bytes
+
+A trailing LF is rejected (`UnexpectedTrailing`). If a client `join("\n")`s a leftover newline, call `raw.trim_end_matches('\n')` **before** `authenticate`. The library does not trim.
+
 ```rust,no_run
 use siwx::{authenticate, AuthOpts, Verifier};
 use siwx_evm::EvmVerifier;
@@ -95,10 +108,8 @@ use siwx_evm::EvmVerifier;
 //   signature_bytes: &[u8]         — raw bytes returned by the wallet
 //   expected_nonce:  String        — nonce your backend issued in step 1
 
-// Parse → validate (domain/nonce bind) → chain name bind → address shape → chain-id shape → verify original bytes.
-// Enable feature `eip1271` (`eip6492` for counterfactual accounts) and
-// `EvmVerifier::with_rpc_for_chain(...)` for contract wallets.
-// Multi-chain: also call `.with_chain_id(...)` on AuthOpts.
+// Feature `eip1271` is off by default. `eip6492` (default off, implies `eip1271`)
+// is for counterfactual accounts; then `EvmVerifier::with_rpc_for_chain(...)`.
 let auth = authenticate(
     &EvmVerifier::new(),
     &signing_input,
@@ -152,9 +163,36 @@ siwx svm message \
 
 ### Verify signature
 
+`--domain` and `--nonce` are required (server-issued). Optional `--uri` /
+`--scheme` / `--chain-id` bind those claims. A trailing LF in `--message` is
+rejected; trim before calling if the client left one.
+
 ```sh
-siwx evm verify --message "..." --signature 0x...
-siwx svm verify --message "..." --signature 0x...
+siwx evm verify \
+  --message "..." \
+  --signature 0x... \
+  --domain example.com \
+  --nonce L8s2Mf7kGxPQN9a4z
+
+siwx svm verify \
+  --message "..." \
+  --signature 0x... \
+  --domain example.com \
+  --nonce L8s2Mf7kGxPQN9a4z
+```
+
+EIP-1271 / EIP-6492 (features `eip1271` / `eip6492`, both default off): `--rpc`
+and `--rpc-chain-id` must appear as pairs, same order, repeatable. Bare `--rpc`
+is rejected.
+
+```sh
+siwx evm verify \
+  --message "..." \
+  --signature 0x... \
+  --domain example.com \
+  --nonce L8s2Mf7kGxPQN9a4z \
+  --rpc-chain-id 1 --rpc https://eth.example \
+  --rpc-chain-id 137 --rpc https://polygon.example
 ```
 
 ### JSON output
@@ -193,7 +231,7 @@ sequenceDiagram
     Frontend->>Wallet: 2. personal_sign / signMessage
     Wallet-->>Frontend: 3. Signature bytes
     Frontend->>Backend: 4. Message text + Signature
-    Backend->>Backend: 5. Parse → Validate → Verify
+    Backend->>Backend: 5. Size → CR → Parse → Validate → Verify original bytes
 ```
 
 ### CAIP-122 Message Format
@@ -277,10 +315,10 @@ impl Verifier for MyChainVerifier {
 | Feature | Crate | Description |
 | --- | --- | --- |
 | `serde` | `siwx` | `Serialize` / `Deserialize` for `SiwxMessage` |
-| `eip1271` | `siwx-evm` | Smart-contract signature verification via RPC (`EvmVerifier::with_rpc_for_chain` / `with_rpc_map`) |
-| `eip6492` | `siwx-evm` | ERC-6492 counterfactual signatures (`eip6492 = ["eip1271"]`, default off) |
-| `eip1271` | `siwx-cli` | Enables `siwx evm verify --rpc-chain-id <id> --rpc <url>` (forwards to `siwx-evm/eip1271`) |
-| `eip6492` | `siwx-cli` | Forwards to `siwx-evm/eip6492` (implies `eip1271` RPC flags) |
+| `eip1271` | `siwx-evm` | Smart-contract signature verification via RPC (`with_rpc_for_chain` / `with_rpc_map`; default off) |
+| `eip6492` | `siwx-evm` | ERC-6492 counterfactual signatures (`eip6492 = ["eip1271"]`, **default off**) |
+| `eip1271` | `siwx-cli` | Enables paired `evm verify --rpc-chain-id <id> --rpc <url>` |
+| `eip6492` | `siwx-cli` | Forwards to `siwx-evm/eip6492` (implies `eip1271` RPC pairs) |
 
 See [SECURITY.md](SECURITY.md) for production integration boundaries (nonce store, RPC trust).
 

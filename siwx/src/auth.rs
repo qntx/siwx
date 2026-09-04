@@ -1,4 +1,4 @@
-//! End-to-end authentication: parse → validate → chain-name bind → verify.
+//! End-to-end authentication: size → CR → parse → validate → chain-name bind → verify original bytes.
 
 use crate::message::MAX_MESSAGE_BYTES;
 use crate::validate::AuthOpts;
@@ -43,16 +43,24 @@ impl Authenticated {
 /// `signature` over the original `raw_message` bytes.
 ///
 /// This is the recommended entry point for backend login flows.
+/// There is no canonical re-serialize check: the wallet-signed bytes are
+/// verified as-is. [`AuthOpts::new`] requires `domain` and `nonce`. Default
+/// clock skew is 60 seconds (expiration / not-before / max issued-at age).
 ///
-/// Steps:
+/// Steps (fail-fast):
 /// 1. Reject oversize input ([`MAX_MESSAGE_BYTES`]).
-/// 2. Parse `raw_message` into [`SiwxMessage`].
-/// 3. [`SiwxMessage::validate`] with `opts` (domain, nonce, optional scheme /
+/// 2. Reject CR (`InvalidFormat { CrLf }`) during parse.
+/// 3. Parse `raw_message` into [`SiwxMessage`] (ABNF; trailing LF rejected).
+/// 4. [`SiwxMessage::validate`] with `opts` (domain, nonce, optional scheme /
 ///    uri / chain id / request id, temporal window).
-/// 4. Require [`SiwxMessage::chain_name`] == [`Verifier::CHAIN_NAME`].
-/// 5. [`Verifier::validate_address`] for chain-specific address shape.
-/// 6. [`Verifier::validate_chain_id`] for namespace chain-id shape.
-/// 7. [`Verifier::verify`] over the original `raw_message` bytes.
+/// 5. Require [`SiwxMessage::chain_name`] == [`Verifier::CHAIN_NAME`].
+/// 6. [`Verifier::validate_address`] for chain-specific address shape.
+/// 7. [`Verifier::validate_chain_id`] for namespace chain-id shape.
+/// 8. [`Verifier::verify`] over the original `raw_message` bytes.
+///
+/// Relying parties that must accept a leftover LF from `join("\n")` clients
+/// should `trim_end_matches('\n')` before calling this function. The library
+/// does not trim.
 ///
 /// # Errors
 ///

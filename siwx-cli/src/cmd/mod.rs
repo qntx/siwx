@@ -107,23 +107,25 @@ pub(crate) struct VerifyArgs {
     #[arg(long)]
     pub signature: String,
 
-    /// Expected domain binding (required unless `--trust-message-bindings`).
+    /// Expected domain binding (server-issued; required).
     #[arg(long)]
-    pub domain: Option<String>,
+    pub domain: String,
 
-    /// Expected nonce binding (required unless `--trust-message-bindings`).
+    /// Expected nonce binding (server-issued; required).
     #[arg(long)]
-    pub nonce: Option<String>,
+    pub nonce: String,
+
+    /// Expected URI binding (optional).
+    #[arg(long)]
+    pub uri: Option<String>,
+
+    /// Expected preamble scheme binding (optional).
+    #[arg(long)]
+    pub scheme: Option<String>,
 
     /// Expected chain id binding (optional; recommended for multi-chain).
     #[arg(long)]
     pub chain_id: Option<String>,
-
-    /// Use domain/nonce (and chain id if present) from the message itself.
-    ///
-    /// Debug-only: does not prove the server issued the challenge.
-    #[arg(long)]
-    pub trust_message_bindings: bool,
 }
 
 #[derive(Args)]
@@ -222,9 +224,7 @@ pub(crate) async fn run_verify<V: Verifier>(
     verifier: V,
 ) -> CmdResult {
     let sig = decode_hex_signature(&args.signature)?;
-    let provisional: SiwxMessage = args.message.parse()?;
-
-    let opts = build_auth_opts(args, &provisional)?;
+    let opts = build_auth_opts(args);
 
     let auth = authenticate(&verifier, &args.message, &sig, &opts).await?;
 
@@ -243,39 +243,18 @@ pub(crate) async fn run_verify<V: Verifier>(
     Ok(())
 }
 
-fn build_auth_opts(args: &VerifyArgs, message: &SiwxMessage) -> Result<AuthOpts, BoxedError> {
-    let (domain, nonce) = if args.trust_message_bindings {
-        (
-            args.domain
-                .clone()
-                .unwrap_or_else(|| message.domain().to_owned()),
-            args.nonce
-                .clone()
-                .unwrap_or_else(|| message.nonce().to_owned()),
-        )
-    } else {
-        let domain = args.domain.clone().ok_or_else(|| {
-            std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                "missing --domain (or pass --trust-message-bindings for debug)",
-            )
-        })?;
-        let nonce = args.nonce.clone().ok_or_else(|| {
-            std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                "missing --nonce (or pass --trust-message-bindings for debug)",
-            )
-        })?;
-        (domain, nonce)
-    };
-
-    let mut opts = AuthOpts::new(domain, nonce);
+fn build_auth_opts(args: &VerifyArgs) -> AuthOpts {
+    let mut opts = AuthOpts::new(args.domain.as_str(), args.nonce.as_str());
+    if let Some(ref scheme) = args.scheme {
+        opts = opts.with_scheme(scheme);
+    }
+    if let Some(ref uri) = args.uri {
+        opts = opts.with_uri(uri);
+    }
     if let Some(ref chain_id) = args.chain_id {
         opts = opts.with_chain_id(chain_id);
-    } else if args.trust_message_bindings {
-        opts = opts.with_chain_id(message.chain_id());
     }
-    Ok(opts)
+    opts
 }
 
 pub(crate) fn decode_hex_signature(s: &str) -> Result<Vec<u8>, BoxedError> {
@@ -288,4 +267,78 @@ fn parse_time_or_duration(s: &str) -> Result<OffsetDateTime, BoxedError> {
         return Ok(OffsetDateTime::now_utc() + time::Duration::seconds(secs));
     }
     Ok(OffsetDateTime::parse(s, &Rfc3339)?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn verify_args() -> VerifyArgs {
+        VerifyArgs {
+            message: String::new(),
+            signature: String::new(),
+            domain: "example.com".into(),
+            nonce: "n12345678".into(),
+            uri: None,
+            scheme: None,
+            chain_id: None,
+        }
+    }
+
+    #[test]
+    fn auth_opts_bind_required_domain_and_nonce() {
+        let msg = SiwxMessage::new(
+            "example.com",
+            "addr1",
+            "https://example.com",
+            "1",
+            "n12345678",
+        )
+        .expect("valid");
+        msg.validate(&build_auth_opts(&verify_args()))
+            .expect("domain/nonce bind");
+    }
+
+    #[test]
+    fn auth_opts_forward_optional_uri_scheme_chain_id() {
+        let args = VerifyArgs {
+            uri: Some("https://example.com/login".into()),
+            scheme: Some("https".into()),
+            chain_id: Some("1".into()),
+            ..verify_args()
+        };
+        let msg = SiwxMessage::new(
+            "example.com",
+            "addr1",
+            "https://example.com/login",
+            "1",
+            "n12345678",
+        )
+        .expect("valid")
+        .with_scheme("https")
+        .expect("scheme");
+        msg.validate(&build_auth_opts(&args))
+            .expect("optional bindings");
+    }
+
+    #[test]
+    fn auth_opts_uri_mismatch_is_rejected() {
+        let args = VerifyArgs {
+            uri: Some("https://other.example/login".into()),
+            ..verify_args()
+        };
+        let msg = SiwxMessage::new(
+            "example.com",
+            "addr1",
+            "https://example.com",
+            "1",
+            "n12345678",
+        )
+        .expect("valid");
+        let err = msg.validate(&build_auth_opts(&args)).expect_err("uri");
+        assert!(
+            matches!(err, siwx::SiwxError::UriMismatch { .. }),
+            "got {err:?}"
+        );
+    }
 }

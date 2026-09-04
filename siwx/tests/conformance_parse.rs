@@ -84,7 +84,11 @@ mod tests {
             required_str(name, fields, "address"),
             "{name}: address"
         );
-        assert_eq!(parsed.uri(), required_str(name, fields, "uri"), "{name}: uri");
+        assert_eq!(
+            parsed.uri(),
+            required_str(name, fields, "uri"),
+            "{name}: uri"
+        );
         assert_eq!(
             parsed.nonce(),
             required_str(name, fields, "nonce"),

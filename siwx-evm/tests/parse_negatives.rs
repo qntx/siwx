@@ -63,7 +63,10 @@ Resources:
     #[test]
     fn core_parse_accepts_non_checksum_address() {
         let parsed: SiwxMessage = ADDRESS_NOT_EIP55.parse().unwrap();
-        assert_eq!(parsed.address(), "0xe5a12547fe4e872d192e3ececb76f2ce1aea4946");
+        assert_eq!(
+            parsed.address(),
+            "0xe5a12547fe4e872d192e3ececb76f2ce1aea4946"
+        );
     }
 
     #[test]

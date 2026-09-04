@@ -1,16 +1,59 @@
 # Changelog
 
-## Unreleased
+## 0.6.0
+
+Breaking release. EIP-4361 ABNF-strict parse, original-byte verify, production
+EOA and SVM profiles, optional EIP-1271 / EIP-6492. No 0.5 compatibility layer.
+
+### Breaking
+
+- **Timestamp originals**: `issued_at` / `expiration_time` / `not_before` keep
+  the RFC 3339 input string. Formatter emits that original; `.000Z` and `Z` are
+  not `Eq` even when they denote the same instant.
+- **No canonical check**: `authenticate` does not require
+  `format_message() == raw_message`. Signature verification hashes the original
+  bytes. Parse is ABNF-strict: reject CR, reject trailing LF, reject out-of-order
+  or unknown fields.
+- **Structured errors**: mismatch variants carry `{ expected, actual }`;
+  `InvalidFormat { reason: FormatReason }`; `InvalidChainId { reason: ChainIdReason }`.
+  There is **no** `FutureIssuedAt`. Over-age `issued_at` is `StaleIssuedAt`, not
+  `Expired`.
+- **Private fields**: `SiwxMessage`, `AuthOpts`, and `Authenticated` fields are
+  private. Use getters and builders.
+- **`AuthOpts`**: `domain` and `nonce` required. Default `clock_skew` is 60s
+  (applies only to `expiration_time` / `not_before` / `max_issued_age`). Optional
+  `scheme` / `uri` / `chain_id` / `request_id`. Future `issued_at` is accepted.
+- **EIP-55**: EVM `validate_address` uses `Address::parse_checksummed`.
+  All-lowercase is rejected unless that string is the checksum form.
+- **Deleted `EvmVerifier::with_rpc`**: use `with_rpc_for_chain` / `with_rpc_map`
+  / `with_rpc_timeout`. RPC `eth_chainId` must equal the message chain.
+- **Deleted CLI `--trust-message-bindings`**: `evm verify` / `svm verify` require
+  `--domain` and `--nonce`. Optional `--uri` / `--scheme` / `--chain-id`.
+  EIP-1271 uses paired `--rpc-chain-id` / `--rpc` (repeatable, same order).
+- **SVM**: `validate_address` requires `VerifyingKey::from_bytes` (off-curve and
+  the all-zero identity fail). `chain_id` is CAIP-2 reference charset.
+- **EIP-191**: reject high-s (EIP-2). Workspace version **0.6.0**.
 
 ### Added
 
-- `siwx-evm` feature **`eip6492 = ["eip1271"]`** (default off): ERC-6492
-  counterfactual signatures via vendored wevm/ox deployless
-  `universalSignatureValidatorBytecode`. Magic suffix is checked before
-  EIP-191; no RPC for the message chain returns `EIP-6492 requires RPC`.
-- `siwx-cli` feature **`eip6492`** (implies `eip1271`) forwards to
-  `siwx-evm/eip6492` so `evm verify --rpc-chain-id` / `--rpc` can validate
-  wrapped signatures.
+- Feature **`eip6492 = ["eip1271"]`** (default off): ERC-6492 counterfactual
+  signatures via vendored wevm/ox `universalSignatureValidatorBytecode`. Magic
+  suffix is checked before EIP-191. No RPC for the message chain returns
+  `EIP-6492 requires RPC`. Without the feature, magic signatures return
+  `EIP-6492 not enabled`.
+- `siwx-cli` feature **`eip6492`** (implies `eip1271`) so
+  `evm verify --rpc-chain-id` / `--rpc` can validate wrapped signatures.
+- SpruceID SIWE parse vectors in core CI; verify vectors in `siwx-evm`.
+- `Verifier::NAMESPACE`; `SiwxMessage::caip10`.
+- CLI `--uri` / `--scheme` bindings on verify.
+
+### Removed
+
+- Canonical bit-identical check in `authenticate`
+- `EvmVerifier::with_rpc(url)`
+- CLI `--trust-message-bindings`
+- Public mutation of message / auth / opts fields
+- `FutureIssuedAt`
 
 ## 0.5.0
 
@@ -40,9 +83,8 @@ Hardening toward production-integrable verification.
 
 ### Library vs product residuals
 
-Session/JWT, nonce store, and live-RPC 1271/6492 e2e remain **out of
-library scope** (see SECURITY.md). ERC-6492 is implemented behind feature
-`eip6492` (default off). 0.5 claims a production-integrable **verification
+Session/JWT, nonce store, and live-RPC 1271 e2e remain **out of library
+scope** (see SECURITY.md). 0.5 claims a production-integrable **verification
 library**, not a full hosted auth stack.
 
 ## 0.4.0
