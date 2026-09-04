@@ -17,9 +17,9 @@ Those belong in the application that calls [`authenticate`](https://docs.rs/siwx
 1. Server generates a cryptographic nonce (`siwx::nonce::generate_default`) and stores it with TTL.
 2. Server builds `SiwxMessage` and renders with `Verifier::format_message`.
 3. Client signs the **exact** rendered string.
-4. Server calls `authenticate` with `AuthOpts::new(configured_domain, stored_nonce)` and, for multi-chain apps, `.with_chain_id(...)`.
+4. Server calls `authenticate` with `AuthOpts::new(configured_domain, stored_nonce)` and, for multi-chain apps, `.with_chain_id(...)`. Bind `uri` / `scheme` / `request_id` when those claims must match server configuration.
 5. On success, **atomically invalidate** the nonce and create an application session.
-6. Prefer a short `expiration_time` (minutes) and optional `AuthOpts::with_max_issued_age`.
+6. Prefer a short `expiration_time` (minutes), single-use nonce consumption, and optional `AuthOpts::with_max_issued_age`.
 
 ## Trust boundaries
 
@@ -34,6 +34,27 @@ Those belong in the application that calls [`authenticate`](https://docs.rs/siwx
 
 Parsing and authentication reject messages larger than `MAX_MESSAGE_BYTES` (16 KiB)
 and resource lists larger than `MAX_RESOURCES` (32).
+
+## Trailing LF
+
+ABNF uses `LF` and does not allow a trailing newline after the last field. Parse
+rejects a trailing LF (`InvalidFormat` / `UnexpectedTrailing`). If a client
+`join("\n")`s lines and leaves a leftover LF, the relying party may call
+`raw.trim_end_matches('\n')` before `authenticate`. The library does not trim.
+
+## Time window and clock skew
+
+`AuthOpts` default `clock_skew` is 60 seconds. Skew applies only to
+`expiration_time`, `not_before`, and `max_issued_age`:
+
+- expired when `now > expiration_time + skew` (`now == expiration_time` is still valid)
+- not yet valid when `now + skew < not_before`
+- stale when `issued_at <= now + skew` and `(now - issued_at) - skew > max_issued_age`
+
+The library does **not** reject a future `issued_at`. There is no `FutureIssuedAt`
+error. Freshness is a short `expiration_time`, single-use nonce consumption, and
+optional `max_issued_age`. Official SIWE verify vector `"expired message"` has
+`issuedAt` after the injected `time` and must succeed.
 
 ## Out of library scope (explicit residuals)
 

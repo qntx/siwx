@@ -10,7 +10,7 @@ use iri_string::validate::authority;
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
-use crate::SiwxError;
+use crate::error::{ChainIdReason, SiwxError};
 use crate::parser::PREAMBLE_MID;
 
 /// CAIP-122 message version (EIP-4361 / CAIP-122 mandate `"1"`).
@@ -57,17 +57,19 @@ impl Timestamp {
     /// `date-time`.
     pub fn parse(s: &str) -> Result<Self, SiwxError> {
         if !s.contains('T') && !s.contains('t') {
-            return Err(SiwxError::InvalidTimestamp(
-                "must contain T date-time separator".into(),
-            ));
+            return Err(SiwxError::InvalidTimestamp {
+                reason: "must contain T date-time separator".into(),
+            });
         }
         if !has_rfc3339_timezone(s) {
-            return Err(SiwxError::InvalidTimestamp(
-                "must have timezone Z or ±HH:MM".into(),
-            ));
+            return Err(SiwxError::InvalidTimestamp {
+                reason: "must have timezone Z or ±HH:MM".into(),
+            });
         }
-        let parsed = OffsetDateTime::parse(s, &Rfc3339)
-            .map_err(|e| SiwxError::InvalidTimestamp(e.to_string()))?;
+        let parsed =
+            OffsetDateTime::parse(s, &Rfc3339).map_err(|e| SiwxError::InvalidTimestamp {
+                reason: e.to_string(),
+            })?;
         Ok(Self {
             parsed,
             original: s.to_owned(),
@@ -83,7 +85,9 @@ impl Timestamp {
     pub fn from_datetime(t: OffsetDateTime) -> Result<Self, SiwxError> {
         let original = t
             .format(&Rfc3339)
-            .map_err(|e| SiwxError::InvalidTimestamp(e.to_string()))?;
+            .map_err(|e| SiwxError::InvalidTimestamp {
+                reason: e.to_string(),
+            })?;
         Ok(Self {
             parsed: t,
             original,
@@ -220,9 +224,19 @@ impl SiwxMessage {
         nonce: impl Into<String>,
     ) -> Result<Self, SiwxError> {
         let domain = check_domain(&domain.into())?;
-        let address = non_empty(address.into(), "address")?;
+        let address = address.into();
+        if address.is_empty() {
+            return Err(SiwxError::InvalidAddress {
+                reason: "empty".into(),
+            });
+        }
         let uri = check_uri(&uri.into())?;
-        let chain_id = non_empty(chain_id.into(), "chain_id")?;
+        let chain_id = chain_id.into();
+        if chain_id.is_empty() {
+            return Err(SiwxError::InvalidChainId {
+                reason: ChainIdReason::Empty,
+            });
+        }
         let nonce = check_nonce_shape(&nonce.into())?;
 
         Ok(Self {
@@ -247,7 +261,7 @@ impl SiwxMessage {
     ///
     /// # Errors
     ///
-    /// Returns [`SiwxError::InvalidFormat`] if the scheme is empty, does not
+    /// Returns [`SiwxError::InvalidScheme`] if the scheme is empty, does not
     /// start with ALPHA, or contains characters outside `ALPHA / DIGIT / "+" /
     /// "-" / "."`.
     pub fn with_scheme(mut self, scheme: impl Into<String>) -> Result<Self, SiwxError> {
@@ -349,8 +363,8 @@ impl SiwxMessage {
     ///
     /// # Errors
     ///
-    /// Returns [`SiwxError::InvalidFormat`] if the value is not RFC 3986 `pchar`
-    /// or exceeds the size limit.
+    /// Returns [`SiwxError::InvalidRequestId`] if the value is not RFC 3986
+    /// `pchar` or exceeds the size limit.
     pub fn with_request_id(mut self, rid: impl Into<String>) -> Result<Self, SiwxError> {
         self.request_id = Some(check_request_id(&rid.into())?);
         Ok(self)
@@ -360,7 +374,7 @@ impl SiwxMessage {
     ///
     /// # Errors
     ///
-    /// Returns [`SiwxError::InvalidFormat`] if there are too many entries, or
+    /// Returns [`SiwxError::TooManyResources`] if there are too many entries, or
     /// [`SiwxError::InvalidUri`] if any entry is not an RFC 3986 URI.
     pub fn with_resources<I, S>(mut self, resources: I) -> Result<Self, SiwxError>
     where
@@ -381,94 +395,88 @@ impl SiwxMessage {
     }
 }
 
-pub(crate) fn non_empty(s: String, field: &str) -> Result<String, SiwxError> {
-    if s.is_empty() {
-        return Err(SiwxError::InvalidFormat(format!(
-            "{field} must not be empty"
-        )));
-    }
-    Ok(s)
-}
-
 pub(crate) fn check_scheme(scheme: &str) -> Result<String, SiwxError> {
     if scheme.is_empty() {
-        return Err(SiwxError::InvalidFormat("empty scheme".into()));
+        return Err(SiwxError::InvalidScheme { reason: "empty" });
     }
     if !scheme
         .as_bytes()
         .first()
         .is_some_and(u8::is_ascii_alphabetic)
     {
-        return Err(SiwxError::InvalidFormat(
-            "scheme must start with ASCII letter".into(),
-        ));
+        return Err(SiwxError::InvalidScheme {
+            reason: "must start with ASCII letter",
+        });
     }
     if !scheme
         .chars()
         .all(|c| c.is_ascii_alphanumeric() || c == '+' || c == '-' || c == '.')
     {
-        return Err(SiwxError::InvalidFormat(
-            "scheme must be ASCII alphanumeric, '+', '-', or '.'".into(),
-        ));
+        return Err(SiwxError::InvalidScheme {
+            reason: "must be ASCII alphanumeric, '+', '-', or '.'",
+        });
     }
     Ok(scheme.to_owned())
 }
 
 pub(crate) fn check_domain(domain: &str) -> Result<String, SiwxError> {
     if domain.is_empty() {
-        return Err(SiwxError::InvalidDomain("empty".into()));
+        return Err(SiwxError::InvalidDomain { reason: "empty" });
     }
     if domain.contains(PREAMBLE_MID) {
-        return Err(SiwxError::InvalidDomain(
-            "must not contain preamble marker".into(),
-        ));
+        return Err(SiwxError::InvalidDomain {
+            reason: "preamble marker",
+        });
     }
     // Empty authority is valid in iri-string (`file:///`); rejected above.
-    authority::<UriSpec>(domain)
-        .map_err(|_| SiwxError::InvalidDomain("not RFC 3986 authority".into()))?;
+    authority::<UriSpec>(domain).map_err(|_| SiwxError::InvalidDomain {
+        reason: "not RFC 3986 authority",
+    })?;
     Ok(domain.to_owned())
 }
 
 pub(crate) fn check_statement(statement: &str) -> Result<(), SiwxError> {
     if statement.is_empty() {
-        return Err(SiwxError::InvalidStatement("empty".into()));
+        return Err(SiwxError::InvalidStatement { reason: "empty" });
     }
     if statement.len() > MAX_STATEMENT_BYTES {
-        return Err(SiwxError::InvalidStatement(format!(
-            "exceeds maximum size of {MAX_STATEMENT_BYTES} bytes, got {}",
-            statement.len()
-        )));
+        return Err(SiwxError::InvalidStatement {
+            reason: "exceeds maximum size",
+        });
     }
     if !statement.chars().all(is_statement_char) {
-        return Err(SiwxError::InvalidStatement(
-            "must be RFC 3986 reserved / unreserved / SP".into(),
-        ));
+        return Err(SiwxError::InvalidStatement {
+            reason: "must be RFC 3986 reserved / unreserved / SP",
+        });
     }
     Ok(())
 }
 
 pub(crate) fn check_uri(uri: &str) -> Result<String, SiwxError> {
     if uri.len() > MAX_URI_BYTES {
-        return Err(SiwxError::InvalidUri(format!(
-            "exceeds maximum size of {MAX_URI_BYTES} bytes, got {}",
-            uri.len()
-        )));
+        return Err(SiwxError::InvalidUri {
+            reason: format!(
+                "exceeds maximum size of {MAX_URI_BYTES} bytes, got {}",
+                uri.len()
+            ),
+        });
     }
-    UriString::try_from(uri).map_err(|e| SiwxError::InvalidUri(e.to_string()))?;
+    UriString::try_from(uri).map_err(|e| SiwxError::InvalidUri {
+        reason: e.to_string(),
+    })?;
     Ok(uri.to_owned())
 }
 
 pub(crate) fn check_request_id(rid: &str) -> Result<String, SiwxError> {
     if rid.len() > MAX_REQUEST_ID_BYTES {
-        return Err(SiwxError::InvalidFormat(format!(
-            "request_id exceeds maximum size of {MAX_REQUEST_ID_BYTES} bytes, got {}",
-            rid.len()
-        )));
+        return Err(SiwxError::InvalidRequestId {
+            reason: "exceeds maximum size",
+        });
     }
     if !is_pchar_string(rid) {
-        return Err(SiwxError::InvalidFormat(
-            "request_id must be RFC 3986 pchar".into(),
-        ));
+        return Err(SiwxError::InvalidRequestId {
+            reason: "must be RFC 3986 pchar",
+        });
     }
     Ok(rid.to_owned())
 }
@@ -481,9 +489,10 @@ pub(crate) fn check_resources(
         .map(|uri| uri.as_ref().to_owned())
         .collect();
     if resources.len() > MAX_RESOURCES {
-        return Err(SiwxError::invalid_format(format!(
-            "too many resources (max {MAX_RESOURCES})"
-        )));
+        return Err(SiwxError::TooManyResources {
+            count: resources.len(),
+            max: MAX_RESOURCES,
+        });
     }
     for uri in &resources {
         check_uri(uri)?;
@@ -494,13 +503,17 @@ pub(crate) fn check_resources(
 /// Validate nonce length and charset (EIP-4361: ≥ 8 alphanumeric).
 pub(crate) fn check_nonce_shape(nonce: &str) -> Result<String, SiwxError> {
     if nonce.len() < MIN_NONCE_LEN {
-        return Err(SiwxError::InvalidNonce(format!(
-            "must be at least {MIN_NONCE_LEN} characters, got {}",
-            nonce.len()
-        )));
+        return Err(SiwxError::InvalidNonce {
+            reason: format!(
+                "must be at least {MIN_NONCE_LEN} characters, got {}",
+                nonce.len()
+            ),
+        });
     }
     if !nonce.chars().all(|c| c.is_ascii_alphanumeric()) {
-        return Err(SiwxError::InvalidNonce("must be ASCII alphanumeric".into()));
+        return Err(SiwxError::InvalidNonce {
+            reason: "must be ASCII alphanumeric".into(),
+        });
     }
     Ok(nonce.to_owned())
 }
@@ -593,11 +606,17 @@ mod tests {
     fn new_rejects_empty_mandatory_fields() {
         assert!(matches!(
             SiwxMessage::new("", "a", "https://d.com", "1", "testnonce12345678").unwrap_err(),
-            SiwxError::InvalidDomain(_)
+            SiwxError::InvalidDomain { .. }
         ));
         assert!(matches!(
             SiwxMessage::new("d.com", "", "https://d.com", "1", "testnonce12345678").unwrap_err(),
-            SiwxError::InvalidFormat(_)
+            SiwxError::InvalidAddress { .. }
+        ));
+        assert!(matches!(
+            SiwxMessage::new("d.com", "a", "https://d.com", "", "testnonce12345678").unwrap_err(),
+            SiwxError::InvalidChainId {
+                reason: ChainIdReason::Empty
+            }
         ));
     }
 
@@ -605,7 +624,7 @@ mod tests {
     fn new_rejects_short_nonce() {
         assert!(matches!(
             SiwxMessage::new("d.com", "a", "https://d.com", "1", "short").unwrap_err(),
-            SiwxError::InvalidNonce(_)
+            SiwxError::InvalidNonce { .. }
         ));
     }
 
@@ -631,7 +650,7 @@ mod tests {
                 "testnonce12345678"
             )
             .unwrap_err(),
-            SiwxError::InvalidUri(_)
+            SiwxError::InvalidUri { .. }
         ));
     }
 
@@ -657,7 +676,7 @@ mod tests {
             .expect("valid")
             .with_statement("bad\nline")
             .unwrap_err();
-        assert!(matches!(err, SiwxError::InvalidStatement(_)));
+        assert!(matches!(err, SiwxError::InvalidStatement { .. }));
     }
 
     #[test]
@@ -666,7 +685,7 @@ mod tests {
             .expect("valid")
             .with_statement("")
             .unwrap_err();
-        assert!(matches!(err, SiwxError::InvalidStatement(_)));
+        assert!(matches!(err, SiwxError::InvalidStatement { .. }));
     }
 
     #[test]
@@ -674,7 +693,7 @@ mod tests {
         let evil = format!("evil.com{PREAMBLE_MID}Ethereum account:\n0x");
         assert!(matches!(
             SiwxMessage::new(&evil, "a", "https://d.com", "1", "testnonce12345678").unwrap_err(),
-            SiwxError::InvalidDomain(_)
+            SiwxError::InvalidDomain { .. }
         ));
     }
 
@@ -701,7 +720,7 @@ mod tests {
     fn domain_rejects_empty_and_non_authority() {
         assert!(matches!(
             SiwxMessage::new("", "a", "https://d.com", "1", "testnonce12345678").unwrap_err(),
-            SiwxError::InvalidDomain(_)
+            SiwxError::InvalidDomain { .. }
         ));
         assert!(matches!(
             SiwxMessage::new(
@@ -712,7 +731,7 @@ mod tests {
                 "testnonce12345678"
             )
             .unwrap_err(),
-            SiwxError::InvalidDomain(_)
+            SiwxError::InvalidDomain { .. }
         ));
     }
 
@@ -721,7 +740,7 @@ mod tests {
         let base = SiwxMessage::new("d.com", "a", "https://d.com", "1", "testnonce12345678")
             .expect("valid");
         let err = base.clone().with_scheme("1http").unwrap_err();
-        assert!(matches!(err, SiwxError::InvalidFormat(_)));
+        assert!(matches!(err, SiwxError::InvalidScheme { .. }));
         let https = base.with_scheme("https").expect("alpha scheme");
         assert_eq!(https.scheme.as_deref(), Some("https"));
     }

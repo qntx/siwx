@@ -24,7 +24,7 @@
 use std::iter::Peekable;
 use std::str::{FromStr, Split};
 
-use crate::SiwxError;
+use crate::error::{FormatReason, SiwxError};
 use crate::message::{
     MAX_MESSAGE_BYTES, SiwxMessage, Timestamp, VERSION, check_domain, check_nonce_shape,
     check_request_id, check_resources, check_scheme, check_statement, check_uri,
@@ -60,38 +60,39 @@ impl FromStr for SiwxMessage {
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         if input.len() > MAX_MESSAGE_BYTES {
-            return Err(SiwxError::InvalidFormat(format!(
-                "message exceeds maximum size of {MAX_MESSAGE_BYTES} bytes"
-            )));
+            return Err(SiwxError::MessageTooLarge {
+                len: input.len(),
+                max: MAX_MESSAGE_BYTES,
+            });
         }
         if input.as_bytes().contains(&b'\r') {
-            return Err(SiwxError::invalid_format("CR not allowed"));
+            return Err(SiwxError::invalid_format(FormatReason::CrLf));
         }
 
         let mut lines = input.split('\n').peekable();
 
-        let (scheme, domain, chain_name) = parse_preamble(next(&mut lines, "preamble")?)?;
+        let (scheme, domain, chain_name) = parse_preamble(next(&mut lines)?)?;
         let scheme = scheme.map(|s| check_scheme(&s)).transpose()?;
         let domain = check_domain(&domain)?;
         let chain_name = (!chain_name.is_empty()).then(|| chain_name.to_owned());
-        let address = next(&mut lines, "address")?.to_owned();
+        let address = next(&mut lines)?.to_owned();
         if address.is_empty() {
-            return Err(SiwxError::InvalidAddress("empty".into()));
+            return Err(SiwxError::InvalidAddress {
+                reason: "empty".into(),
+            });
         }
 
-        expect_blank(&mut lines, "blank line after address")?;
+        expect_blank(&mut lines)?;
         let statement = take_optional_statement(&mut lines)?;
 
         let uri = check_uri(&take_required_tag(&mut lines, URI_TAG)?)?;
         let version = take_required_tag(&mut lines, VERSION_TAG)?;
         if version != VERSION {
-            return Err(SiwxError::InvalidFormat(format!(
-                "version must be {VERSION}, got {version}"
-            )));
+            return Err(SiwxError::invalid_format(FormatReason::VersionNotOne));
         }
         let chain_id = take_required_tag(&mut lines, CHAIN_TAG)?;
         if chain_id.is_empty() {
-            return Err(SiwxError::InvalidFormat("empty chain_id".into()));
+            return Err(SiwxError::invalid_format(FormatReason::EmptyChainId));
         }
 
         let nonce = check_nonce_shape(&take_required_tag(&mut lines, NONCE_TAG)?)?;
@@ -128,68 +129,68 @@ impl FromStr for SiwxMessage {
 fn parse_preamble(header: &str) -> Result<(Option<String>, String, &str), SiwxError> {
     let mid = header
         .find(PREAMBLE_MID)
-        .ok_or_else(|| SiwxError::invalid_format("missing preamble marker"))?;
+        .ok_or_else(|| SiwxError::invalid_format(FormatReason::MissingPreamble))?;
     let authority = &header[..mid];
     let (scheme, domain) = split_scheme_domain(authority)?;
     let after_mid = &header[mid + PREAMBLE_MID.len()..];
     let chain_name = after_mid
         .strip_suffix(PREAMBLE_TAIL)
-        .ok_or_else(|| SiwxError::invalid_format("missing 'account:' suffix"))?;
+        .ok_or_else(|| SiwxError::invalid_format(FormatReason::MissingAccountSuffix))?;
     Ok((scheme, domain, chain_name))
 }
 
 fn split_scheme_domain(authority: &str) -> Result<(Option<String>, String), SiwxError> {
     if let Some((scheme, rest)) = authority.split_once("://") {
         if scheme.is_empty() || rest.is_empty() {
-            return Err(SiwxError::invalid_format(
-                "invalid scheme://domain preamble",
-            ));
+            return Err(SiwxError::invalid_format(FormatReason::Other));
         }
         return Ok((Some(scheme.to_owned()), rest.to_owned()));
     }
     Ok((None, authority.to_owned()))
 }
 
-fn expect_blank(lines: &mut Lines<'_>, ctx: &str) -> Result<(), SiwxError> {
-    let line = next(lines, ctx)?;
+fn expect_blank(lines: &mut Lines<'_>) -> Result<(), SiwxError> {
+    let line = next(lines)?;
     if !line.is_empty() {
-        return Err(SiwxError::invalid_format(format!("expected {ctx}")));
+        return Err(SiwxError::invalid_format(FormatReason::ExpectedBlankLine));
     }
     Ok(())
 }
 
 fn take_optional_statement(lines: &mut Lines<'_>) -> Result<Option<String>, SiwxError> {
     let Some(line) = lines.peek().copied() else {
-        return Err(SiwxError::invalid_format(
-            "unexpected end of input (statement)",
-        ));
+        return Err(SiwxError::invalid_format(FormatReason::UnexpectedEof));
     };
     if line.is_empty() {
         lines.next();
         return match lines.peek() {
             Some(next_line) if next_line.starts_with(URI_TAG) => Ok(None),
-            _ => Err(SiwxError::invalid_format(format!("expected {URI_TAG}"))),
+            _ => Err(SiwxError::invalid_format(FormatReason::MissingField(
+                URI_TAG,
+            ))),
         };
     }
     if is_tagged(line) {
-        return Err(SiwxError::invalid_format("expected blank line"));
+        return Err(SiwxError::invalid_format(FormatReason::ExpectedBlankLine));
     }
-    let stmt = next(lines, "statement")?.to_owned();
+    let stmt = next(lines)?.to_owned();
     check_statement(&stmt)?;
-    expect_blank(lines, "blank line after statement")?;
+    expect_blank(lines)?;
     match lines.peek() {
         Some(next_line) if next_line.starts_with(URI_TAG) => Ok(Some(stmt)),
-        _ => Err(SiwxError::invalid_format(format!("expected {URI_TAG}"))),
+        _ => Err(SiwxError::invalid_format(FormatReason::MissingField(
+            URI_TAG,
+        ))),
     }
 }
 
-fn take_required_tag(lines: &mut Lines<'_>, tag: &str) -> Result<String, SiwxError> {
+fn take_required_tag(lines: &mut Lines<'_>, tag: &'static str) -> Result<String, SiwxError> {
     let line = lines
         .peek()
-        .ok_or_else(|| SiwxError::invalid_format(format!("missing {tag}")))?;
+        .ok_or_else(|| SiwxError::invalid_format(FormatReason::MissingField(tag)))?;
     let value = line
         .strip_prefix(tag)
-        .ok_or_else(|| SiwxError::invalid_format(format!("expected {tag}")))?
+        .ok_or_else(|| SiwxError::invalid_format(FormatReason::MissingField(tag)))?
         .to_owned();
     lines.next();
     Ok(value)
@@ -201,7 +202,7 @@ fn take_optional_tag(lines: &mut Lines<'_>, tag: &str) -> Option<String> {
     Some(value)
 }
 
-fn take_required_ts(lines: &mut Lines<'_>, tag: &str) -> Result<Timestamp, SiwxError> {
+fn take_required_ts(lines: &mut Lines<'_>, tag: &'static str) -> Result<Timestamp, SiwxError> {
     let s = take_required_tag(lines, tag)?;
     Timestamp::parse(&s)
 }
@@ -219,31 +220,26 @@ fn take_resources(lines: &mut Lines<'_>) -> Result<Vec<String>, SiwxError> {
     lines.next();
     let mut resources = Vec::new();
     while lines.peek().is_some_and(|l| !l.is_empty() && *l != RES_TAG) {
-        let line = next(lines, "resource item")?;
+        let line = next(lines)?;
         let item = line
             .strip_prefix("- ")
-            .ok_or_else(|| SiwxError::invalid_format("resource line must start with '- '"))?;
+            .ok_or_else(|| SiwxError::invalid_format(FormatReason::ResourceSyntax))?;
         resources.push(item.to_owned());
     }
     check_resources(resources)
 }
 
 fn reject_trailing(lines: &mut Lines<'_>) -> Result<(), SiwxError> {
-    if let Some(line) = lines.next() {
-        if line.is_empty() {
-            return Err(SiwxError::invalid_format("unexpected trailing newline"));
-        }
-        return Err(SiwxError::invalid_format(format!(
-            "unexpected trailing content: {line}"
-        )));
+    if lines.next().is_some() {
+        return Err(SiwxError::invalid_format(FormatReason::UnexpectedTrailing));
     }
     Ok(())
 }
 
-fn next<'a>(lines: &mut impl Iterator<Item = &'a str>, ctx: &str) -> Result<&'a str, SiwxError> {
+fn next<'a>(lines: &mut impl Iterator<Item = &'a str>) -> Result<&'a str, SiwxError> {
     lines
         .next()
-        .ok_or_else(|| SiwxError::invalid_format(format!("unexpected end of input ({ctx})")))
+        .ok_or_else(|| SiwxError::invalid_format(FormatReason::UnexpectedEof))
 }
 
 pub(crate) fn is_tagged(line: &str) -> bool {
@@ -309,7 +305,12 @@ mod tests {
         let mut text = msg.to_sign_string("Ethereum");
         text.push('\n');
         let err: SiwxError = text.parse::<SiwxMessage>().expect_err("trailing LF");
-        assert!(matches!(err, SiwxError::InvalidFormat(_)));
+        assert!(matches!(
+            err,
+            SiwxError::InvalidFormat {
+                reason: FormatReason::UnexpectedTrailing
+            }
+        ));
     }
 
     #[test]
@@ -317,15 +318,34 @@ mod tests {
         let msg = sample();
         let text = msg.to_sign_string("Ethereum").replace('\n', "\r\n");
         let err: SiwxError = text.parse::<SiwxMessage>().expect_err("CRLF");
-        assert!(matches!(err, SiwxError::InvalidFormat(_)));
+        assert!(matches!(
+            err,
+            SiwxError::InvalidFormat {
+                reason: FormatReason::CrLf
+            }
+        ));
     }
 
     #[test]
     fn trailing_garbage_fails() {
-        let msg = sample();
+        let msg = SiwxMessage::new(
+            "example.com",
+            "addr1",
+            "https://example.com",
+            "1",
+            "testnonce12345678",
+        )
+        .expect("valid")
+        .with_issued_at(datetime!(2021-09-30 16:25:24 UTC))
+        .expect("issued_at");
         let text = format!("{}\nGARBAGE", msg.to_sign_string("Ethereum"));
         let err: SiwxError = text.parse::<SiwxMessage>().expect_err("garbage");
-        assert!(matches!(err, SiwxError::InvalidFormat(_)));
+        assert!(matches!(
+            err,
+            SiwxError::InvalidFormat {
+                reason: FormatReason::UnexpectedTrailing
+            }
+        ));
     }
 
     #[test]
@@ -340,7 +360,12 @@ Version: 1
 Chain ID: 1
 Issued At: 2021-09-30T16:25:24Z";
         let err: SiwxError = text.parse::<SiwxMessage>().expect_err("missing nonce");
-        assert!(matches!(err, SiwxError::InvalidFormat(_)));
+        assert!(matches!(
+            err,
+            SiwxError::InvalidFormat {
+                reason: FormatReason::MissingField(NONCE_TAG)
+            }
+        ));
     }
 
     #[test]
@@ -371,7 +396,12 @@ Issued At: 2021-09-30T16:25:24Z";
         let err: SiwxError = "not a siwx message"
             .parse::<SiwxMessage>()
             .expect_err("should fail");
-        assert!(matches!(err, SiwxError::InvalidFormat(_)));
+        assert!(matches!(
+            err,
+            SiwxError::InvalidFormat {
+                reason: FormatReason::MissingPreamble
+            }
+        ));
     }
 
     #[test]
@@ -443,7 +473,12 @@ Issued At: 2021-09-30T16:25:24Z";
     fn single_blank_before_uri_is_expected_blank_line() {
         let text = after_address("\n\n");
         let err: SiwxError = text.parse::<SiwxMessage>().expect_err("single blank");
-        assert!(matches!(err, SiwxError::InvalidFormat(_)));
+        assert!(matches!(
+            err,
+            SiwxError::InvalidFormat {
+                reason: FormatReason::ExpectedBlankLine
+            }
+        ));
         assert!(
             err.to_string().contains("blank"),
             "expected blank line, got {err}"
@@ -456,10 +491,27 @@ Issued At: 2021-09-30T16:25:24Z";
         let err: SiwxError = text
             .parse::<SiwxMessage>()
             .expect_err("extra blank then statement");
-        assert!(matches!(err, SiwxError::InvalidFormat(_)));
+        assert!(matches!(
+            err,
+            SiwxError::InvalidFormat {
+                reason: FormatReason::MissingField(URI_TAG)
+            }
+        ));
         assert!(
             err.to_string().contains("URI:"),
             "expected URI after second blank, got {err}"
         );
+    }
+
+    #[test]
+    fn empty_chain_id_tag_is_format_empty_chain_id() {
+        let text = after_address("\n\n\n").replace("Chain ID: 1", "Chain ID: ");
+        let err: SiwxError = text.parse::<SiwxMessage>().expect_err("empty chain id");
+        assert!(matches!(
+            err,
+            SiwxError::InvalidFormat {
+                reason: FormatReason::EmptyChainId
+            }
+        ));
     }
 }

@@ -16,7 +16,7 @@ use crate::{SiwxError, SiwxMessage};
 ///   signed), not a re-serialized form of `message`.
 /// * Bind cryptographic identity to `message.address`.
 /// * Return `Ok(())` when the signature is **valid** for the given message.
-/// * Return `Err(SiwxError::VerificationFailed(..))` when the signature is
+/// * Return `Err(SiwxError::VerificationFailed { .. })` when the signature is
 ///   **cryptographically invalid**.
 /// * Return other `Err` variants for malformed inputs.
 ///
@@ -40,7 +40,9 @@ pub trait Verifier: Send + Sync {
     /// Returns [`SiwxError::InvalidAddress`] when the format is wrong.
     fn validate_address(address: &str) -> Result<(), SiwxError> {
         if address.is_empty() {
-            return Err(SiwxError::InvalidAddress("empty".into()));
+            return Err(SiwxError::InvalidAddress {
+                reason: "empty".into(),
+            });
         }
         Ok(())
     }

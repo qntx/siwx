@@ -2,48 +2,79 @@
 
 use time::OffsetDateTime;
 
-use crate::SiwxError;
+use crate::error::{ChainIdReason, FormatReason, SiwxError};
 use crate::message::{
     SiwxMessage, VERSION, check_domain, check_nonce_shape, check_request_id, check_resources,
     check_scheme, check_statement, check_uri,
 };
 
+/// Default leeway for `expiration_time`, `not_before`, and `max_issued_age`.
+const DEFAULT_CLOCK_SKEW: time::Duration = time::Duration::seconds(60);
+
 /// Binding and temporal options for authentication / validation.
 ///
 /// `domain` and `nonce` are **required** so callers cannot skip replay and
 /// origin binding by accident. Multi-chain deployments should also set
-/// [`Self::with_chain_id`].
+/// [`Self::with_chain_id`]. Set [`Self::with_uri`] / [`Self::with_scheme`]
+/// to bind those claims.
 #[derive(Debug, Clone)]
 pub struct AuthOpts {
-    /// Expected domain (must match `message.domain`).
-    pub domain: String,
-    /// Expected nonce (must match `message.nonce`).
-    pub nonce: String,
-    /// Expected chain id (if set, must match `message.chain_id`).
-    pub chain_id: Option<String>,
-    /// The point in time to check against. Defaults to [`OffsetDateTime::now_utc`].
-    pub timestamp: Option<OffsetDateTime>,
-    /// If set, reject when `now - issued_at` exceeds this duration.
-    pub max_issued_age: Option<time::Duration>,
+    domain: String,
+    nonce: String,
+    scheme: Option<String>,
+    uri: Option<String>,
+    chain_id: Option<String>,
+    request_id: Option<String>,
+    timestamp: Option<OffsetDateTime>,
+    clock_skew: time::Duration,
+    max_issued_age: Option<time::Duration>,
 }
 
 impl AuthOpts {
     /// Create opts that bind `domain` and `nonce`.
+    ///
+    /// Default clock skew is 60 seconds. Scheme, URI, chain id, and request id
+    /// are unbound until set with the corresponding `with_*` builders.
     #[must_use]
     pub fn new(domain: impl Into<String>, nonce: impl Into<String>) -> Self {
         Self {
             domain: domain.into(),
             nonce: nonce.into(),
+            scheme: None,
+            uri: None,
             chain_id: None,
+            request_id: None,
             timestamp: None,
+            clock_skew: DEFAULT_CLOCK_SKEW,
             max_issued_age: None,
         }
+    }
+
+    /// Require `message.scheme` to equal `scheme`.
+    #[must_use]
+    pub fn with_scheme(mut self, scheme: impl Into<String>) -> Self {
+        self.scheme = Some(scheme.into());
+        self
+    }
+
+    /// Require `message.uri` to equal `uri`.
+    #[must_use]
+    pub fn with_uri(mut self, uri: impl Into<String>) -> Self {
+        self.uri = Some(uri.into());
+        self
     }
 
     /// Require `message.chain_id` to equal `chain_id`.
     #[must_use]
     pub fn with_chain_id(mut self, chain_id: impl Into<String>) -> Self {
         self.chain_id = Some(chain_id.into());
+        self
+    }
+
+    /// Require `message.request_id` to equal `id`.
+    #[must_use]
+    pub fn with_request_id(mut self, id: impl Into<String>) -> Self {
+        self.request_id = Some(id.into());
         self
     }
 
@@ -54,8 +85,16 @@ impl AuthOpts {
         self
     }
 
+    /// Override clock skew applied to expiration, not-before, and max issued age.
+    #[must_use]
+    pub const fn with_clock_skew(mut self, d: time::Duration) -> Self {
+        self.clock_skew = d;
+        self
+    }
+
     /// Reject messages whose `issued_at` is older than `age` relative to the
-    /// evaluation timestamp.
+    /// evaluation timestamp (after subtracting clock skew). Future `issued_at`
+    /// is not treated as stale.
     #[must_use]
     pub const fn with_max_issued_age(mut self, age: time::Duration) -> Self {
         self.max_issued_age = Some(age);
@@ -87,14 +126,21 @@ impl SiwxMessage {
     /// ```
     pub fn validate(&self, opts: &AuthOpts) -> Result<(), SiwxError> {
         self.check_required_shapes()?;
-        self.check_uri_shapes()?;
+        check_uri(&self.uri)?;
         if let Some(ref s) = self.statement {
             check_statement(s)?;
         }
+        if let Some(ref rid) = self.request_id {
+            check_request_id(rid)?;
+        }
+        check_resources(self.resources.iter())?;
         self.check_domain_binding(&opts.domain)?;
         self.check_nonce_binding(&opts.nonce)?;
+        self.check_scheme_binding(opts.scheme.as_deref())?;
+        self.check_uri_binding(opts.uri.as_deref())?;
         self.check_chain_id_binding(opts.chain_id.as_deref())?;
-        self.check_temporal_window(opts.timestamp, opts.max_issued_age)?;
+        self.check_request_id_binding(opts.request_id.as_deref())?;
+        self.check_temporal_window(opts)?;
         Ok(())
     }
 
@@ -104,46 +150,64 @@ impl SiwxMessage {
         }
         check_domain(&self.domain)?;
         if self.address.is_empty() {
-            return Err(SiwxError::InvalidAddress("empty".into()));
+            return Err(SiwxError::InvalidAddress {
+                reason: "empty".into(),
+            });
         }
         if self.version != VERSION {
-            return Err(SiwxError::InvalidFormat(format!(
-                "version must be {VERSION}, got {}",
-                self.version
-            )));
+            return Err(SiwxError::InvalidFormat {
+                reason: FormatReason::VersionNotOne,
+            });
         }
         if self.chain_id.is_empty() {
-            return Err(SiwxError::InvalidFormat("empty chain_id".into()));
+            return Err(SiwxError::InvalidChainId {
+                reason: ChainIdReason::Empty,
+            });
         }
         check_nonce_shape(&self.nonce)?;
-        if let Some(ref rid) = self.request_id {
-            check_request_id(rid)?;
-        }
-        Ok(())
-    }
-
-    fn check_uri_shapes(&self) -> Result<(), SiwxError> {
-        check_uri(&self.uri)?;
-        check_resources(self.resources.iter())?;
         Ok(())
     }
 
     fn check_domain_binding(&self, expected: &str) -> Result<(), SiwxError> {
         if expected != self.domain {
-            return Err(SiwxError::InvalidDomain(format!(
-                "expected {expected}, got {}",
-                self.domain
-            )));
+            return Err(SiwxError::DomainMismatch {
+                expected: expected.to_owned(),
+                actual: self.domain.clone(),
+            });
         }
         Ok(())
     }
 
     fn check_nonce_binding(&self, expected: &str) -> Result<(), SiwxError> {
         if expected != self.nonce {
-            return Err(SiwxError::InvalidNonce(format!(
-                "expected {expected}, got {}",
-                self.nonce
-            )));
+            return Err(SiwxError::NonceMismatch {
+                expected: expected.to_owned(),
+                actual: self.nonce.clone(),
+            });
+        }
+        Ok(())
+    }
+
+    fn check_scheme_binding(&self, expected: Option<&str>) -> Result<(), SiwxError> {
+        if let Some(expected) = expected
+            && self.scheme.as_deref() != Some(expected)
+        {
+            return Err(SiwxError::SchemeMismatch {
+                expected: Some(expected.to_owned()),
+                actual: self.scheme.clone(),
+            });
+        }
+        Ok(())
+    }
+
+    fn check_uri_binding(&self, expected: Option<&str>) -> Result<(), SiwxError> {
+        if let Some(expected) = expected
+            && expected != self.uri
+        {
+            return Err(SiwxError::UriMismatch {
+                expected: expected.to_owned(),
+                actual: self.uri.clone(),
+            });
         }
         Ok(())
     }
@@ -152,34 +216,43 @@ impl SiwxMessage {
         if let Some(expected) = expected
             && expected != self.chain_id
         {
-            return Err(SiwxError::InvalidFormat(format!(
-                "chain_id: expected {expected}, got {}",
-                self.chain_id
-            )));
+            return Err(SiwxError::ChainIdMismatch {
+                expected: expected.to_owned(),
+                actual: self.chain_id.clone(),
+            });
         }
         Ok(())
     }
 
-    fn check_temporal_window(
-        &self,
-        at: Option<OffsetDateTime>,
-        max_issued_age: Option<time::Duration>,
-    ) -> Result<(), SiwxError> {
-        let now = at.unwrap_or_else(OffsetDateTime::now_utc);
+    fn check_request_id_binding(&self, expected: Option<&str>) -> Result<(), SiwxError> {
+        if let Some(expected) = expected
+            && self.request_id.as_deref() != Some(expected)
+        {
+            return Err(SiwxError::RequestIdMismatch {
+                expected: Some(expected.to_owned()),
+                actual: self.request_id.clone(),
+            });
+        }
+        Ok(())
+    }
+
+    fn check_temporal_window(&self, opts: &AuthOpts) -> Result<(), SiwxError> {
+        let now = opts.timestamp.unwrap_or_else(OffsetDateTime::now_utc);
+        let skew = opts.clock_skew;
         if let Some(ref exp) = self.expiration_time
-            && now > exp.datetime()
+            && now > exp.datetime() + skew
         {
             return Err(SiwxError::Expired);
         }
         if let Some(ref nbf) = self.not_before
-            && now < nbf.datetime()
+            && now + skew < nbf.datetime()
         {
             return Err(SiwxError::NotYetValid);
         }
-        if let Some(max_age) = max_issued_age {
-            let age = now - self.issued_at.datetime();
-            if age > max_age {
-                return Err(SiwxError::Expired);
+        if let Some(max_age) = opts.max_issued_age {
+            let issued = self.issued_at.datetime();
+            if issued <= now + skew && (now - issued) - skew > max_age {
+                return Err(SiwxError::StaleIssuedAt);
             }
         }
         Ok(())
@@ -221,6 +294,36 @@ mod tests {
     }
 
     #[test]
+    fn expiration_at_now_is_still_valid() {
+        let exp = datetime!(2024-01-01 0:00 UTC);
+        let msg = base().with_expiration_time(exp).expect("expiration");
+        let opts = opts_for(&msg)
+            .with_timestamp(exp)
+            .with_clock_skew(time::Duration::ZERO);
+        msg.validate(&opts).expect("now == exp is valid");
+    }
+
+    #[test]
+    fn expiration_within_skew_is_valid() {
+        let msg = base()
+            .with_expiration_time(datetime!(2024-01-01 0:00 UTC))
+            .expect("expiration");
+        let opts = opts_for(&msg).with_timestamp(datetime!(2024-01-01 0:01 UTC));
+        msg.validate(&opts)
+            .expect("now == exp + default 60s skew is valid");
+    }
+
+    #[test]
+    fn expiration_past_skew_is_expired() {
+        let msg = base()
+            .with_expiration_time(datetime!(2024-01-01 0:00 UTC))
+            .expect("expiration");
+        let opts = opts_for(&msg).with_timestamp(datetime!(2024-01-01 0:01:01 UTC));
+        let err = msg.validate(&opts).unwrap_err();
+        assert!(matches!(err, SiwxError::Expired));
+    }
+
+    #[test]
     fn not_before_in_future_is_rejected() {
         let msg = base()
             .with_not_before(datetime!(2099-01-01 0:00 UTC))
@@ -231,11 +334,53 @@ mod tests {
     }
 
     #[test]
+    fn not_before_within_skew_is_valid() {
+        let msg = base()
+            .with_not_before(datetime!(2024-01-01 0:01 UTC))
+            .expect("not_before");
+        let opts = opts_for(&msg).with_timestamp(datetime!(2024-01-01 0:00 UTC));
+        msg.validate(&opts).expect("now + 60s skew == nbf is valid");
+    }
+
+    #[test]
+    fn not_before_beyond_skew_is_not_yet_valid() {
+        let msg = base()
+            .with_not_before(datetime!(2024-01-01 0:01 UTC))
+            .expect("not_before");
+        let opts = opts_for(&msg).with_timestamp(datetime!(2023-12-31 23:59:59 UTC));
+        let err = msg.validate(&opts).unwrap_err();
+        assert!(matches!(err, SiwxError::NotYetValid));
+    }
+
+    #[test]
+    fn future_issued_at_is_not_rejected() {
+        let msg = base()
+            .with_issued_at(datetime!(2022-01-05 14:27:30 UTC))
+            .expect("issued_at")
+            .with_expiration_time(datetime!(2021-01-05 0:00 UTC))
+            .expect("expiration");
+        let opts = opts_for(&msg)
+            .with_timestamp(datetime!(2020-01-05 0:00 UTC))
+            .with_clock_skew(time::Duration::ZERO);
+        msg.validate(&opts)
+            .expect("future issued-at must not fail; exp is still in the future relative to now");
+    }
+
+    #[test]
     fn domain_mismatch_is_rejected() {
         let msg = base();
         let opts = AuthOpts::new("good.com", &msg.nonce);
         let err = msg.validate(&opts).unwrap_err();
-        assert!(matches!(err, SiwxError::InvalidDomain(_)));
+        assert!(
+            matches!(
+                err,
+                SiwxError::DomainMismatch {
+                    ref expected,
+                    ref actual,
+                } if expected == "good.com" && actual == "d.com"
+            ),
+            "got {err:?}"
+        );
     }
 
     #[test]
@@ -243,7 +388,7 @@ mod tests {
         let msg = base();
         let opts = AuthOpts::new(&msg.domain, "othernonce12345678");
         let err = msg.validate(&opts).unwrap_err();
-        assert!(matches!(err, SiwxError::InvalidNonce(_)));
+        assert!(matches!(err, SiwxError::NonceMismatch { .. }));
     }
 
     #[test]
@@ -251,7 +396,79 @@ mod tests {
         let msg = base();
         let opts = opts_for(&msg).with_chain_id("999");
         let err = msg.validate(&opts).unwrap_err();
-        assert!(matches!(err, SiwxError::InvalidFormat(_)));
+        assert!(
+            matches!(
+                err,
+                SiwxError::ChainIdMismatch {
+                    ref expected,
+                    ref actual,
+                } if expected == "999" && actual == "1"
+            ),
+            "got {err:?}"
+        );
+    }
+
+    #[test]
+    fn scheme_mismatch_is_rejected() {
+        let msg = base();
+        let opts = opts_for(&msg).with_scheme("https");
+        let err = msg.validate(&opts).unwrap_err();
+        assert!(
+            matches!(
+                err,
+                SiwxError::SchemeMismatch {
+                    expected: Some(ref expected),
+                    actual: None,
+                } if expected == "https"
+            ),
+            "got {err:?}"
+        );
+    }
+
+    #[test]
+    fn scheme_binding_accepts_match() {
+        let msg = base().with_scheme("https").expect("scheme");
+        let opts = opts_for(&msg).with_scheme("https");
+        msg.validate(&opts).expect("matching scheme");
+    }
+
+    #[test]
+    fn uri_mismatch_is_rejected() {
+        let msg = base();
+        let opts = opts_for(&msg).with_uri("https://other.com");
+        let err = msg.validate(&opts).unwrap_err();
+        assert!(matches!(err, SiwxError::UriMismatch { .. }));
+    }
+
+    #[test]
+    fn uri_binding_accepts_match() {
+        let msg = base();
+        let opts = opts_for(&msg).with_uri("https://d.com");
+        msg.validate(&opts).expect("matching uri");
+    }
+
+    #[test]
+    fn request_id_mismatch_is_rejected() {
+        let msg = base();
+        let opts = opts_for(&msg).with_request_id("rid-1");
+        let err = msg.validate(&opts).unwrap_err();
+        assert!(
+            matches!(
+                err,
+                SiwxError::RequestIdMismatch {
+                    expected: Some(ref expected),
+                    actual: None,
+                } if expected == "rid-1"
+            ),
+            "got {err:?}"
+        );
+    }
+
+    #[test]
+    fn request_id_binding_accepts_match() {
+        let msg = base().with_request_id("rid-1").expect("request_id");
+        let opts = opts_for(&msg).with_request_id("rid-1");
+        msg.validate(&opts).expect("matching request_id");
     }
 
     #[test]
@@ -259,11 +476,11 @@ mod tests {
         let builder_err = base()
             .with_resources(["not a valid uri ::: bad"])
             .unwrap_err();
-        assert!(matches!(builder_err, SiwxError::InvalidUri(_)));
+        assert!(matches!(builder_err, SiwxError::InvalidUri { .. }));
         let mut msg = base();
         msg.resources = vec!["not a valid uri ::: bad".into()];
         let validate_err = msg.validate(&opts_for(&msg)).unwrap_err();
-        assert!(matches!(validate_err, SiwxError::InvalidUri(_)));
+        assert!(matches!(validate_err, SiwxError::InvalidUri { .. }));
     }
 
     #[test]
@@ -284,6 +501,30 @@ mod tests {
             .with_timestamp(datetime!(2020-01-02 0:00 UTC))
             .with_max_issued_age(time::Duration::hours(1));
         let err = msg.validate(&opts).unwrap_err();
-        assert!(matches!(err, SiwxError::Expired));
+        assert!(matches!(err, SiwxError::StaleIssuedAt));
+    }
+
+    #[test]
+    fn max_issued_age_within_skew_is_valid() {
+        let msg = base()
+            .with_issued_at(datetime!(2024-01-01 0:00 UTC))
+            .expect("issued_at");
+        let opts = opts_for(&msg)
+            .with_timestamp(datetime!(2024-01-01 1:01 UTC))
+            .with_max_issued_age(time::Duration::hours(1));
+        msg.validate(&opts)
+            .expect("age - 60s skew == max_age is not stale");
+    }
+
+    #[test]
+    fn future_issued_at_is_not_stale() {
+        let msg = base()
+            .with_issued_at(datetime!(2024-01-02 0:00 UTC))
+            .expect("issued_at");
+        let opts = opts_for(&msg)
+            .with_timestamp(datetime!(2024-01-01 0:00 UTC))
+            .with_max_issued_age(time::Duration::hours(1));
+        msg.validate(&opts)
+            .expect("future issued-at must not be treated as stale");
     }
 }

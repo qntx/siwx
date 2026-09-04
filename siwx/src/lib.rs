@@ -48,7 +48,7 @@ mod validate;
 mod verifier;
 
 pub use auth::{Authenticated, authenticate};
-pub use error::SiwxError;
+pub use error::{ChainIdReason, FormatReason, SiwxError};
 pub use message::{
     MAX_MESSAGE_BYTES, MAX_REQUEST_ID_BYTES, MAX_RESOURCES, MAX_STATEMENT_BYTES, MAX_URI_BYTES,
     MIN_NONCE_LEN, SiwxMessage, Timestamp, VERSION,

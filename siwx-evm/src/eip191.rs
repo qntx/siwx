@@ -12,27 +12,32 @@ pub(crate) fn verify_sync(
     signature: &[u8],
 ) -> Result<(), SiwxError> {
     if signature.len() != 65 {
-        return Err(SiwxError::InvalidSignature(format!(
-            "EIP-191 signature must be 65 bytes, got {}",
-            signature.len()
-        )));
+        return Err(SiwxError::InvalidSignature {
+            reason: format!(
+                "EIP-191 signature must be 65 bytes, got {}",
+                signature.len()
+            ),
+        });
     }
 
-    let alloy_sig = Signature::try_from(signature)
-        .map_err(|e| SiwxError::InvalidSignature(format!("bad signature encoding: {e}")))?;
+    let alloy_sig = Signature::try_from(signature).map_err(|e| SiwxError::InvalidSignature {
+        reason: format!("bad signature encoding: {e}"),
+    })?;
 
     let hash = eip191_hash_message(raw_message.as_bytes());
 
-    let recovered = alloy_sig
-        .recover_address_from_prehash(&hash)
-        .map_err(|e| SiwxError::VerificationFailed(format!("ECDSA recovery failed: {e}")))?;
+    let recovered = alloy_sig.recover_address_from_prehash(&hash).map_err(|e| {
+        SiwxError::VerificationFailed {
+            reason: format!("ECDSA recovery failed: {e}"),
+        }
+    })?;
 
     let expected = parse_address(&message.address)?;
 
     if recovered != expected {
-        return Err(SiwxError::VerificationFailed(format!(
-            "recovered {recovered} != expected {expected}"
-        )));
+        return Err(SiwxError::VerificationFailed {
+            reason: format!("recovered {recovered} != expected {expected}"),
+        });
     }
 
     Ok(())
@@ -140,7 +145,7 @@ mod tests {
         let err = authenticate(&EvmVerifier::new(), &raw, &sig.as_bytes(), &opts)
             .await
             .expect_err("nonce binding must fail");
-        assert!(matches!(err, SiwxError::InvalidNonce(_)));
+        assert!(matches!(err, SiwxError::NonceMismatch { .. }));
     }
 
     #[tokio::test]
@@ -178,7 +183,7 @@ mod tests {
             .verify(&message, &text, &sig_bytes)
             .await
             .unwrap_err();
-        assert!(matches!(err, SiwxError::VerificationFailed(_)));
+        assert!(matches!(err, SiwxError::VerificationFailed { .. }));
     }
 
     #[tokio::test]
@@ -189,7 +194,7 @@ mod tests {
             .verify(&message, &text, &[0u8; 32])
             .await
             .unwrap_err();
-        assert!(matches!(err, SiwxError::InvalidSignature(_)));
+        assert!(matches!(err, SiwxError::InvalidSignature { .. }));
     }
 
     #[tokio::test]
@@ -210,6 +215,6 @@ mod tests {
             .verify(&message, &tampered, &sig.as_bytes())
             .await
             .unwrap_err();
-        assert!(matches!(err, SiwxError::VerificationFailed(_)));
+        assert!(matches!(err, SiwxError::VerificationFailed { .. }));
     }
 }

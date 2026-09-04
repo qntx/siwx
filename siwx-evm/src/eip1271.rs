@@ -46,8 +46,8 @@ impl Eip1271Verifier {
                 let built = ProviderBuilder::new()
                     .connect(&self.rpc_url)
                     .await
-                    .map_err(|e| {
-                        SiwxError::VerificationFailed(format!("RPC connect failed: {e}"))
+                    .map_err(|e| SiwxError::VerificationFailed {
+                        reason: format!("RPC connect failed: {e}"),
                     })?;
                 Ok::<_, SiwxError>(Provider::<Ethereum>::erased(built))
             })
@@ -71,14 +71,14 @@ impl Eip1271Verifier {
             .isValidSignature(hash, signature.to_vec().into())
             .call()
             .await
-            .map_err(|e| {
-                SiwxError::VerificationFailed(format!("isValidSignature call failed: {e}"))
+            .map_err(|e| SiwxError::VerificationFailed {
+                reason: format!("isValidSignature call failed: {e}"),
             })?;
 
         if !is_success_magic(magic) {
-            return Err(SiwxError::VerificationFailed(format!(
-                "EIP-1271 magic mismatch: expected {EIP1271_MAGIC}, got {magic}"
-            )));
+            return Err(SiwxError::VerificationFailed {
+                reason: format!("EIP-1271 magic mismatch: expected {EIP1271_MAGIC}, got {magic}"),
+            });
         }
 
         Ok(())

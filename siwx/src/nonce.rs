@@ -27,9 +27,9 @@ pub const DEFAULT_LEN: usize = 17;
 /// ```
 pub fn generate(len: usize) -> Result<String, SiwxError> {
     if len < MIN_NONCE_LEN {
-        return Err(SiwxError::InvalidNonce(format!(
-            "length must be at least {MIN_NONCE_LEN}, got {len}"
-        )));
+        return Err(SiwxError::InvalidNonce {
+            reason: format!("length must be at least {MIN_NONCE_LEN}, got {len}"),
+        });
     }
     Ok(random_alnum(len))
 }
@@ -90,11 +90,11 @@ mod tests {
     fn short_length_errors() {
         assert!(matches!(
             generate(0).unwrap_err(),
-            SiwxError::InvalidNonce(_)
+            SiwxError::InvalidNonce { .. }
         ));
         assert!(matches!(
             generate(7).unwrap_err(),
-            SiwxError::InvalidNonce(_)
+            SiwxError::InvalidNonce { .. }
         ));
     }
 }

@@ -47,7 +47,9 @@ pub const CHAIN_NAME: &str = "Ethereum";
 /// Returns [`SiwxError::InvalidAddress`] if the format is wrong.
 pub fn validate_address(address: &str) -> Result<(), SiwxError> {
     if !address.starts_with("0x") {
-        return Err(SiwxError::InvalidAddress("must start with 0x".into()));
+        return Err(SiwxError::InvalidAddress {
+            reason: "must start with 0x".into(),
+        });
     }
     parse_address(address)?;
     Ok(())
@@ -55,8 +57,9 @@ pub fn validate_address(address: &str) -> Result<(), SiwxError> {
 
 /// Parse an Ethereum address string into an [`alloy::primitives::Address`].
 pub(crate) fn parse_address(s: &str) -> Result<Address, SiwxError> {
-    s.parse::<Address>()
-        .map_err(|e| SiwxError::InvalidAddress(e.to_string()))
+    s.parse::<Address>().map_err(|e| SiwxError::InvalidAddress {
+        reason: e.to_string(),
+    })
 }
 
 /// How to resolve an RPC endpoint for EIP-1271.
@@ -124,9 +127,9 @@ impl EvmVerifier {
             Some(RpcConfig::Single(url)) => Ok(Some(url.as_str())),
             Some(RpcConfig::ByChain(map)) => map.get(chain_id).map_or_else(
                 || {
-                    Err(SiwxError::VerificationFailed(format!(
-                        "no RPC configured for chain_id {chain_id}"
-                    )))
+                    Err(SiwxError::VerificationFailed {
+                        reason: format!("no RPC configured for chain_id {chain_id}"),
+                    })
                 },
                 |url| Ok(Some(url.as_str())),
             ),
@@ -223,7 +226,7 @@ mod tests {
         let v = EvmVerifier::with_rpc_map([("1", "https://eth.example")]);
         assert!(v.rpc_url_for("1").unwrap().is_some());
         let err = v.rpc_url_for("137").unwrap_err();
-        assert!(matches!(err, SiwxError::VerificationFailed(_)));
+        assert!(matches!(err, SiwxError::VerificationFailed { .. }));
         assert!(
             err.to_string()
                 .contains("no RPC configured for chain_id 137"),
@@ -263,7 +266,7 @@ mod tests {
             .await
             .expect_err("must fail without RPC for chain 137");
         assert!(
-            matches!(err, SiwxError::VerificationFailed(_)),
+            matches!(err, SiwxError::VerificationFailed { .. }),
             "got {err:?}"
         );
         assert!(
@@ -297,7 +300,7 @@ mod tests {
         assert!(
             matches!(
                 err,
-                SiwxError::InvalidSignature(_) | SiwxError::VerificationFailed(_)
+                SiwxError::InvalidSignature { .. } | SiwxError::VerificationFailed { .. }
             ),
             "got {err:?}"
         );

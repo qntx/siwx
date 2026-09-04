@@ -20,7 +20,8 @@ pub struct Authenticated {
 /// Steps:
 /// 1. Reject oversize input ([`MAX_MESSAGE_BYTES`]).
 /// 2. Parse `raw_message` into [`SiwxMessage`].
-/// 3. [`SiwxMessage::validate`] with `opts` (domain, nonce, optional chain id).
+/// 3. [`SiwxMessage::validate`] with `opts` (domain, nonce, optional scheme /
+///    uri / chain id / request id, temporal window).
 /// 4. Require [`SiwxMessage::chain_name`] == [`Verifier::CHAIN_NAME`].
 /// 5. [`Verifier::validate_address`] for chain-specific address shape.
 /// 6. [`Verifier::verify`] over the original `raw_message` bytes.
@@ -35,9 +36,10 @@ pub async fn authenticate<V: Verifier>(
     opts: &AuthOpts,
 ) -> Result<Authenticated, SiwxError> {
     if raw_message.len() > MAX_MESSAGE_BYTES {
-        return Err(SiwxError::InvalidFormat(format!(
-            "message exceeds maximum size of {MAX_MESSAGE_BYTES} bytes"
-        )));
+        return Err(SiwxError::MessageTooLarge {
+            len: raw_message.len(),
+            max: MAX_MESSAGE_BYTES,
+        });
     }
 
     let message: SiwxMessage = raw_message.parse()?;
@@ -64,7 +66,7 @@ mod tests {
     use time::macros::datetime;
 
     use super::*;
-    use crate::SiwxError;
+    use crate::{FormatReason, SiwxError};
 
     struct AcceptingVerifier;
 
@@ -136,7 +138,15 @@ mod tests {
         let err = authenticate(&AcceptingVerifier, &raw, &[], &opts)
             .await
             .expect_err("trailing newline must fail parse");
-        assert!(matches!(err, SiwxError::InvalidFormat(_)), "got {err:?}");
+        assert!(
+            matches!(
+                err,
+                SiwxError::InvalidFormat {
+                    reason: FormatReason::UnexpectedTrailing
+                }
+            ),
+            "got {err:?}"
+        );
     }
 
     #[tokio::test]
@@ -147,7 +157,10 @@ mod tests {
         let err = authenticate(&AcceptingVerifier, &raw, &[], &opts)
             .await
             .expect_err("domain binding");
-        assert!(matches!(err, SiwxError::InvalidDomain(_)), "got {err:?}");
+        assert!(
+            matches!(err, SiwxError::DomainMismatch { .. }),
+            "got {err:?}"
+        );
     }
 
     #[tokio::test]
@@ -161,7 +174,16 @@ mod tests {
         )
         .await
         .expect_err("oversize");
-        assert!(matches!(err, SiwxError::InvalidFormat(_)), "got {err:?}");
+        assert!(
+            matches!(
+                err,
+                SiwxError::MessageTooLarge {
+                    len,
+                    max: MAX_MESSAGE_BYTES,
+                } if len == MAX_MESSAGE_BYTES + 1
+            ),
+            "got {err:?}"
+        );
     }
 
     #[tokio::test]

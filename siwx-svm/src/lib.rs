@@ -41,12 +41,13 @@ pub const CHAIN_NAME: &str = "Solana";
 pub fn validate_address(address: &str) -> Result<(), SiwxError> {
     let bytes = bs58::decode(address)
         .into_vec()
-        .map_err(|e| SiwxError::InvalidAddress(format!("invalid base58: {e}")))?;
+        .map_err(|e| SiwxError::InvalidAddress {
+            reason: format!("invalid base58: {e}"),
+        })?;
     if bytes.len() != 32 {
-        return Err(SiwxError::InvalidAddress(format!(
-            "expected 32 bytes, got {}",
-            bytes.len()
-        )));
+        return Err(SiwxError::InvalidAddress {
+            reason: format!("expected 32 bytes, got {}", bytes.len()),
+        });
     }
     Ok(())
 }

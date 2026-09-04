@@ -26,12 +26,17 @@ impl Ed25519Verifier {
     fn verifying_key_from_address(address: &str) -> Result<VerifyingKey, SiwxError> {
         let bytes = bs58::decode(address)
             .into_vec()
-            .map_err(|e| SiwxError::InvalidAddress(format!("invalid base58 pubkey: {e}")))?;
-        let arr: [u8; 32] = bytes.try_into().map_err(|v: Vec<u8>| {
-            SiwxError::InvalidAddress(format!("Ed25519 pubkey must be 32 bytes, got {}", v.len()))
-        })?;
-        VerifyingKey::from_bytes(&arr)
-            .map_err(|e| SiwxError::InvalidAddress(format!("invalid Ed25519 pubkey: {e}")))
+            .map_err(|e| SiwxError::InvalidAddress {
+                reason: format!("invalid base58 pubkey: {e}"),
+            })?;
+        let arr: [u8; 32] = bytes
+            .try_into()
+            .map_err(|v: Vec<u8>| SiwxError::InvalidAddress {
+                reason: format!("Ed25519 pubkey must be 32 bytes, got {}", v.len()),
+            })?;
+        VerifyingKey::from_bytes(&arr).map_err(|e| SiwxError::InvalidAddress {
+            reason: format!("invalid Ed25519 pubkey: {e}"),
+        })
     }
 
     fn verify_sync(
@@ -39,19 +44,23 @@ impl Ed25519Verifier {
         raw_message: &str,
         signature: &[u8],
     ) -> Result<(), SiwxError> {
-        let sig_arr: [u8; 64] = signature.try_into().map_err(|_| {
-            SiwxError::InvalidSignature(format!(
-                "Ed25519 signature must be 64 bytes, got {}",
-                signature.len()
-            ))
-        })?;
+        let sig_arr: [u8; 64] = signature
+            .try_into()
+            .map_err(|_| SiwxError::InvalidSignature {
+                reason: format!(
+                    "Ed25519 signature must be 64 bytes, got {}",
+                    signature.len()
+                ),
+            })?;
         let sig = Signature::from_bytes(&sig_arr);
 
         let verifying_key = Self::verifying_key_from_address(&message.address)?;
 
         verifying_key
             .verify(raw_message.as_bytes(), &sig)
-            .map_err(|e| SiwxError::VerificationFailed(format!("Ed25519 verify failed: {e}")))
+            .map_err(|e| SiwxError::VerificationFailed {
+                reason: format!("Ed25519 verify failed: {e}"),
+            })
     }
 }
 
@@ -127,7 +136,7 @@ mod tests {
             .verify(&message, &text, &sig.to_bytes())
             .await
             .unwrap_err();
-        assert!(matches!(err, SiwxError::VerificationFailed(_)));
+        assert!(matches!(err, SiwxError::VerificationFailed { .. }));
     }
 
     #[tokio::test]
@@ -142,7 +151,7 @@ mod tests {
             .verify(&message, &text, &[0u8; 32])
             .await
             .unwrap_err();
-        assert!(matches!(err, SiwxError::InvalidSignature(_)));
+        assert!(matches!(err, SiwxError::InvalidSignature { .. }));
     }
 
     #[tokio::test]
@@ -160,7 +169,7 @@ mod tests {
             .verify(&message, &tampered, &sig.to_bytes())
             .await
             .unwrap_err();
-        assert!(matches!(err, SiwxError::VerificationFailed(_)));
+        assert!(matches!(err, SiwxError::VerificationFailed { .. }));
     }
 
     #[test]

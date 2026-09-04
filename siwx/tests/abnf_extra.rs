@@ -46,7 +46,10 @@ mod tests {
         let err: SiwxError = with_statement("hello\tworld")
             .parse::<SiwxMessage>()
             .expect_err("HT is not reserved/unreserved/SP");
-        assert!(matches!(err, SiwxError::InvalidStatement(_)), "got {err:?}");
+        assert!(
+            matches!(err, SiwxError::InvalidStatement { .. }),
+            "got {err:?}"
+        );
     }
 
     #[test]
@@ -54,6 +57,9 @@ mod tests {
         let err: SiwxError = with_request_id("req/id")
             .parse::<SiwxMessage>()
             .expect_err("`/` is not pchar");
-        assert!(matches!(err, SiwxError::InvalidFormat(_)), "got {err:?}");
+        assert!(
+            matches!(err, SiwxError::InvalidRequestId { .. }),
+            "got {err:?}"
+        );
     }
 }
