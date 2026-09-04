@@ -4,6 +4,7 @@
 //! public type [`EvmVerifier`]:
 //! - **EIP-191** (`personal_sign`) — always available
 //! - **EIP-1271** — smart-contract `isValidSignature` (feature `eip1271` + RPC)
+//! - **EIP-6492** — counterfactual signatures (feature `eip6492` + RPC)
 //!
 //! # Quick start
 //!
@@ -29,6 +30,7 @@
 #[cfg(feature = "eip1271")]
 mod eip1271;
 mod eip191;
+mod eip6492;
 
 #[cfg(not(feature = "eip1271"))]
 use std::future::Future;
@@ -100,9 +102,11 @@ struct RpcEndpoint {
 
 /// Ethereum CAIP-122 verifier.
 ///
-/// Tries EIP-191 first. When built with the `eip1271` feature and an RPC URL
-/// is configured for the message chain, any EIP-191 error falls through to
-/// EIP-1271 (`eth_chainId` then `isValidSignature`).
+/// ERC-6492 magic suffix is checked first. When built with `eip6492` and an
+/// RPC URL is configured for the message chain, verification is a deployless
+/// `eth_call`. Otherwise EIP-191 runs; with `eip1271` and a per-chain RPC,
+/// any EIP-191 error falls through to EIP-1271 (`eth_chainId` then
+/// `isValidSignature`).
 #[derive(Debug, Clone)]
 #[cfg_attr(not(feature = "eip1271"), derive(Copy))]
 pub struct EvmVerifier {
@@ -209,6 +213,20 @@ impl EvmVerifier {
         let provider = self.provider_for(endpoint).await?;
         eip1271::verify(provider, self.timeout, message, raw_message, signature).await
     }
+
+    #[cfg(feature = "eip6492")]
+    async fn verify_eip6492(
+        &self,
+        message: &SiwxMessage,
+        raw_message: &str,
+        signature: &[u8],
+    ) -> Result<(), SiwxError> {
+        let Some(endpoint) = self.endpoint_for(&message.chain_id) else {
+            return Err(eip6492::requires_rpc());
+        };
+        let provider = self.provider_for(endpoint).await?;
+        eip6492::verify(provider, self.timeout, message, raw_message, signature).await
+    }
 }
 
 impl Default for EvmVerifier {
@@ -236,7 +254,11 @@ impl Verifier for EvmVerifier {
         raw_message: &str,
         signature: &[u8],
     ) -> impl Future<Output = Result<(), SiwxError>> + Send {
-        std::future::ready(eip191::verify_sync(message, raw_message, signature))
+        std::future::ready(if eip6492::has_magic_suffix(signature) {
+            Err(eip6492::not_enabled())
+        } else {
+            eip191::verify_sync(message, raw_message, signature)
+        })
     }
 
     #[cfg(feature = "eip1271")]
@@ -246,6 +268,16 @@ impl Verifier for EvmVerifier {
         raw_message: &str,
         signature: &[u8],
     ) -> Result<(), SiwxError> {
+        if eip6492::has_magic_suffix(signature) {
+            #[cfg(feature = "eip6492")]
+            {
+                return self.verify_eip6492(message, raw_message, signature).await;
+            }
+            #[cfg(not(feature = "eip6492"))]
+            {
+                return Err(eip6492::not_enabled());
+            }
+        }
         match eip191::verify_sync(message, raw_message, signature) {
             Ok(()) => Ok(()),
             Err(eip191_err) => {

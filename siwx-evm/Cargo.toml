@@ -31,6 +31,8 @@ eip1271 = [
     "alloy/network",
     "alloy/sol-types",
 ]
+## Enable ERC-6492 counterfactual signature verification (deployless eth_call).
+eip6492 = ["eip1271"]
 
 [lints]
 workspace = true

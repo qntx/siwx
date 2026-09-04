@@ -41,7 +41,7 @@ pub(crate) fn assert_rpc_chain_id(
     Ok(())
 }
 
-async fn timed<T, E>(
+pub(crate) async fn timed<T, E>(
     timeout: Duration,
     fut: impl Future<Output = Result<T, E>> + Send,
     what: &'static str,

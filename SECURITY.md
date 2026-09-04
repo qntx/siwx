@@ -27,7 +27,7 @@ Those belong in the application that calls [`authenticate`](https://docs.rs/siwx
 |-------|------|
 | `raw_message` | ABNF-parsed; preamble `chain_name` must equal `Verifier::CHAIN_NAME`; signature is verified over these original bytes |
 | `AuthOpts.domain` / `nonce` | Must come from **server** configuration / store, not the client alone |
-| RPC URL (`eip1271`) | **Server-configured only** — never take untrusted user URLs (SSRF) |
+| RPC URL (`eip1271` / `eip6492`) | **Server-configured only** — never take untrusted user URLs (SSRF) |
 | Signature | Untrusted; cryptographic verification only |
 
 ## Message size
@@ -67,12 +67,31 @@ calling the stack “production ready” as a full auth product:
 | Session / JWT / cookie issuance and revocation | Application |
 | HTTP Origin/Host multi-environment policy beyond `AuthOpts.domain` | Application |
 | Rate limiting, CAPTCHA, device risk | Application / edge |
-| **EIP-6492** predeploy smart-account signatures | Not implemented (future feature) |
-| Live mainnet/anvil EIP-1271 success e2e in CI | App/ops; library tests cover offline selection and magic checks |
+| Live mainnet/anvil EIP-1271 / EIP-6492 success e2e in CI | App/ops; library tests cover offline selection, magic, and `eth_call_bool` |
 | Third-party security audit reports | Process outside the repo |
 
-**Library production-ready** means: correct EOA (and optional 1271-with-trusted-RPC)
+**Library production-ready** means: correct EOA (and optional 1271/6492-with-trusted-RPC)
 verification via `authenticate`, with binding and DoS bounds—not a hosted IdP.
+
+## EIP-6492 (feature `eip6492`)
+
+Counterfactual / predeploy smart-account signatures. The 32-byte magic suffix
+`0x6492` repeated 16 times is checked **before** EIP-191. Without the feature,
+those signatures return `InvalidSignature` (`EIP-6492 not enabled`) and do not
+fall through to EIP-191.
+
+With the feature, verification is a deployless `eth_call` (`to` omitted) of
+vendored wevm/ox `universalSignatureValidatorBytecode` concatenated with
+`abi.encode(signer, hash, signature)`. The pin is
+`siwx-evm/src/bytecode/SOURCE.txt`. Success is `eth_call_bool`: last byte
+`0x01` and the rest zero (nodes pad `return(31,1)` to 32 bytes). Last byte
+`0x00` is `VerificationFailed` (`EIP-6492 invalid`). Revert or RPC failure is
+`VerificationFailed` **without** the RPC URL in the string.
+
+No RPC for the message chain (including `EvmVerifier::new()`) returns
+`InvalidSignature` (`EIP-6492 requires RPC`) and does not `eth_call`. The
+call is `eth_call` only (simulation); the library never sends a deployment
+transaction.
 
 ## Reporting
 

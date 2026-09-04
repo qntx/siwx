@@ -10,7 +10,7 @@
 //! preamble chain name, then verifies the signature over the original bytes.
 //!
 //! Chain-specific implementations live in companion crates:
-//! - `siwx-evm` — Ethereum (EIP-191 / EIP-1271)
+//! - `siwx-evm` — Ethereum (EIP-191 / EIP-1271 / EIP-6492)
 //! - `siwx-svm` — Solana (Ed25519)
 //!
 //! # Examples
