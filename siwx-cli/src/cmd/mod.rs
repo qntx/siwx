@@ -55,7 +55,7 @@ pub(crate) enum Commands {
 /// Shared message-generation arguments.
 #[derive(Args)]
 pub(crate) struct MessageArgs {
-    /// RFC 4501 domain requesting the signing.
+    /// RFC 3986 authority requesting the signing.
     #[arg(long)]
     pub domain: String,
 
@@ -340,5 +340,157 @@ mod tests {
             matches!(err, siwx::SiwxError::UriMismatch { .. }),
             "got {err:?}"
         );
+    }
+
+    fn try_parse(args: &[&str]) -> Result<Cli, clap::Error> {
+        Cli::try_parse_from(args)
+    }
+
+    fn parse_err(args: &[&str]) -> clap::Error {
+        try_parse(args)
+            .map(|_cli| ())
+            .expect_err("expected clap error")
+    }
+
+    #[cfg(feature = "eip1271")]
+    fn parse_ok(args: &[&str]) -> Cli {
+        try_parse(args)
+            .map_err(|err| err.to_string())
+            .expect("expected clap parse to succeed")
+    }
+
+    #[test]
+    fn verify_requires_domain() {
+        let err = parse_err(&[
+            "siwx",
+            "evm",
+            "verify",
+            "--message",
+            "m",
+            "--signature",
+            "00",
+            "--nonce",
+            "n12345678",
+        ]);
+        assert_eq!(err.kind(), clap::error::ErrorKind::MissingRequiredArgument);
+        let rendered = err.to_string();
+        assert!(rendered.contains("--domain"), "{rendered}");
+    }
+
+    #[test]
+    fn verify_requires_nonce() {
+        let err = parse_err(&[
+            "siwx",
+            "svm",
+            "verify",
+            "--message",
+            "m",
+            "--signature",
+            "00",
+            "--domain",
+            "example.com",
+        ]);
+        assert_eq!(err.kind(), clap::error::ErrorKind::MissingRequiredArgument);
+        let rendered = err.to_string();
+        assert!(rendered.contains("--nonce"), "{rendered}");
+    }
+
+    #[test]
+    fn verify_rejects_trust_message_bindings() {
+        let err = parse_err(&[
+            "siwx",
+            "evm",
+            "verify",
+            "--message",
+            "m",
+            "--signature",
+            "00",
+            "--domain",
+            "example.com",
+            "--nonce",
+            "n12345678",
+            "--trust-message-bindings",
+        ]);
+        assert_eq!(err.kind(), clap::error::ErrorKind::UnknownArgument);
+        let rendered = err.to_string();
+        assert!(rendered.contains("trust-message-bindings"), "{rendered}");
+    }
+
+    #[cfg(feature = "eip1271")]
+    #[test]
+    fn verify_rpc_requires_rpc_chain_id() {
+        let err = parse_err(&[
+            "siwx",
+            "evm",
+            "verify",
+            "--message",
+            "m",
+            "--signature",
+            "00",
+            "--domain",
+            "example.com",
+            "--nonce",
+            "n12345678",
+            "--rpc",
+            "https://eth.example",
+        ]);
+        assert_eq!(err.kind(), clap::error::ErrorKind::MissingRequiredArgument);
+        let rendered = err.to_string();
+        assert!(rendered.contains("--rpc-chain-id"), "{rendered}");
+    }
+
+    #[cfg(feature = "eip1271")]
+    #[test]
+    fn verify_rpc_chain_id_requires_rpc() {
+        let err = parse_err(&[
+            "siwx",
+            "evm",
+            "verify",
+            "--message",
+            "m",
+            "--signature",
+            "00",
+            "--domain",
+            "example.com",
+            "--nonce",
+            "n12345678",
+            "--rpc-chain-id",
+            "1",
+        ]);
+        assert_eq!(err.kind(), clap::error::ErrorKind::MissingRequiredArgument);
+        let rendered = err.to_string();
+        assert!(rendered.contains("--rpc"), "{rendered}");
+    }
+
+    #[cfg(feature = "eip1271")]
+    #[test]
+    fn verify_rpc_pair_count_mismatch() {
+        let cli = parse_ok(&[
+            "siwx",
+            "evm",
+            "verify",
+            "--message",
+            "m",
+            "--signature",
+            "00",
+            "--domain",
+            "example.com",
+            "--nonce",
+            "n12345678",
+            "--rpc-chain-id",
+            "1",
+            "--rpc",
+            "https://eth.example",
+            "--rpc-chain-id",
+            "137",
+        ]);
+        let Commands::Evm(cmd) = cli.command else {
+            unreachable!("expected evm");
+        };
+        let evm::EvmAction::Verify(args) = cmd.action else {
+            unreachable!("expected verify");
+        };
+        let err = evm::make_evm_verifier(&args).expect_err("unequal counts");
+        assert!(err.to_string().contains("pairs"), "{err}");
     }
 }

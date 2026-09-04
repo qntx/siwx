@@ -51,7 +51,7 @@ impl EvmCommand {
     }
 }
 
-fn make_evm_verifier(args: &EvmVerifyArgs) -> Result<EvmVerifier, super::BoxedError> {
+pub(super) fn make_evm_verifier(args: &EvmVerifyArgs) -> Result<EvmVerifier, super::BoxedError> {
     #[cfg(feature = "eip1271")]
     {
         if args.rpc.is_empty() && args.rpc_chain_id.is_empty() {

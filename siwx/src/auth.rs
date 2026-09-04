@@ -1,4 +1,4 @@
-//! End-to-end authentication: size → CR → parse → validate → chain-name bind → verify original bytes.
+//! End-to-end authentication: size → CR → parse → validate → `chain_name` → address → `chain_id` → verify original bytes.
 
 use crate::message::MAX_MESSAGE_BYTES;
 use crate::validate::AuthOpts;

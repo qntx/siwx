@@ -5,10 +5,17 @@
 //! validation, and a [`Verifier`] trait for chain-specific signature
 //! verification.
 //!
-//! Prefer [`authenticate`] for backend login: size and CR checks, ABNF parse,
-//! domain/nonce validation (default clock skew 60s), preamble chain-name bind,
-//! then signature verification over the original bytes. Trailing LF is
-//! rejected; trim before [`authenticate`] if a client leaves one.
+//! Prefer [`authenticate`] for backend login (fail-fast):
+//! 1. size ≤ [`MAX_MESSAGE_BYTES`];
+//! 2. reject CR;
+//! 3. ABNF parse;
+//! 4. [`SiwxMessage::validate`] (`AuthOpts` domain/nonce required, clock skew 60s);
+//! 5. preamble `chain_name` == [`Verifier::CHAIN_NAME`];
+//! 6. [`Verifier::validate_address`];
+//! 7. [`Verifier::validate_chain_id`];
+//! 8. [`Verifier::verify`] over the original bytes.
+//!
+//! Trailing LF is rejected; trim before [`authenticate`] if a client leaves one.
 //!
 //! Chain-specific implementations live in companion crates:
 //! - `siwx-evm` — Ethereum (EIP-191 / EIP-1271 / EIP-6492)

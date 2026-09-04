@@ -29,6 +29,9 @@ Or via Cargo:
 
 ```bash
 cargo install siwx-cli
+# EIP-1271 / EIP-6492 RPC flags:
+cargo install siwx-cli --features eip1271
+# or: cargo install siwx-cli --features eip6492
 ```
 
 ### Verify installation
@@ -128,6 +131,8 @@ siwx --json evm verify \
 ```
 
 ### Verify with EIP-1271 RPC pairs
+
+Requires `cargo install siwx-cli --features eip1271` (or `--features eip6492`).
 
 ```bash
 siwx --json evm verify \

@@ -168,7 +168,7 @@ pub struct SiwxMessage {
     #[cfg_attr(feature = "serde", serde(default))]
     scheme: Option<String>,
 
-    /// RFC 4501 `dnsauthority` requesting the signing.
+    /// RFC 3986 `authority` requesting the signing.
     domain: String,
 
     /// Blockchain address performing the signing (CAIP-10 `account_address`

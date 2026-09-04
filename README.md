@@ -183,7 +183,12 @@ siwx svm verify \
 
 EIP-1271 / EIP-6492 (features `eip1271` / `eip6492`, both default off): `--rpc`
 and `--rpc-chain-id` must appear as pairs, same order, repeatable. Bare `--rpc`
-is rejected.
+is rejected. Those flags exist only when the binary is built with the feature:
+
+```sh
+cargo install siwx-cli --features eip1271
+# or: cargo install siwx-cli --features eip6492
+```
 
 ```sh
 siwx evm verify \
@@ -231,7 +236,7 @@ sequenceDiagram
     Frontend->>Wallet: 2. personal_sign / signMessage
     Wallet-->>Frontend: 3. Signature bytes
     Frontend->>Backend: 4. Message text + Signature
-    Backend->>Backend: 5. Size → CR → Parse → Validate → Verify original bytes
+    Backend->>Backend: 5. Size → CR → Parse → Validate → chain_name → address → chain_id → Verify original bytes
 ```
 
 ### CAIP-122 Message Format
