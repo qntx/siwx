@@ -1,0 +1,54 @@
+[package]
+name                   = "siwx"
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+license.workspace      = true
+repository.workspace   = true
+homepage.workspace     = true
+authors.workspace      = true
+description.workspace  = true
+keywords.workspace     = true
+categories.workspace   = true
+
+[dependencies]
+thiserror.workspace  = true
+time.workspace       = true
+iri-string.workspace = true
+rand.workspace       = true
+serde                = { workspace = true, optional = true }
+alloy                = { workspace = true, optional = true }
+ed25519-dalek        = { workspace = true, optional = true }
+bs58                 = { workspace = true, optional = true }
+tokio                = { workspace = true, features = ["sync"], optional = true }
+
+[dev-dependencies]
+proptest             = "1.11"
+time                 = { version = "0.3", features = ["parsing", "formatting", "macros"] }
+tokio.workspace      = true
+serde_json.workspace = true
+
+[features]
+default = []
+serde   = ["dep:serde", "time/serde-well-known"]
+## Enable the EIP-155 verifier module `siwx::evm` (EIP-191).
+evm = ["dep:alloy"]
+## Enable the Solana verifier module `siwx::svm` (Ed25519).
+svm = ["dep:ed25519-dalek", "dep:bs58"]
+## Enable EIP-1271 smart-contract signature verification (RPC).
+eip1271 = ["evm", "dep:tokio", "tokio/time", "alloy/contract", "alloy/provider-http", "alloy/network", "alloy/sol-types"]
+## Enable ERC-6492 counterfactual signature verification (deployless eth_call).
+eip6492 = ["eip1271"]
+
+[[test]]
+name              = "conformance_verify"
+path              = "tests/conformance_verify.rs"
+required-features = ["evm"]
+
+[[test]]
+name              = "parse_negatives"
+path              = "tests/parse_negatives.rs"
+required-features = ["evm"]
+
+[lints]
+workspace = true

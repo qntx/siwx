@@ -1,0 +1,24 @@
+# Caller owns on:. Pin at @v2.
+# ci-rust-fuzz auto-discovers every fuzz/fuzz_targets/*.rs stem; the
+# check-run names are fuzz / <target>. No corpus is committed today.
+name: Fuzz
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fuzz:
+    uses: qntx/workflows/.github/workflows/ci-rust-fuzz.yml@v2
+    permissions:
+      contents: read
+    with:
+      max-total-time: 300

@@ -1,0 +1,33 @@
+[package]
+name                   = "siwx-cli"
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+license.workspace      = true
+repository.workspace   = true
+description            = "CAIP-122 Sign-In with X CLI tool"
+
+[[bin]]
+name = "siwx"
+path = "src/main.rs"
+doc  = false
+
+[dependencies]
+siwx                 = { workspace = true, features = ["evm", "svm"] }
+clap.workspace       = true
+colored.workspace    = true
+serde.workspace      = true
+serde_json.workspace = true
+hex.workspace        = true
+time.workspace       = true
+tokio                = { workspace = true, features = ["rt"] }
+
+[features]
+default = []
+## Enable EIP-1271 smart-contract verification via `--rpc-chain-id` / `--rpc` on `evm verify`.
+eip1271 = ["siwx/eip1271"]
+## Enable ERC-6492 counterfactual verification (implies `eip1271` RPC flags).
+eip6492 = ["eip1271", "siwx/eip6492"]
+
+[lints]
+workspace = true

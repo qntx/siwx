@@ -24,12 +24,12 @@ Those belong in the application that calls [`authenticate`](https://docs.rs/siwx
 
 ## Trust boundaries
 
-| Input | Rule |
-|-------|------|
-| `raw_message` | ABNF-parsed; preamble `chain_name` must equal `Verifier::CHAIN_NAME`; signature is verified over these original bytes |
-| `AuthOpts.domain` / `nonce` | Must come from **server** configuration / store, not the client alone. Exact byte equality. |
-| RPC URL (`eip1271` / `eip6492`) | **Server-configured only** — never take untrusted user URLs (SSRF) |
-| Signature | Untrusted; cryptographic verification only |
+| Input                           | Rule                                                                                                                  |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `raw_message`                   | ABNF-parsed; preamble `chain_name` must equal `Verifier::CHAIN_NAME`; signature is verified over these original bytes |
+| `AuthOpts.domain` / `nonce`     | Must come from **server** configuration / store, not the client alone. Exact byte equality.                           |
+| RPC URL (`eip1271` / `eip6492`) | **Server-configured only** — never take untrusted user URLs (SSRF)                                                    |
+| Signature                       | Untrusted; cryptographic verification only                                                                            |
 
 CLI `--trust-message-bindings` is **deleted**. `evm verify` / `svm verify` always require `--domain` and `--nonce`. Debug self-sign by passing the same values the message already contains; there is no “trust the message” switch.
 
@@ -84,14 +84,14 @@ application must invalidate sessions (short TTL / webhook). Out of library.
 These are **not** provided by this crate and must not be assumed present when
 calling the stack “production ready” as a full auth product:
 
-| Residual | Owner |
-|----------|--------|
-| Nonce single-use store / atomic consume | Application |
-| Session / JWT / cookie issuance and revocation | Application |
-| HTTP Origin/Host multi-environment policy beyond `AuthOpts.domain` | Application |
-| Rate limiting, CAPTCHA, device risk | Application / edge |
-| Live mainnet/anvil EIP-1271 / EIP-6492 success e2e in CI | App/ops; library tests cover offline selection, magic, and `eth_call_bool` |
-| Third-party security audit reports | Process outside the repo |
+| Residual                                                           | Owner                                                                      |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| Nonce single-use store / atomic consume                            | Application                                                                |
+| Session / JWT / cookie issuance and revocation                     | Application                                                                |
+| HTTP Origin/Host multi-environment policy beyond `AuthOpts.domain` | Application                                                                |
+| Rate limiting, CAPTCHA, device risk                                | Application / edge                                                         |
+| Live mainnet/anvil EIP-1271 / EIP-6492 success e2e in CI           | App/ops; library tests cover offline selection, magic, and `eth_call_bool` |
+| Third-party security audit reports                                 | Process outside the repo                                                   |
 
 **Library production-ready** means: correct EOA (and optional 1271/6492-with-trusted-RPC)
 verification via `authenticate`, with binding and DoS bounds—not a hosted IdP.
@@ -106,7 +106,7 @@ fall through to EIP-191.
 With the feature, verification is a deployless `eth_call` (`to` omitted) of
 vendored wevm/ox `universalSignatureValidatorBytecode` concatenated with
 `abi.encode(signer, hash, signature)`. The pin is
-`siwx-evm/src/bytecode/SOURCE.txt` (ox commit SHA + source path). Success is
+`crates/siwx/src/evm/bytecode/SOURCE.txt` (ox commit SHA + source path). Success is
 `eth_call_bool`: last byte `0x01` and the rest zero (nodes pad `return(31,1)`
 to 32 bytes). Last byte `0x00` is `VerificationFailed` (`EIP-6492 invalid`).
 Revert or RPC failure is `VerificationFailed` **without** the RPC URL in the

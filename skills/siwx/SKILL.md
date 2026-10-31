@@ -50,49 +50,49 @@ The `--json` flag is **global** and must appear **before** the chain subcommand.
 
 ### Commands
 
-| Command       | Description                                    |
-|---------------|------------------------------------------------|
-| `evm message` | Generate an Ethereum CAIP-122 signing message  |
-| `evm verify`  | Verify an EIP-191 signature                    |
-| `svm message` | Generate a Solana CAIP-122 signing message     |
-| `svm verify`  | Verify an Ed25519 signature                    |
-| `nonce`       | Generate a cryptographic nonce                 |
-| `parse`       | Parse a CAIP-122 message string into fields    |
+| Command       | Description                                   |
+| ------------- | --------------------------------------------- |
+| `evm message` | Generate an Ethereum CAIP-122 signing message |
+| `evm verify`  | Verify an EIP-191 signature                   |
+| `svm message` | Generate a Solana CAIP-122 signing message    |
+| `svm verify`  | Verify an Ed25519 signature                   |
+| `nonce`       | Generate a cryptographic nonce                |
+| `parse`       | Parse a CAIP-122 message string into fields   |
 
 ### Chain aliases
 
-| Chain      | Primary | Aliases |
-|------------|---------|---------|
-| Ethereum   | `evm`   | `eth`   |
-| Solana     | `svm`   | `sol`   |
+| Chain    | Primary | Aliases |
+| -------- | ------- | ------- |
+| Ethereum | `evm`   | `eth`   |
+| Solana   | `svm`   | `sol`   |
 
 ## Message Generation Flags
 
-| Flag            | Required | Description                                             |
-|-----------------|----------|---------------------------------------------------------|
-| `--domain`      | ✓        | RFC 3986 authority requesting the signing               |
-| `--address`     | ✓        | Blockchain address (EIP-55 0x-hex for EVM, base58 for SVM) |
-| `--uri`         | ✓        | RFC 3986 URI subject of the signing                     |
-| `--chain-id`    | ✓        | CAIP-2 reference (e.g. `"1"` for Ethereum mainnet)      |
-| `--statement`   |          | Human-readable statement                                |
-| `--nonce`       |          | Nonce (auto-generated if omitted)                       |
-| `--expiration`  |          | Expiration (RFC 3339 timestamp or seconds from now)     |
-| `--not-before`  |          | Not-before time (RFC 3339 or seconds from now)          |
-| `--request-id`  |          | System-specific request ID                              |
-| `--resource`    |          | Resource URI (repeatable)                               |
+| Flag           | Required | Description                                                |
+| -------------- | -------- | ---------------------------------------------------------- |
+| `--domain`     | ✓        | RFC 3986 authority requesting the signing                  |
+| `--address`    | ✓        | Blockchain address (EIP-55 0x-hex for EVM, base58 for SVM) |
+| `--uri`        | ✓        | RFC 3986 URI subject of the signing                        |
+| `--chain-id`   | ✓        | CAIP-2 reference (e.g. `"1"` for Ethereum mainnet)         |
+| `--statement`  |          | Human-readable statement                                   |
+| `--nonce`      |          | Nonce (auto-generated if omitted)                          |
+| `--expiration` |          | Expiration (RFC 3339 timestamp or seconds from now)        |
+| `--not-before` |          | Not-before time (RFC 3339 or seconds from now)             |
+| `--request-id` |          | System-specific request ID                                 |
+| `--resource`   |          | Resource URI (repeatable)                                  |
 
 ## Verify Flags
 
-| Flag             | Required | Description |
-|------------------|----------|-------------|
-| `--message`      | ✓        | Raw CAIP-122 signing message text (LF-only; trailing LF rejected) |
-| `--signature`    | ✓        | Hex-encoded signature (`0x` prefix optional) |
-| `--domain`       | ✓        | Expected domain binding (server-issued) |
-| `--nonce`        | ✓        | Expected nonce binding (server-issued) |
-| `--uri`          |          | Expected URI binding |
-| `--scheme`       |          | Expected preamble scheme binding |
-| `--chain-id`     |          | Expected chain id binding (recommended multi-chain) |
-| `--rpc-chain-id` |          | EIP-155 chain id; **pair** with `--rpc` (repeatable, order-matched; feature `eip1271`) |
+| Flag             | Required | Description                                                                                      |
+| ---------------- | -------- | ------------------------------------------------------------------------------------------------ |
+| `--message`      | ✓        | Raw CAIP-122 signing message text (LF-only; trailing LF rejected)                                |
+| `--signature`    | ✓        | Hex-encoded signature (`0x` prefix optional)                                                     |
+| `--domain`       | ✓        | Expected domain binding (server-issued)                                                          |
+| `--nonce`        | ✓        | Expected nonce binding (server-issued)                                                           |
+| `--uri`          |          | Expected URI binding                                                                             |
+| `--scheme`       |          | Expected preamble scheme binding                                                                 |
+| `--chain-id`     |          | Expected chain id binding (recommended multi-chain)                                              |
+| `--rpc-chain-id` |          | EIP-155 chain id; **pair** with `--rpc` (repeatable, order-matched; feature `eip1271`)           |
 | `--rpc`          |          | EIP-1271 / EIP-6492 JSON-RPC URL; **pair** with `--rpc-chain-id` (same order; feature `eip1271`) |
 
 `--trust-message-bindings` does not exist. Bare `--rpc` without `--rpc-chain-id` (or the reverse) is rejected. Repeat pairs in matching order, e.g. `--rpc-chain-id 1 --rpc https://eth --rpc-chain-id 137 --rpc https://polygon`. Feature `eip6492` (default off) implies `eip1271`.

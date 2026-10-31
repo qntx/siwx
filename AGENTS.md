@@ -7,3 +7,35 @@
 - Prefer established, well-maintained libraries when they reduce overall complexity or improve reliability. Do not reimplement common functionality without a clear reason.
 - Lean on the dependencies already in the project before writing your own implementation or adding packages. Do not assume a library lacks a capability without checking its documentation and types.
 - Make architectural decisions for the long term. Do not accept a stopgap that only works for now and is meant to be replaced later.
+
+## Architecture invariants
+
+- `packages/siwx/src` is platform-neutral and Hermes V1-safe (no Node/browser-only globals, no `node:*` imports, no ES2023+ array methods).
+- All I/O is injected; `packages/*/src/` holds no ambient singletons.
+- `crates/siwx` is the library crate; `crates/siwx-cli` is the only workspace member allowed to depend on it (enforced by `scripts/check-layers.ts`). Chain verifiers are feature-gated modules: `siwx::evm` (`evm`, plus `eip1271`/`eip6492` RPC verification) and `siwx::svm` (`svm`).
+- No panics and no `unwrap`/`expect` in library code.
+- npm package and crates are versioned lockstep (`@qntx/siwx` and `siwx`/`siwx-cli` share one version; `bump.config.ts` bumps `packages/siwx/package.json` + `Cargo.toml` together, `scripts/check-version.ts` guards drift).
+- Shared test vectors live in `vectors/` and every capability is tracked in `parity.json`; both languages run the same files.
+- TOML is formatted by taplo (`.taplo.toml`, aligned `=`); run `taplo fmt` and keep `taplo fmt --check` green in `bun run lint`.
+
+## Commands
+
+Local gate before a pull request:
+
+```bash
+bun run lint && bun run typecheck && bun run test   # lint includes taplo,
+                                                    # version, layer and
+                                                    # parity checks
+cargo fmt --all --check
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo clippy --workspace --all-targets --no-default-features -- -D warnings
+cargo test --workspace --all-features
+RUSTDOCFLAGS="-D warnings" cargo doc --workspace --all-features --no-deps
+cargo deny check
+```
+
+Fuzz one target locally (needs a nightly toolchain and cargo-fuzz):
+
+```bash
+cargo +nightly fuzz run fuzz_parse   # run from fuzz/
+```

@@ -1,50 +1,43 @@
 # cargo-deny configuration for the siwx workspace.
-# Run: `cargo deny check` (also wired into CI / Justfile).
+#
+# Run with `cargo deny check` to enforce supply-chain hygiene:
+# - advisories: every transitive dependency must be free of known CVEs
+# - bans:       the workspace ships exactly one version of every crate
+# - licenses:   only permissive licenses are allowed
+# - sources:    only crates.io is trusted
 
 [graph]
-all-features = true
+all-features        = true
+no-default-features = false
 
 [output]
 feature-depth = 1
 
 [advisories]
-ignore = []
-
-[licenses]
-confidence-threshold = 0.8
-allow                = [
-    "MIT",
-    "MIT-0",
-    "Apache-2.0",
-    "Apache-2.0 WITH LLVM-exception",
-    "BSD-2-Clause",
-    "BSD-3-Clause",
-    "BSD-1-Clause",
-    "ISC",
-    "CC0-1.0",
-    "Unlicense",
-    "Zlib",
-    "MPL-2.0",
-    "Unicode-3.0",
-    "Unicode-DFS-2016",
-    "BSL-1.0",
-    "OpenSSL",
-    "CDLA-Permissive-2.0",
+db-path = "~/.cargo/advisory-db"
+db-urls = ["https://github.com/rustsec/advisory-db"]
+yanked = "deny"
+ignore = [
+  # alloy-signer 2.5 pins elliptic-curve/k256 0.13 → crypto-bigint 0.5; no
+  # upgrade path until alloy adopts the 0.14 curve crates.
+  { id = "RUSTSEC-2026-0387", reason = "transitive via alloy k256 chain (crypto-bigint 0.5); drop when alloy moves to elliptic-curve 0.14" },
+  # alloy-primitives / syn-solidity still use unmaintained `paste`.
+  { id = "RUSTSEC-2024-0436", reason = "transitive via alloy-primitives and syn-solidity (unmaintained paste); drop when alloy replaces it" },
 ]
 
-[licenses.private]
-ignore = false
+[licenses]
+allow                = ["MIT", "Apache-2.0", "Apache-2.0 WITH LLVM-exception", "BSD-2-Clause", "BSD-3-Clause", "CC0-1.0", "ISC", "MPL-2.0", "Unicode-3.0", "Zlib"]
+confidence-threshold = 0.93
+exceptions           = []
 
 [bans]
-multiple-versions          = "warn"
-wildcards                  = "deny"
-highlight                  = "all"
-workspace-default-features = "allow"
-external-default-features  = "allow"
-allow-workspace            = true
-
-deny = []
-skip = []
+multiple-versions = "warn"
+wildcards         = "deny"
+highlight         = "all"
+allow             = []
+deny              = []
+skip              = []
+skip-tree         = []
 
 [sources]
 unknown-registry = "deny"

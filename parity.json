@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "capabilities": [
+    {
+      "id": "core.limits",
+      "tier": "A",
+      "status": "stable",
+      "milestone": "TS1",
+      "ts": {
+        "module": "packages/siwx/src/index.ts",
+        "tests": ["packages/siwx/tests/vectors/limits.test.ts"]
+      },
+      "rust": {
+        "module": "crates/siwx/src/message.rs",
+        "tests": ["crates/siwx/tests/limits.rs"]
+      },
+      "vectors": ["vectors/limits/defaults.json"]
+    },
+    {
+      "id": "core.parse-conformance",
+      "tier": "A",
+      "status": "planned",
+      "milestone": "TS1",
+      "ts": null,
+      "rust": {
+        "module": "crates/siwx/src/parser.rs",
+        "tests": ["crates/siwx/tests/conformance_parse.rs"]
+      },
+      "vectors": [
+        "vectors/spruceid/parsing_positive.json",
+        "vectors/spruceid/parsing_negative.json"
+      ]
+    },
+    {
+      "id": "evm.verify-conformance",
+      "tier": "A",
+      "status": "planned",
+      "milestone": "TS1",
+      "ts": null,
+      "rust": {
+        "module": "crates/siwx/src/evm/mod.rs",
+        "tests": ["crates/siwx/tests/conformance_verify.rs"]
+      },
+      "vectors": [
+        "vectors/spruceid/verification_positive.json",
+        "vectors/spruceid/verification_negative.json"
+      ]
+    }
+  ]
+}
