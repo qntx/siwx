@@ -1,0 +1,34 @@
+---
+title: TypeScript core
+description: Messages, Expect, authenticate, namespaces.
+---
+
+# Core
+
+```ts
+import { createMessage, authenticate, generateNonce } from "@qntx/siwx";
+import { evm } from "@qntx/siwx/evm";
+
+const ns = evm();
+const message = createMessage({
+  domain: "service.org",
+  address: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  uri: "https://service.org/login",
+  version: "1",
+  chainId: "1",
+  nonce: generateNonce(),
+  issuedAt: "2026-01-01T00:00:00.000Z",
+});
+const text = ns.format(message); // wallet signs `text`
+const parsed = ns.parse(new TextEncoder().encode(text));
+const account = ns.account(parsed); // CAIP-10
+const auth = await authenticate(ns, {
+  message: text,
+  signature,
+  expect: { domain: "service.org", nonce: "…", skewSeconds: 60 },
+});
+```
+
+`Namespace` = `parse | format | account | verify | namespace | label`.
+`Expect` fields: `domain`/`nonce` required; `scheme`, `uri`, `chainId`,
+`requestId`, `time`, `skewSeconds`, `maxAge` optional.

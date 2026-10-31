@@ -41,7 +41,7 @@ const config: UserConfig = defineConfig({
   },
   lint: merge(lintPreset, {
     // merge() concatenates arrays onto the preset's own ignorePatterns.
-    ignorePatterns: ["target/**"],
+    ignorePatterns: ["target/**", "packages/*/.hermes-smoke.iife.js"],
     jsPlugins: [{ name: "vite-plus", specifier: "vite-plus/oxlint-plugin" }],
     rules: {
       "vite-plus/prefer-vite-plus-imports": "error",
@@ -50,7 +50,7 @@ const config: UserConfig = defineConfig({
     },
     overrides: [
       {
-        files: ["scripts/**"],
+        files: ["scripts/**", "packages/*/scripts/**"],
         rules: {
           // Maintenance scripts print their results.
           "eslint/no-console": "off",
@@ -60,6 +60,13 @@ const config: UserConfig = defineConfig({
         // Data-driven vector runners: conditionals express the vector's own
         // verdict; expect-inside-conditional and it.each-less loops are the
         // natural shape for per-case assertions.
+        files: ["packages/siwx/tests/hermes/**"],
+        rules: {
+          // UTF-8 decoder shim: bitwise ops are the canonical codec idiom.
+          "eslint/no-bitwise": "off",
+        },
+      },
+      {
         files: ["packages/siwx/tests/**"],
         rules: {
           // Verdict branching and conditional assertions mirror the vector shape.

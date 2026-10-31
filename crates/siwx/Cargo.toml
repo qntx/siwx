@@ -11,6 +11,9 @@ description.workspace  = true
 keywords.workspace     = true
 categories.workspace   = true
 
+[package.metadata.docs.rs]
+all-features = true
+
 [dependencies]
 thiserror.workspace  = true
 time.workspace       = true
@@ -72,3 +75,7 @@ required-features = ["rpc"]
 
 [lints]
 workspace = true
+[[test]]
+name              = "differential"
+path              = "tests/differential.rs"
+required-features = ["evm", "svm", "serde"]

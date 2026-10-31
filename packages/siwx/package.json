@@ -1,6 +1,6 @@
 {
   "name": "@qntx/siwx",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "Sign-In with X (CAIP-122) for TypeScript: SIWE, SIWS, message parsing, validation, and signature verification.",
   "keywords": [
     "authentication",
@@ -57,7 +57,8 @@
     "test": "vp test",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.src.json",
     "check:pkg": "vp pack && publint && attw --pack . --profile esm-only",
-    "prepublishOnly": "vp run build"
+    "prepublishOnly": "vp run build",
+    "smoke:hermes": "bun scripts/hermes-smoke.ts"
   },
   "dependencies": {
     "@noble/curves": "^2.4.0",

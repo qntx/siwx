@@ -3,7 +3,10 @@
 use clap::{Args, Subcommand};
 use siwx::evm::Evm;
 
-use super::{CmdResult, MessageArgs, VerifyArgs, run_message, run_verify};
+use super::{
+    CmdResult, MessageArgs, ParseArgs, VerifyArgs, decode_hex_signature, run_message, run_parse,
+    run_verify,
+};
 
 const CHAIN_LABEL: &str = "ethereum";
 
@@ -18,8 +21,10 @@ pub(crate) struct EvmCommand {
 pub(crate) enum EvmAction {
     /// Generate a CAIP-122 signing message for Ethereum.
     Message(Box<MessageArgs>),
-    /// Verify an EIP-191 signature (on-chain smart accounts via `--rpc`).
+    /// Verify a signature (on-chain smart accounts via `--rpc`).
     Verify(Box<EvmVerifyArgs>),
+    /// Parse a signing message into structured fields.
+    Parse(ParseArgs),
 }
 
 /// EVM-specific verify arguments.
@@ -29,8 +34,7 @@ pub(crate) struct EvmVerifyArgs {
     pub common: VerifyArgs,
 
     /// JSON-RPC endpoint as `CHAIN_ID=URL` for on-chain smart-account
-    /// verification (ERC-1271 / ERC-6492 via the universal validator).
-    /// Repeatable; a chain id may appear at most once.
+    /// verification (universal validator). Repeatable.
     #[cfg(feature = "rpc")]
     #[arg(long, value_name = "CHAIN_ID=URL", action = clap::ArgAction::Append)]
     pub rpc: Vec<String>,
@@ -40,19 +44,21 @@ impl EvmCommand {
     pub(crate) async fn execute(&self, json: bool) -> CmdResult {
         match &self.action {
             EvmAction::Message(args) => run_message(CHAIN_LABEL, args, json, &Evm::new()),
+            EvmAction::Parse(args) => run_parse(CHAIN_LABEL, args, json, &Evm::new()),
             EvmAction::Verify(args) => {
+                let sig = decode_hex_signature(&args.common.signature)?;
                 #[cfg(feature = "rpc")]
                 let verifier = make_evm(args)?;
                 #[cfg(not(feature = "rpc"))]
                 let verifier = Evm::new();
-                run_verify(CHAIN_LABEL, &args.common, json, &verifier).await
+                run_verify(CHAIN_LABEL, &args.common, sig, json, &verifier).await
             }
         }
     }
 }
 
 #[cfg(feature = "rpc")]
-pub(super) fn make_evm(args: &EvmVerifyArgs) -> Result<Evm, super::BoxedError> {
+fn make_evm(args: &EvmVerifyArgs) -> Result<Evm, super::BoxedError> {
     use alloy::providers::{Provider, ProviderBuilder};
     use alloy::transports::http::reqwest;
 

@@ -1,0 +1,60 @@
+---
+title: Protocol model
+description: CAIP-122 semantics, the two layouts, Expect bindings, and account rules.
+---
+
+# Protocol model
+
+A CAIP-122 flow has two actors: the **relying party** (server) builds a
+`Message` of `MessageFields`, formats it into chain-specific text, and the
+**wallet** signs the exact bytes. Verification is the inverse: parse the
+signed bytes, bind the fields to server state (`Expect`), map the message to a
+CAIP-10 `AccountId`, then verify the signature.
+
+## Layouts
+
+- **eip4361** (EVM): `domain " wants you to sign in with your Ethereum
+account:"` + address, optional `\n\n statement`, then a field block
+  (`URI`, `Version`, `Chain ID`, `Nonce`, `Issued At`, `Expiration Time`,
+  `Not Before`, `Request ID`, `Resources:`).
+- **SIWS** (SVM): identical shape but the label reads `Solana`, there is no
+  `scheme`, and `Version` is `1`. SIWS 1.1 may wrap the text in the off-chain
+  message v1 envelope (`\xffsolana offchain` + version + signers + content);
+  the signer key must equal the message address.
+
+Round-trip invariant: for every accepted text, `format(parse(t)) == t`.
+
+## Expect
+
+`Expect` binds the parsed message to server state. `domain` and `nonce` are
+required; `scheme`, `uri`, `chainId`, `requestId` bind when present
+(`Mismatch{field}` on disagreement). Time policy: `expired`/`notBefore` checks
+with configurable `skew` (default 60 s) and `maxAge` (default none); a future
+`issuedAt` is not an error. Timestamps are RFC 3339 with **millisecond**
+precision — the same text both languages emit.
+
+## Accounts
+
+`account()` maps a message to a CAIP-10 id.
+
+- EVM: `eip155:<numeric chain>:<eip-55 checksummed address>`. The message
+  address must be a canonical EIP-55 or all-lowercase hex — mixed-case strings
+  that fail the checksum are rejected (`InvalidField { address }`).
+- SVM: `solana:<genesis-hash prefix>:<base58 address>`. Chain ids are
+  cluster aliases (`mainnet`, `testnet`, `devnet`, `localnet`) or
+  `solana:`-prefixed forms; unknown clusters are `InvalidField { chainId }`.
+
+## Verification rules
+
+- EVM signatures are 65-byte low-s EIP-191 recoveries. With a provider
+  injected for the message chain, a 191 failure or a `0x6492` magic suffix
+  falls through to the ERC-6492 **universal validator** deployless `eth_call`
+  (bytecode pinned from wevm/ox), covering deployed 1271 accounts,
+  counterfactual 6492 accounts and EOAs through one path. `eth_chainId` must
+  equal the message chain id (`Mismatch { chainId }`, cached per chain key);
+  `0x01`/word-ending-01 returns valid, `00` shapes are `VerificationFailed`,
+  malformed results are `Backend`, JSON-RPC code 3 is `VerificationFailed`,
+  all other failures are `Backend` — reasons are fixed strings, never URLs.
+- SVM signatures are 64-byte Ed25519 over the exact signed bytes: canonical
+  prime-order-subgroup `A` and `R`, `S < L`, strict verification
+  (`verify_strict` / `zip215: false` + torsion-free, non-identity prechecks).

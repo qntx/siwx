@@ -17,7 +17,6 @@ use cmd::{Cli, Commands, NonceArgs};
 async fn main() -> ExitCode {
     let cli = Cli::parse();
     let json = cli.json;
-
     match dispatch(cli).await {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
@@ -27,22 +26,22 @@ async fn main() -> ExitCode {
     }
 }
 
-async fn dispatch(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
+async fn dispatch(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let json = cli.json;
     match cli.command {
         Commands::Evm(cmd) => cmd.execute(json).await,
         Commands::Svm(cmd) => cmd.execute(json).await,
         Commands::Nonce(_args) => NonceArgs::execute(json),
-        Commands::Parse(args) => args.execute(json),
     }
 }
 
-fn report_error(error: &dyn std::error::Error, json: bool) {
+fn report_error(error: &(dyn std::error::Error + 'static), json: bool) {
     if json {
-        let payload = output::ErrorOutput {
-            error: error.to_string(),
-        };
-        if output::print_json(&payload).is_err() {
+        let out = error.downcast_ref::<siwx::Error>().map_or_else(
+            || output::ErrorOutput::plain(error.to_string()),
+            output::ErrorOutput::from_error,
+        );
+        if output::print_json(&out).is_err() {
             eprintln!("failed to serialize error output");
         }
     } else {

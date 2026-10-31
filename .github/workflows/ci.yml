@@ -23,6 +23,18 @@ jobs:
     with:
       rust: true
 
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run test:parity
+
   rust:
     uses: qntx/workflows/.github/workflows/ci-rust.yml@v2
     permissions:

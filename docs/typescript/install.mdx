@@ -1,0 +1,21 @@
+---
+title: TypeScript install
+description: Install @qntx/siwx and pick a namespace.
+---
+
+# TypeScript
+
+```bash
+bun add @qntx/siwx
+```
+
+Subpath exports: `@qntx/siwx` (core), `@qntx/siwx/evm`, `@qntx/siwx/svm`.
+
+```ts
+import { createMessage, authenticate, generateNonce } from "@qntx/siwx";
+import { evm } from "@qntx/siwx/evm";
+import { svm } from "@qntx/siwx/svm";
+```
+
+The package is platform-neutral and Hermes-safe: all I/O is injected, no
+Node/browser globals.

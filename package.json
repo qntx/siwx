@@ -19,7 +19,9 @@
     "test": "vp run -r test && vp test",
     "release": "bumpp",
     "prepare": "vp config",
-    "test:e2e": "SIWX_E2E_ANVIL=1 bun --cwd packages/siwx test tests/e2e/ && SIWX_E2E_ANVIL=1 cargo test -p siwx --test e2e_anvil --features rpc"
+    "test:e2e": "SIWX_E2E_ANVIL=1 bun --cwd packages/siwx test tests/e2e/ && SIWX_E2E_ANVIL=1 cargo test -p siwx --test e2e_anvil --features rpc",
+    "test:parity": "bun scripts/parity/differential.ts --seed 42 && SIWX_DIFFERENTIAL=../../target/parity/differential.json cargo test -p siwx --test differential --all-features -- --ignored",
+    "test:parity:random": "seed=$((RANDOM * RANDOM)); echo \"seed: $seed\"; bun scripts/parity/differential.ts --seed $seed --count 5000 && SIWX_DIFFERENTIAL=../../target/parity/differential.json cargo test -p siwx --test differential --all-features -- --ignored"
   },
   "devDependencies": {
     "@qntx/oxfmt": "1.1.1",

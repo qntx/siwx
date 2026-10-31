@@ -1,0 +1,45 @@
+---
+title: Error codes
+description: Stable cross-language error contract.
+---
+
+# Error codes
+
+`Error::code()` / `info.code` is a stable string; `field` is a camelCase
+`Field`; `syntax` is a `Syntax` kind.
+
+| code                 | emitted by                          | meaning                                                             |
+| -------------------- | ----------------------------------- | ------------------------------------------------------------------- |
+| `MessageTooLarge`    | size gate                           | signed bytes exceed `MAX_MESSAGE_BYTES`                             |
+| `Syntax`             | parser                              | see syntax table below                                              |
+| `InvalidField`       | `Message::new` / `account` / verify | `{field, reason}` — value fails a validator                         |
+| `Mismatch`           | `Expect` / envelope / chain-id      | `{field, expected, actual}`                                         |
+| `Expired`            | `Expect`                            | `expirationTime` passed                                             |
+| `NotYetValid`        | `Expect`                            | before `notBefore`                                                  |
+| `IssuedAtTooOld`     | `Expect`                            | beyond `maxAge`                                                     |
+| `InvalidSignature`   | verify                              | malformed signature bytes/encoding                                  |
+| `VerificationFailed` | verify                              | cryptographic rejection                                             |
+| `Unsupported`        | verify                              | capability needed but not configured (e.g. `EIP-6492 requires RPC`) |
+| `Backend`            | verify                              | RPC/transport/malformed-result failure — never contains URLs        |
+
+## Syntax kinds
+
+`InvalidUtf8`, `CarriageReturn`, `MissingPreamble`, `MissingAccountSuffix`,
+`UnexpectedEof`, `ExpectedBlankLine`, `MissingField(field)`, `UnexpectedTrailing`,
+`ResourceSyntax`, `InvalidEnvelope` (SIWS off-chain envelope malformed).
+
+## Fields
+
+`scheme`, `domain`, `address`, `statement`, `uri`, `version`, `chainId`,
+`nonce`, `issuedAt`, `expirationTime`, `notBefore`, `requestId`, `resources`.
+
+## Which step emits what
+
+| Step                             | Errors                                                                                               |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `Message::new` / `createMessage` | `InvalidField`                                                                                       |
+| `format`                         | `InvalidField` (statement/scheme rules)                                                              |
+| `parse`                          | `MessageTooLarge`, `Syntax` (incl. `InvalidEnvelope`), `InvalidField`, `Mismatch { label\|address }` |
+| `Expect::check` / `checkExpect`  | `Mismatch`, `Expired`, `NotYetValid`, `IssuedAtTooOld`                                               |
+| `account()`                      | `InvalidField`                                                                                       |
+| `verify()`                       | `InvalidSignature`, `VerificationFailed`, `Unsupported`, `Backend`, `Mismatch { chainId }`           |

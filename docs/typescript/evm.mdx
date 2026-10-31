@@ -1,0 +1,24 @@
+---
+title: TypeScript EVM
+description: evm() namespace, providers, universal validator.
+---
+
+# EVM
+
+```ts
+import { evm } from "@qntx/siwx/evm";
+import type { Eip1193Provider } from "@qntx/siwx/evm";
+
+const ns = evm({ rpc: { "1": provider } }); // decimal chain-id keys
+```
+
+- EOA signatures verify fully offline — no RPC call.
+- `0x6492` magic suffix or a failed EIP-191 with a configured provider takes
+  the on-chain universal-validator `eth_call`; without a provider the magic
+  returns `Unsupported { "EIP-6492 requires RPC" }` and a plain 191 failure
+  returns its own error.
+- `eth_chainId` must equal the message chain (`Mismatch { chainId }`), cached
+  per chain-id key.
+- `Eip1193Provider` = `{ request(args): Promise<unknown> }`; JSON-RPC `code 3`
+  → `VerificationFailed`, everything else → `Backend` (fixed reason strings,
+  no URLs). The library sets no timeout — the provider owns transport policy.

@@ -10,11 +10,11 @@ pub(crate) use svm::SvmCommand;
 use time::OffsetDateTime;
 
 use crate::output::{
-    MessageOutput, NonceOutput, ParseOutput, VerifyOutput, print_json, render_message,
-    render_parse, render_verify,
+    FieldsOutput, MessageOutput, NonceOutput, ParseOutput, VerifyOutput, print_json,
+    render_message, render_parse, render_verify,
 };
 
-type BoxedError = Box<dyn std::error::Error>;
+type BoxedError = Box<dyn std::error::Error + Send + Sync>;
 pub(crate) type CmdResult = Result<(), BoxedError>;
 
 /// siwx — CAIP-122 Sign-In with X CLI tool.
@@ -45,10 +45,6 @@ pub(crate) enum Commands {
     /// Generate a cryptographic nonce.
     #[command(name = "nonce")]
     Nonce(NonceArgs),
-
-    /// Parse a CAIP-122 message string into structured fields.
-    #[command(name = "parse")]
-    Parse(ParseArgs),
 }
 
 /// Shared message-generation arguments.
@@ -74,9 +70,18 @@ pub(crate) struct MessageArgs {
     #[arg(long)]
     pub statement: Option<String>,
 
+    /// Preamble scheme (evm only — the SIWS layout rejects a scheme with
+    /// `InvalidField { scheme }`).
+    #[arg(long)]
+    pub scheme: Option<String>,
+
     /// Nonce (auto-generated if omitted).
     #[arg(long)]
     pub nonce: Option<String>,
+
+    /// Issued-at time (RFC 3339; defaults to now).
+    #[arg(long)]
+    pub issued_at: Option<String>,
 
     /// Expiration time (RFC 3339 timestamp, or seconds from now).
     #[arg(long)]
@@ -95,14 +100,48 @@ pub(crate) struct MessageArgs {
     pub resources: Vec<String>,
 }
 
+/// Signed-bytes input: exactly one of the three forms.
+#[derive(Args, Clone)]
+#[group(required = true, multiple = false)]
+pub(crate) struct MessageInput {
+    /// The raw signing message text.
+    #[arg(long)]
+    pub message: Option<String>,
+
+    /// Read the signing message from a file (raw bytes).
+    #[arg(long, value_name = "PATH")]
+    pub message_file: Option<std::path::PathBuf>,
+
+    /// Hex-encoded signed bytes (`0x` optional) — needed for SIWS off-chain
+    /// envelopes and other non-UTF-8 inputs.
+    #[arg(long, value_name = "HEX")]
+    pub message_hex: Option<String>,
+}
+
+impl MessageInput {
+    pub(crate) fn bytes(&self) -> Result<Vec<u8>, BoxedError> {
+        if let Some(ref m) = self.message {
+            return Ok(m.clone().into_bytes());
+        }
+        if let Some(ref p) = self.message_file {
+            return Ok(std::fs::read(p)?);
+        }
+        let h = self
+            .message_hex
+            .as_ref()
+            .ok_or("one of --message/--message-file/--message-hex is required")?;
+        Ok(hex::decode(h.strip_prefix("0x").unwrap_or(h))?)
+    }
+}
+
 /// Shared verify arguments.
 #[derive(Args)]
 pub(crate) struct VerifyArgs {
-    /// The raw CAIP-122 signing message text.
-    #[arg(long)]
-    pub message: String,
+    #[command(flatten)]
+    pub input: MessageInput,
 
-    /// Hex-encoded signature bytes (0x prefix optional).
+    /// Signature encoding: evm = hex (`0x` optional); svm = base58
+    /// (`0x`-prefixed switches to hex).
     #[arg(long)]
     pub signature: String,
 
@@ -125,23 +164,42 @@ pub(crate) struct VerifyArgs {
     /// Expected chain id binding (optional; recommended for multi-chain).
     #[arg(long)]
     pub chain_id: Option<String>,
+
+    /// Expected request-id binding (optional).
+    #[arg(long)]
+    pub request_id: Option<String>,
+
+    /// Clock-skew tolerance in seconds (default 60).
+    #[arg(long, value_name = "SECS")]
+    pub skew: Option<u64>,
+
+    /// Maximum age of issued-at in seconds (no cap when omitted).
+    #[arg(long, value_name = "SECS")]
+    pub max_age: Option<u64>,
+}
+
+/// Parse arguments (per namespace).
+#[derive(Args)]
+pub(crate) struct ParseArgs {
+    #[command(flatten)]
+    pub input: MessageInput,
 }
 
 #[derive(Args)]
 pub(crate) struct NonceArgs {}
 
-#[derive(Args)]
-pub(crate) struct ParseArgs {
-    /// Raw CAIP-122 message text to parse.
-    #[arg(long)]
-    pub message: String,
-}
-
 impl MessageArgs {
     pub(crate) fn build(&self) -> Result<Message, BoxedError> {
         let nonce = self.nonce.clone().unwrap_or_else(siwx::nonce::generate);
+        let issued_at = match self.issued_at.as_deref() {
+            Some(s) => {
+                Timestamp::parse(s).ok_or_else(|| format!("invalid RFC 3339 timestamp: {s}"))?
+            }
+            None => Timestamp::from_instant(OffsetDateTime::now_utc())
+                .ok_or("issued-at out of range")?,
+        };
         Ok(Message::new(MessageFields {
-            scheme: None,
+            scheme: self.scheme.clone(),
             domain: self.domain.clone(),
             address: self.address.clone(),
             statement: self.statement.clone(),
@@ -149,9 +207,7 @@ impl MessageArgs {
             version: "1".to_owned(),
             chain_id: self.chain_id.clone(),
             nonce,
-            issued_at: Timestamp::from_instant(OffsetDateTime::now_utc())
-                .map(|t| t.as_str().to_owned())
-                .ok_or("issued-at out of range")?,
+            issued_at: issued_at.as_str().to_owned(),
             expiration_time: self
                 .expiration
                 .as_deref()
@@ -178,10 +234,7 @@ impl NonceArgs {
     pub(crate) fn execute(json: bool) -> CmdResult {
         let nonce = siwx::nonce::generate();
         if json {
-            print_json(&NonceOutput {
-                len: nonce.len(),
-                nonce,
-            })?;
+            print_json(&NonceOutput { nonce })?;
         } else {
             println!("{nonce}");
         }
@@ -189,15 +242,7 @@ impl NonceArgs {
     }
 }
 
-impl ParseArgs {
-    pub(crate) fn execute(&self, json: bool) -> CmdResult {
-        let parsed = siwx::eip4361::parse(&self.message)?;
-        let out = ParseOutput::from_message(&parsed.label, &parsed.message);
-        render_parse(&out, json)
-    }
-}
-
-/// Build a message for chain `V` and render it.
+/// Build a message for chain `ns` and render `{chain, message, fields, account}`.
 pub(crate) fn run_message(
     chain_label: &'static str,
     args: &MessageArgs,
@@ -206,38 +251,67 @@ pub(crate) fn run_message(
 ) -> CmdResult {
     let msg = args.build()?;
     let text = namespace.format(&msg)?;
-    let out = MessageOutput::new(chain_label, text, &msg);
+    let account = namespace.account(&msg)?.to_string();
+    let out = MessageOutput {
+        chain: chain_label.to_owned(),
+        message: text,
+        fields: FieldsOutput::from_message(&msg),
+        account,
+    };
     render_message(&out, json)
 }
 
-/// Parse + authenticate a signature and render the outcome.
-///
-/// On cryptographic or validation failure, returns `Err` so the process exits
-/// non-zero. Success always reports `valid: true`.
-pub(crate) async fn run_verify(
+/// Parse signed bytes for chain `ns` and render `{chain, fields}`.
+pub(crate) fn run_parse(
     chain_label: &'static str,
-    args: &VerifyArgs,
+    args: &ParseArgs,
     json: bool,
     namespace: &dyn Namespace,
 ) -> CmdResult {
-    let sig = decode_hex_signature(&args.signature)?;
+    let parsed = namespace.parse(&args.input.bytes()?)?;
+    render_parse(
+        &ParseOutput {
+            chain: chain_label.to_owned(),
+            fields: FieldsOutput::from_message(&parsed),
+        },
+        json,
+    )
+}
+
+/// Parse + authenticate and render `{valid, chain, account, fields}`.
+pub(crate) async fn run_verify(
+    chain_label: &'static str,
+    args: &VerifyArgs,
+    sig: Vec<u8>,
+    json: bool,
+    namespace: &dyn Namespace,
+) -> CmdResult {
     let expect = build_expect(args);
-
-    let auth = authenticate(namespace, args.message.as_bytes(), &sig, &expect).await?;
-
+    let auth = authenticate(namespace, &args.input.bytes()?, &sig, &expect).await?;
     let out = VerifyOutput {
         valid: true,
         chain: chain_label.to_owned(),
-        domain: auth.message().domain().to_owned(),
-        address: auth.account().address().to_owned(),
+        account: auth.account().to_string(),
+        fields: FieldsOutput::from_message(auth.message()),
     };
-
     if json {
         print_json(&out)?;
     } else {
         render_verify(&out, false)?;
     }
     Ok(())
+}
+
+pub(crate) fn decode_hex_signature(s: &str) -> Result<Vec<u8>, BoxedError> {
+    Ok(hex::decode(s.strip_prefix("0x").unwrap_or(s))?)
+}
+
+/// svm signature: base58 by default, hex when `0x`-prefixed.
+pub(crate) fn decode_svm_signature(s: &str) -> Result<Vec<u8>, BoxedError> {
+    if s.starts_with("0x") {
+        return decode_hex_signature(s);
+    }
+    Ok(bs58::decode(s).into_vec()?)
 }
 
 fn build_expect(args: &VerifyArgs) -> Expect {
@@ -251,12 +325,16 @@ fn build_expect(args: &VerifyArgs) -> Expect {
     if let Some(ref chain_id) = args.chain_id {
         expect = expect.with_chain_id(chain_id);
     }
+    if let Some(ref request_id) = args.request_id {
+        expect = expect.with_request_id(request_id);
+    }
+    if let Some(skew) = args.skew {
+        expect = expect.with_skew(time::Duration::seconds(skew.cast_signed()));
+    }
+    if let Some(max_age) = args.max_age {
+        expect = expect.with_max_age(time::Duration::seconds(max_age.cast_signed()));
+    }
     expect
-}
-
-pub(crate) fn decode_hex_signature(s: &str) -> Result<Vec<u8>, BoxedError> {
-    let s = s.strip_prefix("0x").unwrap_or(s);
-    Ok(hex::decode(s)?)
 }
 
 fn parse_time_or_duration(s: &str) -> Result<Timestamp, BoxedError> {
@@ -268,179 +346,246 @@ fn parse_time_or_duration(s: &str) -> Result<Timestamp, BoxedError> {
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    clippy::unwrap_used,
+    clippy::unwrap_in_result,
+    clippy::panic,
+    clippy::indexing_slicing,
+    clippy::needless_pass_by_value,
+    reason = "test module"
+)]
 mod tests {
     use super::*;
 
-    fn message(fields: &MessageFields) -> Message {
-        Message::new(fields.clone()).expect("valid")
+    fn vector(path: &str) -> serde_json::Value {
+        let p = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../vectors")
+            .join(path);
+        serde_json::from_str(&std::fs::read_to_string(p).unwrap()).unwrap()
     }
 
-    fn base_fields() -> MessageFields {
-        MessageFields {
-            scheme: None,
-            domain: "example.com".into(),
-            address: "addr1".into(),
-            statement: None,
-            uri: "https://example.com".into(),
-            version: "1".into(),
-            chain_id: "1".into(),
-            nonce: "n12345678".into(),
-            issued_at: "2022-03-17T12:45:13.610Z".into(),
-            expiration_time: None,
-            not_before: None,
-            request_id: None,
-            resources: None,
+    fn cli(args: &[&str]) -> Result<Cli, clap::Error> {
+        Cli::try_parse_from(args)
+    }
+
+    fn cli_err(args: &[&str]) -> clap::Error {
+        Cli::try_parse_from(args)
+            .err()
+            .expect("expected clap error")
+    }
+
+    // clap-level shape tests
+
+    #[test]
+    fn verify_requires_domain_and_nonce() {
+        let e = cli_err(&[
+            "siwx",
+            "evm",
+            "verify",
+            "--message",
+            "m",
+            "--signature",
+            "00",
+        ]);
+        assert_eq!(e.kind(), clap::error::ErrorKind::MissingRequiredArgument);
+        for flag in ["--domain", "--nonce"] {
+            let err = cli_err(&[
+                "siwx",
+                "evm",
+                "verify",
+                "--message",
+                "m",
+                "--signature",
+                "00",
+                flag,
+                "x",
+            ]);
+            assert_eq!(err.kind(), clap::error::ErrorKind::MissingRequiredArgument);
         }
     }
 
-    fn verify_args() -> VerifyArgs {
-        VerifyArgs {
-            message: String::new(),
-            signature: String::new(),
-            domain: "example.com".into(),
-            nonce: "n12345678".into(),
-            uri: None,
-            scheme: None,
-            chain_id: None,
-        }
+    #[test]
+    fn message_inputs_are_mutually_exclusive() {
+        let e = cli_err(&[
+            "siwx",
+            "svm",
+            "parse",
+            "--message",
+            "a",
+            "--message-hex",
+            "00",
+        ]);
+        assert_eq!(e.kind(), clap::error::ErrorKind::ArgumentConflict);
     }
 
     #[test]
-    fn expect_binds_required_domain_and_nonce() {
-        build_expect(&verify_args())
-            .check(&message(&base_fields()))
-            .expect("domain/nonce bind");
+    fn top_level_parse_is_gone() {
+        let e = cli_err(&["siwx", "parse", "--message", "a"]);
+        assert_eq!(e.kind(), clap::error::ErrorKind::InvalidSubcommand);
     }
 
     #[test]
-    fn expect_forwards_optional_uri_scheme_chain_id() {
-        let args = VerifyArgs {
-            uri: Some("https://example.com/login".into()),
-            scheme: Some("https".into()),
-            chain_id: Some("1".into()),
-            ..verify_args()
+    fn svm_scheme_fails_at_format_not_clap() {
+        // --scheme parses (shared args) but the SIWS layout rejects it.
+        let c = cli(&[
+            "siwx",
+            "svm",
+            "message",
+            "--domain",
+            "d.example",
+            "--address",
+            "9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+            "--uri",
+            "https://d.example",
+            "--chain-id",
+            "mainnet",
+            "--scheme",
+            "https",
+        ])
+        .expect("clap accepts");
+        let Commands::Svm(cmd) = c.command else {
+            panic!("svm")
         };
-        let mut f = base_fields();
-        f.scheme = Some("https".into());
-        f.uri = "https://example.com/login".into();
-        build_expect(&args)
-            .check(&message(&f))
-            .expect("optional bindings");
-    }
-
-    #[test]
-    fn expect_uri_mismatch_is_rejected() {
-        let args = VerifyArgs {
-            uri: Some("https://other.example/login".into()),
-            ..verify_args()
-        };
-        let err = build_expect(&args)
-            .check(&message(&base_fields()))
-            .expect_err("uri");
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap();
+        let err = rt
+            .block_on(async { cmd.execute(false).await })
+            .expect_err("SIWS rejects scheme");
         assert!(
-            matches!(
-                err,
-                siwx::Error::Mismatch {
-                    field: siwx::Field::Uri,
+            err.downcast_ref::<siwx::Error>().is_some_and(|e| matches!(
+                e,
+                siwx::Error::InvalidField {
+                    field: siwx::Field::Scheme,
                     ..
                 }
-            ),
+            )),
             "got {err:?}"
         );
     }
 
-    fn try_parse(args: &[&str]) -> Result<Cli, clap::Error> {
-        Cli::try_parse_from(args)
-    }
+    // in-process end-to-end against fixed vectors
 
-    fn parse_err(args: &[&str]) -> clap::Error {
-        try_parse(args)
-            .map(|_cli| ())
-            .expect_err("expected clap error")
-    }
-
-    #[cfg(feature = "rpc")]
-    fn parse_ok(args: &[&str]) -> Cli {
-        try_parse(args)
-            .map_err(|err| err.to_string())
-            .expect("expected clap parse to succeed")
-    }
-
-    #[test]
-    fn verify_requires_domain() {
-        let err = parse_err(&[
-            "siwx",
-            "evm",
-            "verify",
-            "--message",
-            "m",
-            "--signature",
-            "00",
-            "--nonce",
-            "n12345678",
-        ]);
-        assert_eq!(err.kind(), clap::error::ErrorKind::MissingRequiredArgument);
-        let rendered = err.to_string();
-        assert!(rendered.contains("--domain"), "{rendered}");
+    fn fields_msg() -> Message {
+        Message::new(MessageFields {
+            scheme: None,
+            domain: "siwe.xyz".into(),
+            address: "0xAE9aA90F1a627c7a20783AF9e8747fCFEDEFAd03".into(),
+            statement: Some("Sign In with Ethereum Example Statement".into()),
+            uri: "https://siwe.xyz".into(),
+            version: "1".into(),
+            chain_id: "1".into(),
+            nonce: "bTyXgcQxn2htgkjJn".into(),
+            issued_at: "2022-01-27T17:09:38.578Z".into(),
+            expiration_time: Some("2100-01-07T14:31:43.952Z".into()),
+            not_before: None,
+            request_id: None,
+            resources: None,
+        })
+        .unwrap()
     }
 
     #[test]
-    fn verify_requires_nonce() {
-        let err = parse_err(&[
-            "siwx",
-            "svm",
-            "verify",
-            "--message",
-            "m",
-            "--signature",
-            "00",
-            "--domain",
-            "example.com",
-        ]);
-        assert_eq!(err.kind(), clap::error::ErrorKind::MissingRequiredArgument);
-        let rendered = err.to_string();
-        assert!(rendered.contains("--nonce"), "{rendered}");
+    fn evm_e2e_message_parse_verify() {
+        let v = vector("siwe/verification/verification_positive.json");
+        let case = &v["example message"];
+        let evm = siwx::evm::Evm::new();
+        let text = evm.format(&fields_msg()).unwrap();
+        // parse path
+        run_parse(
+            "ethereum",
+            &ParseArgs {
+                input: MessageInput {
+                    message: Some(text.clone()),
+                    message_file: None,
+                    message_hex: None,
+                },
+            },
+            false,
+            &evm,
+        )
+        .unwrap();
+        // verify path (max-age off; issued-at is in the past)
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap();
+        rt.block_on(async {
+            run_verify(
+                "ethereum",
+                &VerifyArgs {
+                    input: MessageInput {
+                        message: Some(text),
+                        message_file: None,
+                        message_hex: None,
+                    },
+                    signature: case["signature"].as_str().unwrap().to_owned(),
+                    domain: "siwe.xyz".into(),
+                    nonce: "bTyXgcQxn2htgkjJn".into(),
+                    uri: None,
+                    scheme: None,
+                    chain_id: None,
+                    request_id: None,
+                    skew: None,
+                    max_age: None,
+                },
+                decode_hex_signature(case["signature"].as_str().unwrap()).unwrap(),
+                true,
+                &evm,
+            )
+            .await
+        })
+        .unwrap();
+    }
+
+    fn run_svm(signed: Vec<u8>, sig: &str) -> Result<(), BoxedError> {
+        let svm = siwx::svm::Svm::new();
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap();
+        rt.block_on(async {
+            run_verify(
+                "solana",
+                &VerifyArgs {
+                    input: MessageInput {
+                        message: None,
+                        message_file: None,
+                        message_hex: Some(hex::encode(&signed)),
+                    },
+                    signature: sig.to_owned(),
+                    domain: "service.org".into(),
+                    nonce: "12341234".into(),
+                    uri: None,
+                    scheme: None,
+                    chain_id: None,
+                    request_id: None,
+                    skew: None,
+                    max_age: None,
+                },
+                decode_svm_signature(sig).unwrap(),
+                true,
+                &svm,
+            )
+            .await
+        })
     }
 
     #[test]
-    fn verify_rejects_trust_message_bindings() {
-        let err = parse_err(&[
-            "siwx",
-            "evm",
-            "verify",
-            "--message",
-            "m",
-            "--signature",
-            "00",
-            "--domain",
-            "example.com",
-            "--nonce",
-            "n12345678",
-            "--trust-message-bindings",
-        ]);
-        assert_eq!(err.kind(), clap::error::ErrorKind::UnknownArgument);
-        let rendered = err.to_string();
-        assert!(rendered.contains("trust-message-bindings"), "{rendered}");
-    }
-
-    #[cfg(feature = "rpc")]
-    #[test]
-    fn verify_rpc_accepts_chain_url_pairs() {
-        let cli = parse_ok(&[
-            "siwx",
-            "evm",
-            "verify",
-            "--message",
-            "m",
-            "--signature",
-            "00",
-            "--domain",
-            "example.com",
-            "--nonce",
-            "n12345678",
-            "--rpc",
-            "1=https://eth.example",
-        ]);
-        let _ = cli;
+    fn svm_e2e_raw_and_envelope() {
+        let v = vector("svm/ed25519.json");
+        for name in ["valid raw SIWS", "valid envelope"] {
+            let case = v["cases"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|c| c["name"] == name)
+                .unwrap();
+            let signed = match &case["signedHex"] {
+                serde_json::Value::String(h) => hex::decode(h.strip_prefix("0x").unwrap()).unwrap(),
+                _ => case["text"].as_str().unwrap().as_bytes().to_vec(),
+            };
+            let sig_hex = case["signatureHex"].as_str().unwrap();
+            run_svm(signed, sig_hex).unwrap_or_else(|e| panic!("{name}: {e}"));
+        }
     }
 }

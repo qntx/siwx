@@ -6,8 +6,11 @@
 //! trait for chain-specific verification via [`authenticate`].
 //!
 //! Chain profiles live in feature-gated modules:
-//! - [`evm`] — Ethereum (EIP-191 / EIP-1271 / EIP-6492), feature `evm`
-//! - [`svm`] — Solana (Ed25519), feature `svm`
+//! - [`evm`] — Ethereum: EIP-4361 layout + EIP-191 offline verification
+//!   (feature `evm`); on-chain smart-account verification through the
+//!   ERC-6492 universal validator with injected providers (feature `rpc`).
+//! - [`svm`] — Solana: SIWS layout + strict Ed25519, incl. the off-chain
+//!   message v1 envelope (feature `svm`).
 //!
 //! [CAIP-122]: https://chainagnostic.org/CAIPs/caip-122
 

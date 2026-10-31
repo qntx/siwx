@@ -1,0 +1,18 @@
+---
+title: Limits
+description: Hard bounds and sizing rules.
+---
+
+# Limits
+
+| Bound               | Value                                                     | Enforcement                                                                 |
+| ------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `MAX_MESSAGE_BYTES` | 8 192 B                                                   | `parse` on the whole `signed` input (envelope included) → `MessageTooLarge` |
+| Signature (EVM)     | 65 B (plus optional 32-B 6492 trailer inside `signature`) | `InvalidSignature` on length                                                |
+| Signature (SVM)     | 64 B                                                      | `InvalidSignature` on length                                                |
+| Off-chain envelope  | version 1, exactly 1 signer (SIWS 1.1)                    | `Unsupported` / `Syntax { InvalidEnvelope }`                                |
+| Clock skew          | 60 s default                                              | `Expect::with_skew` / `skewSeconds`                                         |
+| `maxAge`            | unbounded default                                         | `Expect::with_max_age` / `maxAge`                                           |
+
+Library policy: inputs are bytes, no I/O, no transports, no timeouts — the
+injected provider owns transport policy on the on-chain path.

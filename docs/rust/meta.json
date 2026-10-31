@@ -1,0 +1,4 @@
+{
+  "title": "Rust",
+  "pages": ["install", "core", "evm", "svm", "cli"]
+}

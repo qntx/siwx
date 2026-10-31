@@ -1,0 +1,24 @@
+---
+title: Rust EVM
+description: Evm namespace, DynProvider injection, universal validator.
+---
+
+# EVM
+
+```rust
+use alloy::providers::{DynProvider, Provider, ProviderBuilder};
+use siwx::evm::Evm;
+
+let provider: DynProvider =
+    Provider::erased(ProviderBuilder::new().connect_http(url));
+let evm = Evm::new().with_provider(1, provider);
+```
+
+- `Evm::new()` verifies EOAs fully offline.
+- `with_provider(chain_id, provider)` registers a `DynProvider` per chain;
+  `Evm` is `Clone` (providers behind `Arc`).
+- 6492 magic → on-chain (no provider → `Unsupported`); failed EIP-191 +
+  provider → on-chain universal validator; otherwise the 191 error returns.
+- `eth_chainId` is bound before `eth_call` and cached per registered entry;
+  result `01`/`00` words map to valid/`VerificationFailed`, malformed results
+  and non-code-3 RPC failures are `Backend` (no URLs).

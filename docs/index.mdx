@@ -1,6 +1,37 @@
 ---
 title: siwx
-description: Documentation stub.
+description: CAIP-122 Sign-In with X for TypeScript and Rust — one contract, two implementations.
 ---
 
-Documentation stub.
+# siwx
+
+`siwx` implements [CAIP-122](https://chainagnostic.org/CAIPs/caip-122) _Sign-In
+with X_: wallet-driven authentication where a server issues a challenge, the
+wallet signs a human-readable message, and the server verifies the signature
+against the account it claims.
+
+One contract, two implementations:
+
+- **`@qntx/siwx`** (TypeScript, platform-neutral, Hermes-safe)
+- **`siwx` / `siwx-cli`** (Rust library + CLI)
+
+Both run the same golden vectors under `vectors/` and are tracked in
+`parity.json`; a seeded differential harness (`bun run test:parity`) replays
+TS-generated cases through Rust.
+
+## Namespaces
+
+| Namespace      | Label    | Layout              | Signature                                                                    |
+| -------------- | -------- | ------------------- | ---------------------------------------------------------------------------- |
+| `eip155` (EVM) | Ethereum | EIP-4361 text       | secp256k1 personal_sign; smart accounts via the ERC-6492 universal validator |
+| `solana` (SVM) | Solana   | SIWS (Phantom spec) | Ed25519 over raw text or the off-chain message v1 envelope                   |
+
+```bash
+bun add @qntx/siwx        # TypeScript
+cargo add siwx          # Rust
+cargo install siwx-cli  # CLI
+```
+
+See [protocol](protocol.mdx), [errors](errors.mdx), [limits](limits.mdx), and
+the per-language guides under [typescript/](typescript/install.mdx) and
+[rust/](rust/install.mdx).

@@ -1,0 +1,20 @@
+---
+title: Rust install
+description: cargo add siwx — features evm/svm/rpc.
+---
+
+# Rust
+
+```bash
+cargo add siwx
+```
+
+Feature-gated namespaces: `evm` (EIP-191 + account/address rules), `svm`
+(SIWS + Ed25519), `rpc` (= `evm` + on-chain smart-account verification via
+alloy providers). The core (`Message`, `Expect`, `eip4361`, `nonce`) is
+always compiled.
+
+```toml
+[dependencies]
+siwx = { version = "0.7", features = ["evm", "svm", "rpc"] }
+```

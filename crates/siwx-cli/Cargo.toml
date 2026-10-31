@@ -13,6 +13,7 @@ path = "src/main.rs"
 doc  = false
 
 [dependencies]
+bs58                 = { workspace = true }
 siwx                 = { workspace = true, features = ["evm", "svm"] }
 clap.workspace       = true
 colored.workspace    = true

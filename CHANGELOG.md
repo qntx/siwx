@@ -1,5 +1,69 @@
 # Changelog
 
+## 0.7.0
+
+### Breaking
+
+- **Dual TypeScript + Rust monorepo**: `@qntx/siwx` (npm) and `siwx` /
+  `siwx-cli` (crates) share one contract — shared golden vectors in
+  `vectors/`, capability tracking in `parity.json`, and a seeded
+  differential replay harness (`bun run test:parity`).
+- **Single crate**: `siwx-evm` and `siwx-svm` are merged into `siwx` as the
+  `evm` / `svm` / `rpc` features (`siwx::evm::Evm`, `siwx::svm::Svm`).
+- **Spec baseline**: canonical `signinwithethereum/test-vectors`. Parsing
+  accepts empty statements, empty `Request ID:` and bare `Resources:`;
+  `userinfo@` and empty hosts in `domain` are rejected (ERC-4361 erratum).
+  EVM addresses accept uniform case and require EIP-55 for mixed case;
+  CAIP-10 accounts use the checksum form.
+- **Solana uses SIWS**: the `svm` profile parses and formats the Sign In With
+  Solana layout produced by wallet-standard wallets (not the EIP-4361
+  layout), chain ids are `mainnet|testnet|devnet|localnet` (optionally
+  `solana:`-prefixed) mapped to CAIP-2 genesis references.
+- **New core API** replacing `SiwxMessage`/`SiwxError`/`Verifier`:
+  `Message`/`MessageFields`, `Timestamp`, `Expect` (domain/nonce bindings +
+  skew/max-age), `AccountId` (CAIP-10), `Namespace` trait, `Error` +
+  `Syntax` + `Field` with stable `code()` names.
+- **Smart-account verification is one path**: the `eip1271` and `eip6492`
+  cargo features, the standalone `isValidSignature` call, `with_rpc_map` /
+  `with_rpc_for_chain` / `with_rpc_timeout`, and the `--rpc-chain-id` CLI
+  flag are gone. The new `rpc` feature injects providers
+  (`Evm::with_provider(chain_id, DynProvider)`; TS `evm({ rpc })` keyed by
+  decimal chain ids) and every on-chain check runs through the ERC-6492
+  universal validator deployless `eth_call` with `eth_chainId` binding.
+- **Error model**: `Expired`/`NotYetValid`/`IssuedAtTooOld`,
+  `Unsupported`, `Backend` replace ad-hoc strings; JSON-RPC code 3 is
+  `VerificationFailed`, all other RPC failures are `Backend` with fixed,
+  URL-free reason strings.
+- **CLI**: `siwx evm|svm message|verify|parse` + `siwx nonce`, JSON-first
+  output (`{valid, chain, account, fields}` / `{error:{code,message,…}}`);
+  `parse` moved under the namespaces; `--message-hex` for exact signed
+  bytes (SIWS off-chain envelopes); repeatable `--rpc CHAIN_ID=URL` under
+  feature `rpc`.
+- **Ed25519 rule**: `A` and `R` must be canonical prime-order-subgroup
+  (torsion-free, non-identity) encodings; identity `R` is rejected in both
+  languages.
+
+### Added
+
+- **SVM namespace**: real SIWS layout (Phantom ABNF), off-chain message v1
+  envelope (`offchain_message`), strict Ed25519
+  (`verify_strict` / `zip215:false` + prechecks), base58 address
+  validation.
+- **Canonical vector sets** for eip4361, SIWS, accounts, Ed25519
+  (incl. ed25519-speccheck), and universal-validator calldata/results;
+  mainnet Argent/Loopring vectors opt-in via `SIWX_MAINNET_RPC`.
+- **Anvil e2e suites** (`SIWX_E2E_ANVIL=1`, `bun run test:e2e`) covering
+  EOA, deployed 1271, counterfactual 6492, and chain-id mismatch.
+- **Hermes smoke bundle** (`smoke:hermes`) and daily differential CI
+  (`parity.yml`).
+
+### Removed
+
+- `siwx-evm` and `siwx-svm` crates, `SiwxMessage`, `AuthOpts`, `Verifier`,
+  `EvmVerifier`, `Ed25519Verifier`, `nonce::generate(len)`.
+- `eip1271` / `eip6492` features and URL-based RPC configuration.
+- Top-level `siwx parse` and `siwx nonce --len`.
+
 ## 0.6.1
 
 ### Breaking

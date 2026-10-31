@@ -11,7 +11,8 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4"
 
 [dependencies.siwx]
-path = "../crates/siwx"
+path     = "../crates/siwx"
+features = ["evm", "svm"]
 
 # Isolate from the parent workspace so stable `cargo test` / CI never
 # requires libfuzzer or nightly.
@@ -31,3 +32,13 @@ path  = "fuzz_targets/roundtrip_eip4361.rs"
 test  = false
 doc   = false
 bench = false
+
+[[bin]]
+name = "roundtrip_siws"
+path = "fuzz_targets/roundtrip_siws.rs"
+doc  = false
+
+[[bin]]
+name = "svm_parse"
+path = "fuzz_targets/svm_parse.rs"
+doc  = false
