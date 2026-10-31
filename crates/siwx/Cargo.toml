@@ -21,9 +21,9 @@ alloy                = { workspace = true, optional = true }
 ed25519-dalek        = { workspace = true, optional = true }
 curve25519-dalek     = { workspace = true, optional = true }
 bs58                 = { workspace = true, optional = true }
-tokio                = { workspace = true, features = ["sync"], optional = true }
 
 [dev-dependencies]
+alloy                = { workspace = true, features = ["node-bindings", "provider-http", "signer-local", "network", "sol-types", "json-rpc"] }
 proptest             = "1.11"
 time                 = { version = "0.3", features = ["parsing", "formatting", "macros"] }
 tokio.workspace      = true
@@ -36,10 +36,9 @@ serde   = ["dep:serde", "time/serde-well-known"]
 evm = ["dep:alloy"]
 ## Enable the Solana verifier module `siwx::svm` (Ed25519).
 svm = ["dep:ed25519-dalek", "dep:curve25519-dalek", "dep:bs58"]
-## Enable EIP-1271 smart-contract signature verification (RPC).
-eip1271 = ["evm", "dep:tokio", "tokio/time", "alloy/contract", "alloy/provider-http", "alloy/network", "alloy/sol-types"]
-## Enable ERC-6492 counterfactual signature verification (deployless eth_call).
-eip6492 = ["eip1271"]
+## Enable on-chain smart-account verification via the ERC-6492 universal
+## validator (provider injection, deployless eth_call).
+rpc = ["evm", "alloy/provider-http", "alloy/network", "alloy/sol-types", "alloy/transports"]
 
 [[test]]
 name              = "siwe_parsing"
@@ -60,6 +59,16 @@ required-features = ["evm"]
 name              = "evm_vectors"
 path              = "tests/evm_vectors.rs"
 required-features = ["evm"]
+
+[[test]]
+name              = "evm_rpc"
+path              = "tests/evm_rpc.rs"
+required-features = ["rpc"]
+
+[[test]]
+name              = "e2e_anvil"
+path              = "tests/e2e_anvil.rs"
+required-features = ["rpc"]
 
 [lints]
 workspace = true

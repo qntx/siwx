@@ -24,12 +24,12 @@ Those belong in the application that calls [`authenticate`](https://docs.rs/siwx
 
 ## Trust boundaries
 
-| Input                           | Rule                                                                                                                  |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `raw_message`                   | ABNF-parsed; preamble `chain_name` must equal `Verifier::CHAIN_NAME`; signature is verified over these original bytes |
-| `AuthOpts.domain` / `nonce`     | Must come from **server** configuration / store, not the client alone. Exact byte equality.                           |
-| RPC URL (`eip1271` / `eip6492`) | **Server-configured only** — never take untrusted user URLs (SSRF)                                                    |
-| Signature                       | Untrusted; cryptographic verification only                                                                            |
+| Input                        | Rule                                                                                                                                               |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `raw_message`                | ABNF-parsed; preamble `chain_name` must equal `Verifier::CHAIN_NAME`; signature is verified over these original bytes                              |
+| `AuthOpts.domain` / `nonce`  | Must come from **server** configuration / store, not the client alone. Exact byte equality.                                                        |
+| RPC provider (`rpc` feature) | **Server-injected only** — the library builds no transports and applies no timeouts; the provider owner owns transport policy and URL trust (SSRF) |
+| Signature                    | Untrusted; cryptographic verification only                                                                                                         |
 
 CLI `--trust-message-bindings` is **deleted**. `evm verify` / `svm verify` always require `--domain` and `--nonce`. Debug self-sign by passing the same values the message already contains; there is no “trust the message” switch.
 
@@ -84,16 +84,16 @@ application must invalidate sessions (short TTL / webhook). Out of library.
 These are **not** provided by this crate and must not be assumed present when
 calling the stack “production ready” as a full auth product:
 
-| Residual                                                           | Owner                                                                      |
-| ------------------------------------------------------------------ | -------------------------------------------------------------------------- |
-| Nonce single-use store / atomic consume                            | Application                                                                |
-| Session / JWT / cookie issuance and revocation                     | Application                                                                |
-| HTTP Origin/Host multi-environment policy beyond `AuthOpts.domain` | Application                                                                |
-| Rate limiting, CAPTCHA, device risk                                | Application / edge                                                         |
-| Live mainnet/anvil EIP-1271 / EIP-6492 success e2e in CI           | App/ops; library tests cover offline selection, magic, and `eth_call_bool` |
-| Third-party security audit reports                                 | Process outside the repo                                                   |
+| Residual                                                           | Owner                                                                                             |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| Nonce single-use store / atomic consume                            | Application                                                                                       |
+| Session / JWT / cookie issuance and revocation                     | Application                                                                                       |
+| HTTP Origin/Host multi-environment policy beyond `AuthOpts.domain` | Application                                                                                       |
+| Rate limiting, CAPTCHA, device risk                                | Application / edge                                                                                |
+| Anvil e2e + opt-in mainnet 1271 vectors (`SIWX_MAINNET_RPC`)       | `SIWX_E2E_ANVIL=1` suite + opt-in mainnet runner; unit tests cover selection, magic, decode table |
+| Third-party security audit reports                                 | Process outside the repo                                                                          |
 
-**Library production-ready** means: correct EOA (and optional 1271/6492-with-trusted-RPC)
+**Library production-ready** means: correct EOA (and optional universal-validator with trusted providers)
 verification via `authenticate`, with binding and DoS bounds—not a hosted IdP.
 
 ## EIP-6492 (feature `eip6492`, default off)
@@ -120,7 +120,7 @@ transaction.
 ## Logging
 
 Do not log signature bytes or the full `raw_message`. Error strings must not
-include RPC URLs (SSRF / internal network leak).
+include provider URLs or transport details (SSRF / internal network leak).
 
 ## Reporting
 

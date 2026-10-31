@@ -42,7 +42,7 @@ export function verifyEddsa(message: Message, signed: Uint8Array, signature: Uin
   } catch {
     throw new SiwxError({ code: "VerificationFailed" });
   }
-  if (!equalBytes(r.toBytes(), rBytes) || !r.isTorsionFree()) {
+  if (!equalBytes(r.toBytes(), rBytes) || !r.isTorsionFree() || r.equals(P.ZERO)) {
     throw new SiwxError({ code: "VerificationFailed" });
   }
   let ok: boolean;

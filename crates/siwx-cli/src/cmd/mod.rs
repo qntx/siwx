@@ -359,7 +359,7 @@ mod tests {
             .expect_err("expected clap error")
     }
 
-    #[cfg(feature = "eip1271")]
+    #[cfg(feature = "rpc")]
     fn parse_ok(args: &[&str]) -> Cli {
         try_parse(args)
             .map_err(|err| err.to_string())
@@ -423,55 +423,9 @@ mod tests {
         assert!(rendered.contains("trust-message-bindings"), "{rendered}");
     }
 
-    #[cfg(feature = "eip1271")]
+    #[cfg(feature = "rpc")]
     #[test]
-    fn verify_rpc_requires_rpc_chain_id() {
-        let err = parse_err(&[
-            "siwx",
-            "evm",
-            "verify",
-            "--message",
-            "m",
-            "--signature",
-            "00",
-            "--domain",
-            "example.com",
-            "--nonce",
-            "n12345678",
-            "--rpc",
-            "https://eth.example",
-        ]);
-        assert_eq!(err.kind(), clap::error::ErrorKind::MissingRequiredArgument);
-        let rendered = err.to_string();
-        assert!(rendered.contains("--rpc-chain-id"), "{rendered}");
-    }
-
-    #[cfg(feature = "eip1271")]
-    #[test]
-    fn verify_rpc_chain_id_requires_rpc() {
-        let err = parse_err(&[
-            "siwx",
-            "evm",
-            "verify",
-            "--message",
-            "m",
-            "--signature",
-            "00",
-            "--domain",
-            "example.com",
-            "--nonce",
-            "n12345678",
-            "--rpc-chain-id",
-            "1",
-        ]);
-        assert_eq!(err.kind(), clap::error::ErrorKind::MissingRequiredArgument);
-        let rendered = err.to_string();
-        assert!(rendered.contains("--rpc"), "{rendered}");
-    }
-
-    #[cfg(feature = "eip1271")]
-    #[test]
-    fn verify_rpc_pair_count_mismatch() {
+    fn verify_rpc_accepts_chain_url_pairs() {
         let cli = parse_ok(&[
             "siwx",
             "evm",
@@ -484,20 +438,9 @@ mod tests {
             "example.com",
             "--nonce",
             "n12345678",
-            "--rpc-chain-id",
-            "1",
             "--rpc",
-            "https://eth.example",
-            "--rpc-chain-id",
-            "137",
+            "1=https://eth.example",
         ]);
-        let Commands::Evm(cmd) = cli.command else {
-            unreachable!("expected evm");
-        };
-        let evm::EvmAction::Verify(args) = cmd.action else {
-            unreachable!("expected verify");
-        };
-        let err = evm::make_evm(&args).expect_err("unequal counts");
-        assert!(err.to_string().contains("pairs"), "{err}");
+        let _ = cli;
     }
 }

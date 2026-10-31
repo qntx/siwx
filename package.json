@@ -18,7 +18,8 @@
     "build": "vp run -r build",
     "test": "vp run -r test && vp test",
     "release": "bumpp",
-    "prepare": "vp config"
+    "prepare": "vp config",
+    "test:e2e": "SIWX_E2E_ANVIL=1 bun --cwd packages/siwx test tests/e2e/ && SIWX_E2E_ANVIL=1 cargo test -p siwx --test e2e_anvil --features rpc"
   },
   "devDependencies": {
     "@qntx/oxfmt": "1.1.1",

@@ -12,7 +12,7 @@
 
 - `packages/siwx/src` is platform-neutral and Hermes V1-safe (no Node/browser-only globals, no `node:*` imports, no ES2023+ array methods).
 - All I/O is injected; `packages/*/src/` holds no ambient singletons.
-- `crates/siwx` is the library crate; `crates/siwx-cli` is the only workspace member allowed to depend on it (enforced by `scripts/check-layers.ts`). Chain verifiers are feature-gated modules: `siwx::evm` (`evm`, plus `eip1271`/`eip6492` RPC verification) and `siwx::svm` (`svm`).
+- `crates/siwx` is the library crate; `crates/siwx-cli` is the only workspace member allowed to depend on it (enforced by `scripts/check-layers.ts`). Chain verifiers are feature-gated modules: `siwx::evm` (`evm`, plus `rpc` for on-chain smart-account verification via the ERC-6492 universal validator) and `siwx::svm` (`svm`).
 - No panics and no `unwrap`/`expect` in library code.
 - npm package and crates are versioned lockstep (`@qntx/siwx` and `siwx`/`siwx-cli` share one version; `bump.config.ts` bumps `packages/siwx/package.json` + `Cargo.toml` together, `scripts/check-version.ts` guards drift).
 - Shared test vectors live in `vectors/` and every capability is tracked in `parity.json`; both languages run the same files.
@@ -32,6 +32,8 @@ cargo clippy --workspace --all-targets --no-default-features -- -D warnings
 cargo test --workspace --all-features
 RUSTDOCFLAGS="-D warnings" cargo doc --workspace --all-features --no-deps
 cargo deny check
+SIWX_E2E_ANVIL=1 bun run test:e2e               # anvil e2e (needs foundry)
+SIWX_MAINNET_RPC=<url> cargo test -p siwx --test evm_rpc eip1271  # opt-in mainnet vectors
 ```
 
 Fuzz one target locally (needs a nightly toolchain and cargo-fuzz):

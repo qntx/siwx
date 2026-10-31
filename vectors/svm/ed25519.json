@@ -83,6 +83,14 @@
       "error": {
         "code": "VerificationFailed"
       }
+    },
+    {
+      "name": "identity R",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "signatureHex": "0x0100000000000000000000000000000000000000000000000000000000000000edd3f55c1a631258d69cf7a2def9de140000000000000000000000000000000f",
+      "error": {
+        "code": "VerificationFailed"
+      }
     }
   ]
 }

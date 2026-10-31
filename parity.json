@@ -171,6 +171,34 @@
         "vectors/svm/speccheck/cases.json",
         "vectors/svm/speccheck-expected.json"
       ]
+    },
+    {
+      "id": "evm.universal-validator",
+      "tier": "A",
+      "status": "stable",
+      "milestone": "TS3",
+      "ts": {
+        "module": "packages/siwx/src/evm/validator.ts",
+        "tests": [
+          "packages/siwx/tests/vectors/evm-rpc.test.ts",
+          "packages/siwx/tests/e2e/anvil.test.ts"
+        ]
+      },
+      "rust": {
+        "module": "crates/siwx/src/evm/validator.rs",
+        "tests": [
+          "crates/siwx/src/evm/validator.rs",
+          "crates/siwx/tests/evm_rpc.rs",
+          "crates/siwx/tests/e2e_anvil.rs"
+        ]
+      },
+      "vectors": [
+        "vectors/evm/universal-validator.json",
+        "vectors/evm/e2e/Owner1271.sol",
+        "vectors/evm/e2e/Factory.sol",
+        "vectors/evm/e2e/contracts.json"
+      ],
+      "notes": "On-chain smart-account path (deployed ERC-1271 + counterfactual ERC-6492 + EOA). eip1271.json mainnet vectors are opt-in via SIWX_MAINNET_RPC."
     }
   ]
 }

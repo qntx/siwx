@@ -34,6 +34,8 @@ cargo clippy --workspace --all-targets --no-default-features -- -D warnings
 cargo test --workspace --all-features
 RUSTDOCFLAGS="-D warnings" cargo doc --workspace --all-features --no-deps
 cargo deny check
+SIWX_E2E_ANVIL=1 bun run test:e2e               # anvil e2e (needs foundry)
+SIWX_MAINNET_RPC=<url> cargo test -p siwx --test evm_rpc eip1271  # opt-in mainnet vectors
 ```
 
 ## Versioning and release

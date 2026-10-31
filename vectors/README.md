@@ -20,7 +20,8 @@ never to make a failing test pass.
 
 - `parsing/` — `parsing_positive`, `parsing_negative`, `parsing_warnings`.
 - `verification/` — `verification_positive`, `verification_negative`,
-  `eip1271` (RPC-only; registered in `parity.json`, not run yet).
+  `eip1271.json` — canonical Argent/Loopring mainnet vectors; runs only
+  when `SIWX_MAINNET_RPC=<url>` is set (both languages; see `parity.json`).
 - `grammar/` — `valid_chars`, `invalid_chars`, `valid_uris`,
   `invalid_uris`, `valid_resources`, `invalid_resources`,
   `valid_specification`.

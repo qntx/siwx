@@ -18,7 +18,7 @@ pub(crate) struct EvmCommand {
 pub(crate) enum EvmAction {
     /// Generate a CAIP-122 signing message for Ethereum.
     Message(Box<MessageArgs>),
-    /// Verify an EIP-191 signature (EIP-1271 / EIP-6492 when built with those features + RPC).
+    /// Verify an EIP-191 signature (on-chain smart accounts via `--rpc`).
     Verify(Box<EvmVerifyArgs>),
 }
 
@@ -28,15 +28,12 @@ pub(crate) struct EvmVerifyArgs {
     #[command(flatten)]
     pub common: VerifyArgs,
 
-    /// JSON-RPC URL for EIP-1271 / EIP-6492. Repeatable; must pair with `--rpc-chain-id` in the same order.
-    #[cfg(feature = "eip1271")]
-    #[arg(long, requires = "rpc_chain_id", action = clap::ArgAction::Append)]
+    /// JSON-RPC endpoint as `CHAIN_ID=URL` for on-chain smart-account
+    /// verification (ERC-1271 / ERC-6492 via the universal validator).
+    /// Repeatable; a chain id may appear at most once.
+    #[cfg(feature = "rpc")]
+    #[arg(long, value_name = "CHAIN_ID=URL", action = clap::ArgAction::Append)]
     pub rpc: Vec<String>,
-
-    /// EIP-155 chain id for the corresponding `--rpc`. Repeatable; must pair with `--rpc`.
-    #[cfg(feature = "eip1271")]
-    #[arg(long = "rpc-chain-id", requires = "rpc", action = clap::ArgAction::Append)]
-    pub rpc_chain_id: Vec<u64>,
 }
 
 impl EvmCommand {
@@ -44,9 +41,9 @@ impl EvmCommand {
         match &self.action {
             EvmAction::Message(args) => run_message(CHAIN_LABEL, args, json, &Evm::new()),
             EvmAction::Verify(args) => {
-                #[cfg(feature = "eip1271")]
+                #[cfg(feature = "rpc")]
                 let verifier = make_evm(args)?;
-                #[cfg(not(feature = "eip1271"))]
+                #[cfg(not(feature = "rpc"))]
                 let verifier = Evm::new();
                 run_verify(CHAIN_LABEL, &args.common, json, &verifier).await
             }
@@ -54,18 +51,24 @@ impl EvmCommand {
     }
 }
 
-#[cfg(feature = "eip1271")]
+#[cfg(feature = "rpc")]
 pub(super) fn make_evm(args: &EvmVerifyArgs) -> Result<Evm, super::BoxedError> {
-    if args.rpc.is_empty() && args.rpc_chain_id.is_empty() {
-        Ok(Evm::new())
-    } else if args.rpc.len() != args.rpc_chain_id.len() {
-        Err("`--rpc` and `--rpc-chain-id` must be given in pairs".into())
-    } else {
-        let map = args
-            .rpc_chain_id
-            .iter()
-            .copied()
-            .zip(args.rpc.iter().cloned());
-        Ok(Evm::with_rpc_map(map))
+    use alloy::providers::{Provider, ProviderBuilder};
+    use alloy::transports::http::reqwest;
+
+    let mut evm = Evm::new();
+    for spec in &args.rpc {
+        let (id, url) = spec.split_once('=').ok_or("`--rpc` expects CHAIN_ID=URL")?;
+        let chain_id: u64 = id
+            .parse()
+            .map_err(|_| "`--rpc` chain id must be a decimal u64")?;
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(10))
+            .build()?;
+        let url = url.parse().map_err(|_| "`--rpc` URL is invalid")?;
+        let provider: alloy::providers::DynProvider =
+            Provider::erased(ProviderBuilder::new().connect_reqwest(client, url));
+        evm = evm.with_provider(chain_id, provider);
     }
+    Ok(evm)
 }

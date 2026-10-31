@@ -2,12 +2,13 @@
 
 use curve25519_dalek::edwards::CompressedEdwardsY;
 use curve25519_dalek::scalar::Scalar;
+use curve25519_dalek::traits::IsIdentity;
 use ed25519_dalek::{Signature, VerifyingKey};
 
 use super::{address_bytes, canonical_point};
 use crate::{Error, Message};
 
-/// Decode `address` as a canonical, on-curve, non-small-order Ed25519
+/// Decode `address` as a canonical, on-curve, prime-order-subgroup Ed25519
 /// verifying key.
 pub(crate) fn verifying_key_from_address(address: &str) -> Result<VerifyingKey, Error> {
     let arr = address_bytes(address)?;
@@ -29,18 +30,19 @@ pub(crate) fn verify_sync(message: &Message, signed: &[u8], signature: &[u8]) ->
             reason: "S must be a canonical scalar (S < L)",
         });
     }
-    // R must be a canonical, prime-order-subgroup point encoding.
+    // Address key first: canonical, on-curve, prime-order subgroup.
+    let verifying_key = verifying_key_from_address(message.address())?;
+
+    // R must be a canonical, prime-order-subgroup, non-identity encoding.
     let mut r_arr = [0u8; 32];
     r_arr.copy_from_slice(r_bytes);
     let Some(r_point) = CompressedEdwardsY(r_arr).decompress() else {
         return Err(Error::VerificationFailed);
     };
-    if !r_point.is_torsion_free() || r_point.compress().0 != r_arr {
+    if !r_point.is_torsion_free() || r_point.is_identity() || r_point.compress().0 != r_arr {
         return Err(Error::VerificationFailed);
     }
     let sig = Signature::from_bytes(&sig_arr);
-
-    let verifying_key = verifying_key_from_address(message.address())?;
 
     // RFC 8032 cofactorless on torsion-free A/R: canonical encodings, S < L.
     verifying_key
