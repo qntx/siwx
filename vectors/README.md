@@ -1,39 +1,37 @@
-# Shared test vectors
+# Test vectors
 
-Frozen golden data consumed by both implementations: the TypeScript tests in
-`packages/siwx/tests/` and the Rust tests in `crates/siwx/tests/` read exactly
-these files. Do not reformat, re-wrap, or normalize them; any change is a
-deliberate contract change and must land in both languages in the same
-commit. Provenance lives in this README rather than in per-directory
-`SOURCE.txt` files.
+Shared golden vectors consumed by both the TypeScript and Rust
+implementations. Files under this directory are **frozen data**: change
+them only via a deliberate upstream sync or a reviewed contract change —
+never to make a failing test pass.
 
 ## Layout
 
-| Path                                   | Contents                                              |
-| -------------------------------------- | ----------------------------------------------------- |
-| `spruceid/parsing_positive.json`       | Official SIWE messages that must parse                |
-| `spruceid/parsing_negative.json`       | Official SIWE messages that must fail to parse        |
-| `spruceid/verification_positive.json`  | Official SIWE field objects + signatures that verify  |
-| `spruceid/verification_negative.json`  | Official SIWE field objects + signatures that fail    |
-| `limits/defaults.json`                 | Core message limits shared by both implementations    |
+| Path | Provenance |
+| ---- | ---------- |
+| `limits/defaults.json` | Project-owned: shared default limits (`MAX_*`/`MIN_*`). |
+| `siwe/` | Vendored byte-for-byte from [signinwithethereum/test-vectors] at commit `7f480da491b651164d7a31e43f45cc26557518e7` (licensed MIT OR Apache-2.0). |
+| `siwe-overrides.json` | Project-owned: canonical cases siwx intentionally answers differently (keyed `"<file>#<case name>"`). |
+| `eip4361/contract.json` | Project-owned: EIP-4361 layout accept/reject contract. |
+| `eip4361/expect.json` | Project-owned: `Expect` binding + time policy contract. |
+| `timestamp/from-instant.json` | Project-owned: instant → JS `toISOString` contract. |
 
-## Provenance
+## `siwe/` contents
 
-- `spruceid/` — official test vectors from
-  [spruceid/siwe](https://github.com/spruceid/siwe) `test/` at commit
-  `911f6f2c73ef24deac73fec2f6b84930721d2fb4` (MIT OR Apache-2.0), vendored as
-  git blobs:
+- `parsing/` — `parsing_positive`, `parsing_negative`, `parsing_warnings`.
+- `verification/` — `verification_positive`, `verification_negative`,
+  `eip1271` (RPC-only; registered in `parity.json`, not run yet).
+- `grammar/` — `valid_chars`, `invalid_chars`, `valid_uris`,
+  `invalid_uris`, `valid_resources`, `invalid_resources`,
+  `valid_specification`.
+- `objects/` — `message_objects`, `parsing_negative_objects`.
 
-  | File                          | Blob SHA                                   |
-  | ----------------------------- | ------------------------------------------ |
-  | `parsing_positive.json`       | `95ca7540c557455eeaa5442f4cc56ba3c428d25e` |
-  | `parsing_negative.json`       | `8fd22cfc3a362ef50b58b357977b8afac54ad168` |
-  | `verification_positive.json`  | `c4d38ba7e20bef5daa3193e7784ff1d382cf8eb5` |
-  | `verification_negative.json`  | `3dd9206e54fcbc7f46f246af0ab131110819ad8b` |
+## Deliberate divergence
 
-  Only goldens are vendored, no source. The `eip1271.json` upstream file is
-  intentionally not vendored: contract-signature cases need RPC.
+`domain` rejects `userinfo@` (ERC-4361 erratum
+[signinwithethereum/ERCs#1]). The two canonical cases that expect
+acceptance live in `siwe-overrides.json`; runners must assert the pinned
+error rather than skip.
 
-- `limits/` — contract vector authored for this repository's `@qntx/siwx` +
-  `siwx` (crate) interop suite. Names are camelCase JSON keys mirroring the
-  TypeScript constant names.
+[signinwithethereum/test-vectors]: https://github.com/signinwithethereum/test-vectors
+[signinwithethereum/ERCs#1]: https://github.com/signinwithethereum/ERCs/issues/1

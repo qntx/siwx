@@ -2,7 +2,12 @@
 
 #![allow(
     unused_crate_dependencies,
-    reason = "integration test crate links lib deps it does not use"
+    clippy::panic,
+    clippy::indexing_slicing,
+    clippy::excessive_nesting,
+    clippy::map_unwrap_or,
+    clippy::match_same_arms,
+    reason = "integration test crate links lib deps it does not use; test helpers may panic/index"
 )]
 
 #[cfg(test)]

@@ -24,3 +24,10 @@ path  = "fuzz_targets/fuzz_parse.rs"
 test  = false
 doc   = false
 bench = false
+
+[[bin]]
+name  = "roundtrip_eip4361"
+path  = "fuzz_targets/roundtrip_eip4361.rs"
+test  = false
+doc   = false
+bench = false

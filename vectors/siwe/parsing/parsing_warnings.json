@@ -1,0 +1,38 @@
+{
+    "address not EIP-55 (all-lowercase)": {
+        "message": "service.org wants you to sign in with your Ethereum account:\n0xe5a12547fe4e872d192e3ececb76f2ce1aea4946\n\nI accept the ServiceOrg Terms of Service: https://service.org/tos\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z\nExpiration Time: 2023-03-17T12:45:13.610Z\nNot Before: 2022-03-17T12:45:13.610Z\nRequest ID: some_id\nResources:\n- https://service.org/login",
+        "fields": {
+            "domain": "service.org",
+            "address": "0xe5a12547fe4e872d192e3ececb76f2ce1aea4946",
+            "statement": "I accept the ServiceOrg Terms of Service: https://service.org/tos",
+            "uri": "https://service.org/login",
+            "version": "1",
+            "chainId": 1,
+            "nonce": "12341234",
+            "issuedAt": "2022-03-17T12:45:13.610Z",
+            "expirationTime": "2023-03-17T12:45:13.610Z",
+            "notBefore": "2022-03-17T12:45:13.610Z",
+            "requestId": "some_id",
+            "resources": ["https://service.org/login"]
+        },
+        "expectedWarnings": 1
+    },
+    "address not EIP-55 (all-uppercase)": {
+        "message": "service.org wants you to sign in with your Ethereum account:\n0xE5A12547FE4E872D192E3ECECB76F2CE1AEA4946\n\nI accept the ServiceOrg Terms of Service: https://service.org/tos\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z\nExpiration Time: 2023-03-17T12:45:13.610Z\nNot Before: 2022-03-17T12:45:13.610Z\nRequest ID: some_id\nResources:\n- https://service.org/login",
+        "fields": {
+            "domain": "service.org",
+            "address": "0xE5A12547FE4E872D192E3ECECB76F2CE1AEA4946",
+            "statement": "I accept the ServiceOrg Terms of Service: https://service.org/tos",
+            "uri": "https://service.org/login",
+            "version": "1",
+            "chainId": 1,
+            "nonce": "12341234",
+            "issuedAt": "2022-03-17T12:45:13.610Z",
+            "expirationTime": "2023-03-17T12:45:13.610Z",
+            "notBefore": "2022-03-17T12:45:13.610Z",
+            "requestId": "some_id",
+            "resources": ["https://service.org/login"]
+        },
+        "expectedWarnings": 1
+    }
+}

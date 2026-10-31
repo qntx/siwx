@@ -34,3 +34,4 @@ dist
 
 # proptest FileFailurePersistence::Direct (created only on failure)
 crates/siwx/tests/proptest-regressions.txt
+crates/siwx/tests/*.proptest-regressions

@@ -1,0 +1,552 @@
+{
+  "accept": [
+    {
+      "name": "minimal",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "label": "Ethereum",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": null,
+        "notBefore": null,
+        "requestId": null,
+        "resources": null
+      }
+    },
+    {
+      "name": "non-ethereum label",
+      "text": "service.org wants you to sign in with your Solana account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "label": "Solana",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": null,
+        "notBefore": null,
+        "requestId": null,
+        "resources": null
+      }
+    },
+    {
+      "name": "cosmos label",
+      "text": "service.org wants you to sign in with your Cosmos Hub account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "label": "Cosmos Hub",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": null,
+        "notBefore": null,
+        "requestId": null,
+        "resources": null
+      }
+    },
+    {
+      "name": "scheme",
+      "text": "https://service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "label": "Ethereum",
+      "fields": {
+        "scheme": "https",
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": null,
+        "notBefore": null,
+        "requestId": null,
+        "resources": null
+      }
+    },
+    {
+      "name": "scheme digits plus minus dot",
+      "text": "a1+.-z://service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "label": "Ethereum",
+      "fields": {
+        "scheme": "a1+.-z",
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": null,
+        "notBefore": null,
+        "requestId": null,
+        "resources": null
+      }
+    },
+    {
+      "name": "statement",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\nI accept the Terms\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "label": "Ethereum",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": "I accept the Terms",
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": null,
+        "notBefore": null,
+        "requestId": null,
+        "resources": null
+      }
+    },
+    {
+      "name": "empty statement",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "label": "Ethereum",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": "",
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": null,
+        "notBefore": null,
+        "requestId": null,
+        "resources": null
+      }
+    },
+    {
+      "name": "empty request id",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z\nRequest ID: ",
+      "label": "Ethereum",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": null,
+        "notBefore": null,
+        "requestId": "",
+        "resources": null
+      }
+    },
+    {
+      "name": "bare resources",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z\nResources:",
+      "label": "Ethereum",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": null,
+        "notBefore": null,
+        "requestId": null,
+        "resources": []
+      }
+    },
+    {
+      "name": "resources",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z\nResources:\n- https://a.example\n- ipfs://QmX",
+      "label": "Ethereum",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": null,
+        "notBefore": null,
+        "requestId": null,
+        "resources": [
+          "https://a.example",
+          "ipfs://QmX"
+        ]
+      }
+    },
+    {
+      "name": "optional tags all",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z\nExpiration Time: 2023-03-17T12:45:13.610Z\nNot Before: 2022-03-17T12:45:13.610Z\nRequest ID: some_id\nResources:\n- https://a.example",
+      "label": "Ethereum",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": "some_id",
+        "resources": [
+          "https://a.example"
+        ]
+      }
+    },
+    {
+      "name": "timestamp offset",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T14:45:13.610+02:00",
+      "label": "Ethereum",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T14:45:13.610+02:00",
+        "expirationTime": null,
+        "notBefore": null,
+        "requestId": null,
+        "resources": null
+      }
+    },
+    {
+      "name": "timestamp lowercase t z",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17t12:45:13.610z",
+      "label": "Ethereum",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17t12:45:13.610z",
+        "expirationTime": null,
+        "notBefore": null,
+        "requestId": null,
+        "resources": null
+      }
+    },
+    {
+      "name": "timestamp nanosecond fraction",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.123456789Z",
+      "label": "Ethereum",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.123456789Z",
+        "expirationTime": null,
+        "notBefore": null,
+        "requestId": null,
+        "resources": null
+      }
+    }
+  ],
+  "reject": [
+    {
+      "name": "invalid utf8",
+      "text": "",
+      "error": {
+        "code": "Syntax",
+        "syntax": "InvalidUtf8"
+      },
+      "note": "runner synthesizes [0xff]"
+    },
+    {
+      "name": "carriage return",
+      "text": "service.org wants you to sign in with your Ethereum account:\r\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "Syntax",
+        "syntax": "CarriageReturn"
+      }
+    },
+    {
+      "name": "missing preamble",
+      "text": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://x\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "Syntax",
+        "syntax": "MissingPreamble"
+      }
+    },
+    {
+      "name": "missing account suffix",
+      "text": "service.org wants you to sign in with your Ethereum\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://x\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "Syntax",
+        "syntax": "MissingAccountSuffix"
+      }
+    },
+    {
+      "name": "empty label",
+      "text": "service.org wants you to sign in with your  account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://x\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "InvalidField",
+        "field": "label"
+      }
+    },
+    {
+      "name": "unexpected eof",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234",
+      "error": {
+        "code": "Syntax",
+        "syntax": "UnexpectedEof"
+      }
+    },
+    {
+      "name": "expected blank line missing",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\nURI: https://x\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "Syntax",
+        "syntax": "ExpectedBlankLine"
+      }
+    },
+    {
+      "name": "missing uri tag",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "Syntax",
+        "syntax": "MissingField",
+        "field": "uri"
+      }
+    },
+    {
+      "name": "missing version tag",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "Syntax",
+        "syntax": "MissingField",
+        "field": "version"
+      }
+    },
+    {
+      "name": "missing chain id tag",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "Syntax",
+        "syntax": "MissingField",
+        "field": "chainId"
+      }
+    },
+    {
+      "name": "missing nonce tag",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "Syntax",
+        "syntax": "MissingField",
+        "field": "nonce"
+      }
+    },
+    {
+      "name": "missing issued at tag",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nSigned At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "Syntax",
+        "syntax": "MissingField",
+        "field": "issuedAt"
+      }
+    },
+    {
+      "name": "trailing newline",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z\n",
+      "error": {
+        "code": "Syntax",
+        "syntax": "UnexpectedTrailing"
+      }
+    },
+    {
+      "name": "trailing garbage",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z\ngarbage",
+      "error": {
+        "code": "Syntax",
+        "syntax": "UnexpectedTrailing"
+      }
+    },
+    {
+      "name": "resource bad dash",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z\nResources:\n-x https://a.example",
+      "error": {
+        "code": "Syntax",
+        "syntax": "ResourceSyntax"
+      }
+    },
+    {
+      "name": "resource non-dash line",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z\nResources:\nhttps://a.example",
+      "error": {
+        "code": "Syntax",
+        "syntax": "UnexpectedTrailing"
+      }
+    },
+    {
+      "name": "message too large",
+      "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "error": {
+        "code": "MessageTooLarge"
+      }
+    },
+    {
+      "name": "domain userinfo",
+      "text": "user@service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "InvalidField",
+        "field": "domain"
+      }
+    },
+    {
+      "name": "domain empty",
+      "text": " wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://x\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "InvalidField",
+        "field": "domain"
+      }
+    },
+    {
+      "name": "bad scheme char",
+      "text": "ht_tp://service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://x\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "InvalidField",
+        "field": "scheme"
+      }
+    },
+    {
+      "name": "address bad charset",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xZZZ!!!\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "InvalidField",
+        "field": "address"
+      }
+    },
+    {
+      "name": "statement bad char tab",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\nbad\ttab\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "InvalidField",
+        "field": "statement"
+      }
+    },
+    {
+      "name": "statement bad char unicode",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\nh\u00e9llo\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "InvalidField",
+        "field": "statement"
+      }
+    },
+    {
+      "name": "uri not uri",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: not a uri with spaces\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "InvalidField",
+        "field": "uri"
+      }
+    },
+    {
+      "name": "version not one",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 2\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "InvalidField",
+        "field": "version"
+      }
+    },
+    {
+      "name": "chain id bad charset",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: bad$id\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "InvalidField",
+        "field": "chainId"
+      }
+    },
+    {
+      "name": "nonce too short",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: short\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "InvalidField",
+        "field": "nonce"
+      }
+    },
+    {
+      "name": "issued at invalid feb 30",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-02-30T12:45:13.610Z",
+      "error": {
+        "code": "InvalidField",
+        "field": "issuedAt"
+      }
+    },
+    {
+      "name": "issued at leap second",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:60.610Z",
+      "error": {
+        "code": "InvalidField",
+        "field": "issuedAt"
+      }
+    },
+    {
+      "name": "request id bad pchar",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z\nRequest ID: bad id with spaces",
+      "error": {
+        "code": "InvalidField",
+        "field": "requestId"
+      }
+    },
+    {
+      "name": "resource bad uri",
+      "text": "service.org wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z\nResources:\n- not a uri with spaces",
+      "error": {
+        "code": "InvalidField",
+        "field": "resources"
+      }
+    },
+    {
+      "name": "domain empty host",
+      "text": ":8080 wants you to sign in with your Ethereum account:\n0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946\n\n\nURI: https://x\nVersion: 1\nChain ID: 1\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "InvalidField",
+        "field": "domain"
+      }
+    }
+  ]
+}

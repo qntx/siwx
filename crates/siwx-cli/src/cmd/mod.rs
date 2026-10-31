@@ -5,10 +5,9 @@ mod svm;
 
 use clap::{Args, Parser, Subcommand};
 pub(crate) use evm::EvmCommand;
-use siwx::{AuthOpts, SiwxMessage, Verifier, authenticate};
+use siwx::{Expect, Message, MessageFields, Namespace, Timestamp, authenticate};
 pub(crate) use svm::SvmCommand;
 use time::OffsetDateTime;
-use time::format_description::well_known::Rfc3339;
 
 use crate::output::{
     MessageOutput, NonceOutput, ParseOutput, VerifyOutput, print_json, render_message,
@@ -129,11 +128,7 @@ pub(crate) struct VerifyArgs {
 }
 
 #[derive(Args)]
-pub(crate) struct NonceArgs {
-    /// Nonce length in characters (≥ 8).
-    #[arg(short, long, default_value_t = siwx::nonce::DEFAULT_LEN)]
-    pub len: usize,
-}
+pub(crate) struct NonceArgs {}
 
 #[derive(Args)]
 pub(crate) struct ParseArgs {
@@ -143,46 +138,49 @@ pub(crate) struct ParseArgs {
 }
 
 impl MessageArgs {
-    pub(crate) fn build(&self) -> Result<SiwxMessage, BoxedError> {
-        let nonce = self
-            .nonce
-            .clone()
-            .unwrap_or_else(siwx::nonce::generate_default);
-
-        let mut msg = SiwxMessage::new(
-            &self.domain,
-            &self.address,
-            &self.uri,
-            &self.chain_id,
+    pub(crate) fn build(&self) -> Result<Message, BoxedError> {
+        let nonce = self.nonce.clone().unwrap_or_else(siwx::nonce::generate);
+        Ok(Message::new(MessageFields {
+            scheme: None,
+            domain: self.domain.clone(),
+            address: self.address.clone(),
+            statement: self.statement.clone(),
+            uri: self.uri.clone(),
+            version: "1".to_owned(),
+            chain_id: self.chain_id.clone(),
             nonce,
-        )?;
-
-        if let Some(ref s) = self.statement {
-            msg = msg.with_statement(s)?;
-        }
-        if let Some(ref exp) = self.expiration {
-            msg = msg.with_expiration_time(parse_time_or_duration(exp)?)?;
-        }
-        if let Some(ref nbf) = self.not_before {
-            msg = msg.with_not_before(parse_time_or_duration(nbf)?)?;
-        }
-        if let Some(ref rid) = self.request_id {
-            msg = msg.with_request_id(rid)?;
-        }
-        if !self.resources.is_empty() {
-            msg = msg.with_resources(self.resources.clone())?;
-        }
-        Ok(msg)
+            issued_at: Timestamp::from_instant(OffsetDateTime::now_utc())
+                .map(|t| t.as_str().to_owned())
+                .ok_or("issued-at out of range")?,
+            expiration_time: self
+                .expiration
+                .as_deref()
+                .map(parse_time_or_duration)
+                .transpose()?
+                .map(|t| t.as_str().to_owned()),
+            not_before: self
+                .not_before
+                .as_deref()
+                .map(parse_time_or_duration)
+                .transpose()?
+                .map(|t| t.as_str().to_owned()),
+            request_id: self.request_id.clone(),
+            resources: if self.resources.is_empty() {
+                None
+            } else {
+                Some(self.resources.clone())
+            },
+        })?)
     }
 }
 
 impl NonceArgs {
-    pub(crate) fn execute(&self, json: bool) -> CmdResult {
-        let nonce = siwx::nonce::generate(self.len)?;
+    pub(crate) fn execute(json: bool) -> CmdResult {
+        let nonce = siwx::nonce::generate();
         if json {
             print_json(&NonceOutput {
+                len: nonce.len(),
                 nonce,
-                len: self.len,
             })?;
         } else {
             println!("{nonce}");
@@ -193,22 +191,21 @@ impl NonceArgs {
 
 impl ParseArgs {
     pub(crate) fn execute(&self, json: bool) -> CmdResult {
-        let msg: SiwxMessage = self.message.parse()?;
-        let out = ParseOutput::from_message(&msg);
+        let parsed = siwx::eip4361::parse(&self.message)?;
+        let out = ParseOutput::from_message(&parsed.label, &parsed.message);
         render_parse(&out, json)
     }
 }
 
 /// Build a message for chain `V` and render it.
-pub(crate) fn run_message<V: Verifier>(
+pub(crate) fn run_message(
     chain_label: &'static str,
     args: &MessageArgs,
     json: bool,
+    namespace: &dyn Namespace,
 ) -> CmdResult {
-    V::validate_address(&args.address)?;
-    V::validate_chain_id(&args.chain_id)?;
     let msg = args.build()?;
-    let text = V::format_message(&msg);
+    let text = namespace.format(&msg)?;
     let out = MessageOutput::new(chain_label, text, &msg);
     render_message(&out, json)
 }
@@ -217,22 +214,22 @@ pub(crate) fn run_message<V: Verifier>(
 ///
 /// On cryptographic or validation failure, returns `Err` so the process exits
 /// non-zero. Success always reports `valid: true`.
-pub(crate) async fn run_verify<V: Verifier>(
+pub(crate) async fn run_verify(
     chain_label: &'static str,
     args: &VerifyArgs,
     json: bool,
-    verifier: V,
+    namespace: &dyn Namespace,
 ) -> CmdResult {
     let sig = decode_hex_signature(&args.signature)?;
-    let opts = build_auth_opts(args);
+    let expect = build_expect(args);
 
-    let auth = authenticate(&verifier, &args.message, &sig, &opts).await?;
+    let auth = authenticate(namespace, args.message.as_bytes(), &sig, &expect).await?;
 
     let out = VerifyOutput {
         valid: true,
         chain: chain_label.to_owned(),
         domain: auth.message().domain().to_owned(),
-        address: auth.address().to_owned(),
+        address: auth.account().address().to_owned(),
     };
 
     if json {
@@ -243,18 +240,18 @@ pub(crate) async fn run_verify<V: Verifier>(
     Ok(())
 }
 
-fn build_auth_opts(args: &VerifyArgs) -> AuthOpts {
-    let mut opts = AuthOpts::new(args.domain.as_str(), args.nonce.as_str());
+fn build_expect(args: &VerifyArgs) -> Expect {
+    let mut expect = Expect::new(args.domain.as_str(), args.nonce.as_str());
     if let Some(ref scheme) = args.scheme {
-        opts = opts.with_scheme(scheme);
+        expect = expect.with_scheme(scheme);
     }
     if let Some(ref uri) = args.uri {
-        opts = opts.with_uri(uri);
+        expect = expect.with_uri(uri);
     }
     if let Some(ref chain_id) = args.chain_id {
-        opts = opts.with_chain_id(chain_id);
+        expect = expect.with_chain_id(chain_id);
     }
-    opts
+    expect
 }
 
 pub(crate) fn decode_hex_signature(s: &str) -> Result<Vec<u8>, BoxedError> {
@@ -262,16 +259,39 @@ pub(crate) fn decode_hex_signature(s: &str) -> Result<Vec<u8>, BoxedError> {
     Ok(hex::decode(s)?)
 }
 
-fn parse_time_or_duration(s: &str) -> Result<OffsetDateTime, BoxedError> {
+fn parse_time_or_duration(s: &str) -> Result<Timestamp, BoxedError> {
     if let Ok(secs) = s.parse::<i64>() {
-        return Ok(OffsetDateTime::now_utc() + time::Duration::seconds(secs));
+        return Timestamp::from_instant(OffsetDateTime::now_utc() + time::Duration::seconds(secs))
+            .ok_or_else(|| "timestamp out of range".into());
     }
-    Ok(OffsetDateTime::parse(s, &Rfc3339)?)
+    Timestamp::parse(s).ok_or_else(|| format!("invalid RFC 3339 timestamp: {s}").into())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn message(fields: &MessageFields) -> Message {
+        Message::new(fields.clone()).expect("valid")
+    }
+
+    fn base_fields() -> MessageFields {
+        MessageFields {
+            scheme: None,
+            domain: "example.com".into(),
+            address: "addr1".into(),
+            statement: None,
+            uri: "https://example.com".into(),
+            version: "1".into(),
+            chain_id: "1".into(),
+            nonce: "n12345678".into(),
+            issued_at: "2022-03-17T12:45:13.610Z".into(),
+            expiration_time: None,
+            not_before: None,
+            request_id: None,
+            resources: None,
+        }
+    }
 
     fn verify_args() -> VerifyArgs {
         VerifyArgs {
@@ -286,58 +306,45 @@ mod tests {
     }
 
     #[test]
-    fn auth_opts_bind_required_domain_and_nonce() {
-        let msg = SiwxMessage::new(
-            "example.com",
-            "addr1",
-            "https://example.com",
-            "1",
-            "n12345678",
-        )
-        .expect("valid");
-        msg.validate(&build_auth_opts(&verify_args()))
+    fn expect_binds_required_domain_and_nonce() {
+        build_expect(&verify_args())
+            .check(&message(&base_fields()))
             .expect("domain/nonce bind");
     }
 
     #[test]
-    fn auth_opts_forward_optional_uri_scheme_chain_id() {
+    fn expect_forwards_optional_uri_scheme_chain_id() {
         let args = VerifyArgs {
             uri: Some("https://example.com/login".into()),
             scheme: Some("https".into()),
             chain_id: Some("1".into()),
             ..verify_args()
         };
-        let msg = SiwxMessage::new(
-            "example.com",
-            "addr1",
-            "https://example.com/login",
-            "1",
-            "n12345678",
-        )
-        .expect("valid")
-        .with_scheme("https")
-        .expect("scheme");
-        msg.validate(&build_auth_opts(&args))
+        let mut f = base_fields();
+        f.scheme = Some("https".into());
+        f.uri = "https://example.com/login".into();
+        build_expect(&args)
+            .check(&message(&f))
             .expect("optional bindings");
     }
 
     #[test]
-    fn auth_opts_uri_mismatch_is_rejected() {
+    fn expect_uri_mismatch_is_rejected() {
         let args = VerifyArgs {
             uri: Some("https://other.example/login".into()),
             ..verify_args()
         };
-        let msg = SiwxMessage::new(
-            "example.com",
-            "addr1",
-            "https://example.com",
-            "1",
-            "n12345678",
-        )
-        .expect("valid");
-        let err = msg.validate(&build_auth_opts(&args)).expect_err("uri");
+        let err = build_expect(&args)
+            .check(&message(&base_fields()))
+            .expect_err("uri");
         assert!(
-            matches!(err, siwx::SiwxError::UriMismatch { .. }),
+            matches!(
+                err,
+                siwx::Error::Mismatch {
+                    field: siwx::Field::Uri,
+                    ..
+                }
+            ),
             "got {err:?}"
         );
     }
@@ -490,7 +497,7 @@ mod tests {
         let evm::EvmAction::Verify(args) = cmd.action else {
             unreachable!("expected verify");
         };
-        let err = evm::make_evm_verifier(&args).expect_err("unequal counts");
+        let err = evm::make_evm(&args).expect_err("unequal counts");
         assert!(err.to_string().contains("pairs"), "{err}");
     }
 }

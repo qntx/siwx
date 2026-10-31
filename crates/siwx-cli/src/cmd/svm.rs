@@ -1,7 +1,7 @@
 //! Solana CLI commands.
 
 use clap::{Args, Subcommand};
-use siwx::svm::Ed25519Verifier;
+use siwx::svm::Svm;
 
 use super::{CmdResult, MessageArgs, VerifyArgs, run_message, run_verify};
 
@@ -32,9 +32,9 @@ pub(crate) struct SvmVerifyArgs {
 impl SvmCommand {
     pub(crate) async fn execute(&self, json: bool) -> CmdResult {
         match &self.action {
-            SvmAction::Message(args) => run_message::<Ed25519Verifier>(CHAIN_LABEL, args, json),
+            SvmAction::Message(args) => run_message(CHAIN_LABEL, args, json, &Svm::new()),
             SvmAction::Verify(args) => {
-                run_verify(CHAIN_LABEL, &args.common, json, Ed25519Verifier::new()).await
+                run_verify(CHAIN_LABEL, &args.common, json, &Svm::new()).await
             }
         }
     }

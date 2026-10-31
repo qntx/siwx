@@ -4,7 +4,7 @@ use std::fmt::Display;
 
 use colored::{ColoredString, Colorize};
 use serde::Serialize;
-use siwx::SiwxMessage;
+use siwx::Message;
 
 /// Width reserved for field labels in the human-readable renderer.
 const LABEL_WIDTH: usize = 10;
@@ -27,7 +27,7 @@ pub(crate) struct MessageOutput {
 }
 
 impl MessageOutput {
-    pub(crate) fn new(chain: impl Into<String>, message: String, msg: &SiwxMessage) -> Self {
+    pub(crate) fn new(chain: impl Into<String>, message: String, msg: &Message) -> Self {
         Self {
             chain: chain.into(),
             message,
@@ -37,9 +37,9 @@ impl MessageOutput {
             version: msg.version().to_owned(),
             chain_id: msg.chain_id().to_owned(),
             nonce: msg.nonce().to_owned(),
-            issued_at: msg.issued_at_raw().to_owned(),
-            expiration_time: msg.expiration_time_raw().map(str::to_owned),
-            not_before: msg.not_before_raw().map(str::to_owned),
+            issued_at: msg.issued_at().as_str().to_owned(),
+            expiration_time: msg.expiration_time().map(|t| t.as_str().to_owned()),
+            not_before: msg.not_before().map(|t| t.as_str().to_owned()),
         }
     }
 }
@@ -60,6 +60,7 @@ pub(crate) struct NonceOutput {
 
 #[derive(Serialize)]
 pub(crate) struct ParseOutput {
+    pub label: String,
     pub domain: String,
     pub address: String,
     pub uri: String,
@@ -82,8 +83,9 @@ pub(crate) struct ParseOutput {
 }
 
 impl ParseOutput {
-    pub(crate) fn from_message(msg: &SiwxMessage) -> Self {
+    pub(crate) fn from_message(label: &str, msg: &Message) -> Self {
         Self {
+            label: label.to_owned(),
             domain: msg.domain().to_owned(),
             address: msg.address().to_owned(),
             uri: msg.uri().to_owned(),
@@ -91,11 +93,11 @@ impl ParseOutput {
             chain_id: msg.chain_id().to_owned(),
             statement: msg.statement().map(str::to_owned),
             nonce: Some(msg.nonce().to_owned()),
-            issued_at: Some(msg.issued_at_raw().to_owned()),
-            expiration_time: msg.expiration_time_raw().map(str::to_owned),
-            not_before: msg.not_before_raw().map(str::to_owned),
+            issued_at: Some(msg.issued_at().as_str().to_owned()),
+            expiration_time: msg.expiration_time().map(|t| t.as_str().to_owned()),
+            not_before: msg.not_before().map(|t| t.as_str().to_owned()),
             request_id: msg.request_id().map(str::to_owned),
-            resources: msg.resources().to_vec(),
+            resources: msg.resources().map(<[String]>::to_vec).unwrap_or_default(),
         }
     }
 }
@@ -171,6 +173,7 @@ pub(crate) fn render_parse(
     }
 
     println!();
+    field("Label", &out.label);
     field("Domain", &out.domain);
     field("Address", &out.address.as_str().green());
     field("URI", &out.uri);

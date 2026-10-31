@@ -1,4 +1,4 @@
-//! Fuzz [`siwx::SiwxMessage`] [`std::str::FromStr`]. Must not panic.
+//! Fuzz [`siwx::eip4361::parse_bytes`]. Must not panic.
 //!
 //! Nightly + cargo-fuzz only. Not part of `cargo test` or stable CI:
 //!
@@ -9,10 +9,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use siwx::SiwxMessage;
 
 fuzz_target!(|data: &[u8]| {
-    if let Ok(text) = std::str::from_utf8(data) {
-        let _ = text.parse::<SiwxMessage>();
-    }
+    let _ = siwx::eip4361::parse_bytes(data);
 });

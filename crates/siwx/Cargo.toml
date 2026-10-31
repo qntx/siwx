@@ -41,13 +41,18 @@ eip1271 = ["evm", "dep:tokio", "tokio/time", "alloy/contract", "alloy/provider-h
 eip6492 = ["eip1271"]
 
 [[test]]
-name              = "conformance_verify"
-path              = "tests/conformance_verify.rs"
+name              = "siwe_parsing"
+path              = "tests/siwe_parsing.rs"
 required-features = ["evm"]
 
 [[test]]
-name              = "parse_negatives"
-path              = "tests/parse_negatives.rs"
+name              = "siwe_objects"
+path              = "tests/siwe_objects.rs"
+required-features = ["evm"]
+
+[[test]]
+name              = "siwe_verify"
+path              = "tests/siwe_verify.rs"
 required-features = ["evm"]
 
 [lints]

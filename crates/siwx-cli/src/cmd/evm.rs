@@ -1,7 +1,7 @@
 //! Ethereum (EIP-155) CLI commands.
 
 use clap::{Args, Subcommand};
-use siwx::evm::EvmVerifier;
+use siwx::evm::Evm;
 
 use super::{CmdResult, MessageArgs, VerifyArgs, run_message, run_verify};
 
@@ -42,22 +42,22 @@ pub(crate) struct EvmVerifyArgs {
 impl EvmCommand {
     pub(crate) async fn execute(&self, json: bool) -> CmdResult {
         match &self.action {
-            EvmAction::Message(args) => run_message::<EvmVerifier>(CHAIN_LABEL, args, json),
+            EvmAction::Message(args) => run_message(CHAIN_LABEL, args, json, &Evm::new()),
             EvmAction::Verify(args) => {
                 #[cfg(feature = "eip1271")]
-                let verifier = make_evm_verifier(args)?;
+                let verifier = make_evm(args)?;
                 #[cfg(not(feature = "eip1271"))]
-                let verifier = EvmVerifier::new();
-                run_verify(CHAIN_LABEL, &args.common, json, verifier).await
+                let verifier = Evm::new();
+                run_verify(CHAIN_LABEL, &args.common, json, &verifier).await
             }
         }
     }
 }
 
 #[cfg(feature = "eip1271")]
-pub(super) fn make_evm_verifier(args: &EvmVerifyArgs) -> Result<EvmVerifier, super::BoxedError> {
+pub(super) fn make_evm(args: &EvmVerifyArgs) -> Result<Evm, super::BoxedError> {
     if args.rpc.is_empty() && args.rpc_chain_id.is_empty() {
-        Ok(EvmVerifier::new())
+        Ok(Evm::new())
     } else if args.rpc.len() != args.rpc_chain_id.len() {
         Err("`--rpc` and `--rpc-chain-id` must be given in pairs".into())
     } else {
@@ -66,6 +66,6 @@ pub(super) fn make_evm_verifier(args: &EvmVerifyArgs) -> Result<EvmVerifier, sup
             .iter()
             .copied()
             .zip(args.rpc.iter().cloned());
-        Ok(EvmVerifier::with_rpc_map(map))
+        Ok(Evm::with_rpc_map(map))
     }
 }

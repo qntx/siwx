@@ -11,7 +11,7 @@ mod output;
 use std::process::ExitCode;
 
 use clap::Parser;
-use cmd::{Cli, Commands};
+use cmd::{Cli, Commands, NonceArgs};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> ExitCode {
@@ -32,7 +32,7 @@ async fn dispatch(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
     match cli.command {
         Commands::Evm(cmd) => cmd.execute(json).await,
         Commands::Svm(cmd) => cmd.execute(json).await,
-        Commands::Nonce(args) => args.execute(json),
+        Commands::Nonce(_args) => NonceArgs::execute(json),
         Commands::Parse(args) => args.execute(json),
     }
 }

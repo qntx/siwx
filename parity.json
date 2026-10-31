@@ -17,34 +17,116 @@
       "vectors": ["vectors/limits/defaults.json"]
     },
     {
-      "id": "core.parse-conformance",
+      "id": "core.message",
       "tier": "A",
       "status": "planned",
-      "milestone": "TS1",
+      "milestone": "TS2",
       "ts": null,
       "rust": {
-        "module": "crates/siwx/src/parser.rs",
-        "tests": ["crates/siwx/tests/conformance_parse.rs"]
+        "module": "crates/siwx/src/message.rs",
+        "tests": ["crates/siwx/tests/siwe_objects.rs"]
       },
       "vectors": [
-        "vectors/spruceid/parsing_positive.json",
-        "vectors/spruceid/parsing_negative.json"
+        "vectors/siwe/objects/message_objects.json",
+        "vectors/siwe/objects/parsing_negative_objects.json"
       ]
     },
     {
-      "id": "evm.verify-conformance",
+      "id": "core.timestamp",
       "tier": "A",
       "status": "planned",
-      "milestone": "TS1",
+      "milestone": "TS2",
+      "ts": null,
+      "rust": {
+        "module": "crates/siwx/src/message.rs",
+        "tests": ["crates/siwx/tests/timestamp.rs"]
+      },
+      "vectors": ["vectors/timestamp/from-instant.json"]
+    },
+    {
+      "id": "core.eip4361",
+      "tier": "A",
+      "status": "planned",
+      "milestone": "TS2",
+      "ts": null,
+      "rust": {
+        "module": "crates/siwx/src/eip4361.rs",
+        "tests": [
+          "crates/siwx/tests/siwe_parsing.rs",
+          "crates/siwx/tests/contract_eip4361.rs",
+          "crates/siwx/tests/prop_roundtrip.rs"
+        ]
+      },
+      "vectors": [
+        "vectors/siwe/parsing/parsing_positive.json",
+        "vectors/siwe/parsing/parsing_negative.json",
+        "vectors/siwe/parsing/parsing_warnings.json",
+        "vectors/siwe-overrides.json",
+        "vectors/eip4361/contract.json"
+      ]
+    },
+    {
+      "id": "core.expect",
+      "tier": "A",
+      "status": "planned",
+      "milestone": "TS2",
+      "ts": null,
+      "rust": {
+        "module": "crates/siwx/src/expect.rs",
+        "tests": ["crates/siwx/tests/expect.rs"]
+      },
+      "vectors": ["vectors/eip4361/expect.json"]
+    },
+    {
+      "id": "core.account",
+      "tier": "A",
+      "status": "planned",
+      "milestone": "TS2",
+      "ts": null,
+      "rust": {
+        "module": "crates/siwx/src/account.rs",
+        "tests": ["crates/siwx/tests/siwe_parsing.rs"]
+      },
+      "vectors": []
+    },
+    {
+      "id": "evm.namespace",
+      "tier": "A",
+      "status": "planned",
+      "milestone": "TS2",
       "ts": null,
       "rust": {
         "module": "crates/siwx/src/evm/mod.rs",
-        "tests": ["crates/siwx/tests/conformance_verify.rs"]
+        "tests": [
+          "crates/siwx/tests/siwe_parsing.rs",
+          "crates/siwx/tests/siwe_grammar.rs",
+          "crates/siwx/tests/siwe_verify.rs"
+        ]
       },
       "vectors": [
-        "vectors/spruceid/verification_positive.json",
-        "vectors/spruceid/verification_negative.json"
+        "vectors/siwe/grammar/valid_chars.json",
+        "vectors/siwe/grammar/invalid_chars.json",
+        "vectors/siwe/grammar/valid_uris.json",
+        "vectors/siwe/grammar/invalid_uris.json",
+        "vectors/siwe/grammar/valid_resources.json",
+        "vectors/siwe/grammar/invalid_resources.json",
+        "vectors/siwe/grammar/valid_specification.json",
+        "vectors/siwe/verification/verification_positive.json",
+        "vectors/siwe/verification/verification_negative.json",
+        "vectors/siwe/verification/eip1271.json"
       ]
+    },
+    {
+      "id": "svm.namespace",
+      "tier": "A",
+      "status": "planned",
+      "milestone": "TS2",
+      "ts": null,
+      "rust": {
+        "module": "crates/siwx/src/svm/mod.rs",
+        "tests": ["crates/siwx/tests/prop_roundtrip.rs"]
+      },
+      "vectors": []
     }
   ]
 }
