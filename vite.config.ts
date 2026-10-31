@@ -57,6 +57,22 @@ const config: UserConfig = defineConfig({
         },
       },
       {
+        // Data-driven vector runners: conditionals express the vector's own
+        // verdict; expect-inside-conditional and it.each-less loops are the
+        // natural shape for per-case assertions.
+        files: ["packages/siwx/tests/**"],
+        rules: {
+          // Verdict branching and conditional assertions mirror the vector shape.
+          "vitest/no-conditional-in-test": "off",
+          "vitest/no-conditional-expect": "off",
+        },
+      },
+      {
+        // Bitwise ops are confined to the crypto byte twiddling in evm/.
+        files: ["packages/siwx/src/evm/**"],
+        rules: { "eslint/no-bitwise": "off" },
+      },
+      {
         files: ["packages/*/src/**"],
         rules: {
           // Hermes V1 (what React Native ships) has no ES2023 immutable array
@@ -86,6 +102,26 @@ const config: UserConfig = defineConfig({
             { name: "sessionStorage", message: "browser-only global — inject a store" },
           ],
           "eslint/no-restricted-imports": ["error", platformNeutralImports],
+        },
+      },
+      {
+        // Overrides replace a rule per override — this must come after the
+        // generic packages/*/src/** block so core cannot import chain modules.
+        files: ["packages/siwx/src/core/**"],
+        rules: {
+          "eslint/no-restricted-imports": [
+            "error",
+            {
+              paths: [
+                ...platformNeutralImports.paths,
+                { name: "../evm/index.ts", message: "core must not import chain modules" },
+              ],
+              patterns: [
+                ...platformNeutralImports.patterns,
+                { group: ["../evm/**"], message: "core must not import chain modules" },
+              ],
+            },
+          ],
         },
       },
     ],

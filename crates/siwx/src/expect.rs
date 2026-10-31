@@ -6,6 +6,11 @@ use crate::{Error, Field, Message};
 
 const DEFAULT_SKEW: Duration = Duration::seconds(60);
 
+/// Instant in whole milliseconds since the Unix epoch, floored toward -inf.
+const fn ms_floor(t: OffsetDateTime) -> i128 {
+    t.unix_timestamp_nanos().div_euclid(1_000_000)
+}
+
 /// Expected bindings and clock policy checked by [`Expect::check`].
 ///
 /// `domain` and `nonce` are always bound (server-issued values). Optional
@@ -138,20 +143,23 @@ impl Expect {
             return Err(mismatch(Field::RequestId, expected, message.request_id()));
         }
 
-        let now = self.time.unwrap_or_else(OffsetDateTime::now_utc);
+        // All comparisons at millisecond precision (toISOString floor),
+        // truncated toward -inf like JS Date.
+        let now = ms_floor(self.time.unwrap_or_else(OffsetDateTime::now_utc));
+        let skew_ms = self.skew.whole_milliseconds();
         if let Some(exp) = message.expiration_time()
-            && now > exp.instant() + self.skew
+            && now > ms_floor(exp.instant()) + skew_ms
         {
             return Err(Error::Expired);
         }
         if let Some(nbf) = message.not_before()
-            && now + self.skew < nbf.instant()
+            && now + skew_ms < ms_floor(nbf.instant())
         {
             return Err(Error::NotYetValid);
         }
         if let Some(max_age) = self.max_age {
-            let issued = message.issued_at().instant();
-            if issued <= now + self.skew && now - issued - self.skew > max_age {
+            let issued = ms_floor(message.issued_at().instant());
+            if issued <= now + skew_ms && now - issued - skew_ms > max_age.whole_milliseconds() {
                 return Err(Error::IssuedAtTooOld);
             }
         }

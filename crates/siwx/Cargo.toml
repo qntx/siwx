@@ -55,5 +55,10 @@ name              = "siwe_verify"
 path              = "tests/siwe_verify.rs"
 required-features = ["evm"]
 
+[[test]]
+name              = "evm_vectors"
+path              = "tests/evm_vectors.rs"
+required-features = ["evm"]
+
 [lints]
 workspace = true

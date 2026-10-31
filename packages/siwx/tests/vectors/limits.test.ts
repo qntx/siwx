@@ -9,7 +9,7 @@ import {
   MAX_RESOURCES,
   MAX_STATEMENT_BYTES,
   MAX_URI_BYTES,
-  MIN_NONCE_LENGTH,
+  MIN_NONCE_LEN,
 } from "../../src/index.ts";
 
 // Shared golden file; the Rust suite reads the same file in
@@ -25,6 +25,6 @@ describe("core limits", () => {
     expect(MAX_STATEMENT_BYTES).toBe(DEFAULTS["maxStatementBytes"]);
     expect(MAX_REQUEST_ID_BYTES).toBe(DEFAULTS["maxRequestIdBytes"]);
     expect(MAX_URI_BYTES).toBe(DEFAULTS["maxUriBytes"]);
-    expect(MIN_NONCE_LENGTH).toBe(DEFAULTS["minNonceLength"]);
+    expect(MIN_NONCE_LEN).toBe(DEFAULTS["minNonceLength"]);
   });
 });

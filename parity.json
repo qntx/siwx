@@ -7,8 +7,11 @@
       "status": "stable",
       "milestone": "TS1",
       "ts": {
-        "module": "packages/siwx/src/index.ts",
-        "tests": ["packages/siwx/tests/vectors/limits.test.ts"]
+        "module": "packages/siwx/src/core/limits.ts",
+        "tests": [
+          "packages/siwx/tests/vectors/limits.test.ts",
+          "packages/siwx/tests/vectors/core.test.ts"
+        ]
       },
       "rust": {
         "module": "crates/siwx/src/message.rs",
@@ -19,9 +22,16 @@
     {
       "id": "core.message",
       "tier": "A",
-      "status": "planned",
+      "status": "stable",
       "milestone": "TS2",
-      "ts": null,
+      "ts": {
+        "module": "packages/siwx/src/core/message.ts",
+        "tests": [
+          "packages/siwx/tests/unit.test.ts",
+          "packages/siwx/tests/vectors/siwe.test.ts",
+          "packages/siwx/tests/vectors/eip4361.test.ts"
+        ]
+      },
       "rust": {
         "module": "crates/siwx/src/message.rs",
         "tests": ["crates/siwx/tests/siwe_objects.rs"]
@@ -34,9 +44,12 @@
     {
       "id": "core.timestamp",
       "tier": "A",
-      "status": "planned",
+      "status": "stable",
       "milestone": "TS2",
-      "ts": null,
+      "ts": {
+        "module": "packages/siwx/src/core/timestamp.ts",
+        "tests": ["packages/siwx/tests/vectors/core.test.ts"]
+      },
       "rust": {
         "module": "crates/siwx/src/message.rs",
         "tests": ["crates/siwx/tests/timestamp.rs"]
@@ -46,9 +59,16 @@
     {
       "id": "core.eip4361",
       "tier": "A",
-      "status": "planned",
+      "status": "stable",
       "milestone": "TS2",
-      "ts": null,
+      "ts": {
+        "module": "packages/siwx/src/core/eip4361.ts",
+        "tests": [
+          "packages/siwx/tests/vectors/eip4361.test.ts",
+          "packages/siwx/tests/vectors/siwe.test.ts",
+          "packages/siwx/tests/unit.test.ts"
+        ]
+      },
       "rust": {
         "module": "crates/siwx/src/eip4361.rs",
         "tests": [
@@ -68,9 +88,12 @@
     {
       "id": "core.expect",
       "tier": "A",
-      "status": "planned",
+      "status": "stable",
       "milestone": "TS2",
-      "ts": null,
+      "ts": {
+        "module": "packages/siwx/src/core/expect.ts",
+        "tests": ["packages/siwx/tests/vectors/eip4361.test.ts", "packages/siwx/tests/unit.test.ts"]
+      },
       "rust": {
         "module": "crates/siwx/src/expect.rs",
         "tests": ["crates/siwx/tests/expect.rs"]
@@ -80,21 +103,30 @@
     {
       "id": "core.account",
       "tier": "A",
-      "status": "planned",
+      "status": "stable",
       "milestone": "TS2",
-      "ts": null,
+      "ts": {
+        "module": "packages/siwx/src/core/account.ts",
+        "tests": ["packages/siwx/tests/unit.test.ts"]
+      },
       "rust": {
         "module": "crates/siwx/src/account.rs",
         "tests": ["crates/siwx/tests/siwe_parsing.rs"]
       },
-      "vectors": []
+      "vectors": ["vectors/account/caip10.json"]
     },
     {
       "id": "evm.namespace",
       "tier": "A",
-      "status": "planned",
+      "status": "stable",
       "milestone": "TS2",
-      "ts": null,
+      "ts": {
+        "module": "packages/siwx/src/evm/index.ts",
+        "tests": [
+          "packages/siwx/tests/vectors/evm.test.ts",
+          "packages/siwx/tests/vectors/siwe.test.ts"
+        ]
+      },
       "rust": {
         "module": "crates/siwx/src/evm/mod.rs",
         "tests": [
@@ -113,7 +145,9 @@
         "vectors/siwe/grammar/valid_specification.json",
         "vectors/siwe/verification/verification_positive.json",
         "vectors/siwe/verification/verification_negative.json",
-        "vectors/siwe/verification/eip1271.json"
+        "vectors/siwe/verification/eip1271.json",
+        "vectors/evm/eip191.json",
+        "vectors/evm/account.json"
       ]
     },
     {

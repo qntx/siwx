@@ -537,6 +537,110 @@
         "time": "2022-06-01T00:00:00Z"
       },
       "error": null
+    },
+    {
+      "name": "sub-ms expiry boundary expired",
+      "fields": {
+        "scheme": "https",
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2022-03-17T12:46:13.0009Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "time": "2022-03-17T12:46:13.001Z",
+        "skewSeconds": 0
+      },
+      "error": {
+        "code": "Expired"
+      }
+    },
+    {
+      "name": "sub-ms expiry boundary ok",
+      "fields": {
+        "scheme": "https",
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2022-03-17T12:46:13.0009Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "time": "2022-03-17T12:46:13.000Z",
+        "skewSeconds": 0
+      },
+      "error": null
+    },
+    {
+      "name": "sub-ms nbf boundary notyet",
+      "fields": {
+        "scheme": "https",
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.0019Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "time": "2022-03-17T12:45:13.0009Z",
+        "skewSeconds": 0
+      },
+      "error": {
+        "code": "NotYetValid"
+      }
+    },
+    {
+      "name": "sub-ms nbf boundary ok",
+      "fields": {
+        "scheme": "https",
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.0019Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "time": "2022-03-17T12:45:13.0019Z",
+        "skewSeconds": 0
+      },
+      "error": null
     }
   ]
 }

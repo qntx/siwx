@@ -36,6 +36,11 @@
       "import": "./dist/index.mjs",
       "default": "./dist/index.mjs"
     },
+    "./evm": {
+      "types": "./dist/evm.d.mts",
+      "import": "./dist/evm.mjs",
+      "default": "./dist/evm.mjs"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -48,6 +53,10 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.src.json",
     "check:pkg": "vp pack && publint && attw --pack . --profile esm-only",
     "prepublishOnly": "vp run build"
+  },
+  "dependencies": {
+    "@noble/curves": "^2.4.0",
+    "@noble/hashes": "^2.4.0"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
