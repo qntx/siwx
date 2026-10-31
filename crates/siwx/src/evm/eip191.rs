@@ -20,8 +20,7 @@ pub(crate) fn verify_sync(message: &Message, signed: &[u8], signature: &[u8]) ->
     let sig: &[u8; 65] = signature.try_into().map_err(|_| Error::InvalidSignature {
         reason: "EIP-191 signature must be 65 bytes",
     })?;
-    let (rs, v) = sig.split_last_chunk::<1>().unwrap_or((&sig[..64], &[0]));
-    let [v] = *v;
+    let [rs @ .., v] = *sig;
     if !matches!(v, 0 | 1 | 27 | 28) {
         return Err(Error::InvalidSignature {
             reason: "v must be 0, 1, 27 or 28",

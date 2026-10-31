@@ -105,6 +105,25 @@ const config: UserConfig = defineConfig({
         },
       },
       {
+        // Chain modules must not import each other's implementation.
+        files: ["packages/siwx/src/{evm,svm}/**"],
+        rules: {
+          "eslint/no-restricted-imports": [
+            "error",
+            {
+              paths: [
+                { name: "../evm/index.ts", message: "chain modules are independent" },
+                { name: "../svm/index.ts", message: "chain modules are independent" },
+              ],
+              patterns: [
+                ...platformNeutralImports.patterns,
+                { group: ["../evm/**", "../svm/**"], message: "chain modules are independent" },
+              ],
+            },
+          ],
+        },
+      },
+      {
         // Overrides replace a rule per override — this must come after the
         // generic packages/*/src/** block so core cannot import chain modules.
         files: ["packages/siwx/src/core/**"],
@@ -115,10 +134,12 @@ const config: UserConfig = defineConfig({
               paths: [
                 ...platformNeutralImports.paths,
                 { name: "../evm/index.ts", message: "core must not import chain modules" },
+                { name: "../svm/index.ts", message: "core must not import chain modules" },
               ],
               patterns: [
                 ...platformNeutralImports.patterns,
                 { group: ["../evm/**"], message: "core must not import chain modules" },
+                { group: ["../svm/**"], message: "core must not import chain modules" },
               ],
             },
           ],

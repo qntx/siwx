@@ -25,6 +25,7 @@ const config: UserConfig = defineConfig({
     entry: {
       index: "src/index.ts",
       evm: "src/evm/index.ts",
+      svm: "src/svm/index.ts",
     },
   },
 });

@@ -1,0 +1,64 @@
+{
+  "cases": [
+    {
+      "index": 0,
+      "accept": false,
+      "comment": "small A and R"
+    },
+    {
+      "index": 1,
+      "accept": false,
+      "comment": "small A only"
+    },
+    {
+      "index": 2,
+      "accept": false,
+      "comment": "small R only"
+    },
+    {
+      "index": 3,
+      "accept": false,
+      "comment": "mixed-order A/R rejected (prime-order subgroup required)"
+    },
+    {
+      "index": 4,
+      "accept": false,
+      "comment": "fails cofactorless equation"
+    },
+    {
+      "index": 5,
+      "accept": false,
+      "comment": "R order L \u2014 cofactorless fails"
+    },
+    {
+      "index": 6,
+      "accept": false,
+      "comment": "S > L"
+    },
+    {
+      "index": 7,
+      "accept": false,
+      "comment": "S >> L"
+    },
+    {
+      "index": 8,
+      "accept": false,
+      "comment": "non-canonical R encoding"
+    },
+    {
+      "index": 9,
+      "accept": false,
+      "comment": "non-canonical R encoding"
+    },
+    {
+      "index": 10,
+      "accept": false,
+      "comment": "non-canonical A encoding"
+    },
+    {
+      "index": 11,
+      "accept": false,
+      "comment": "non-canonical A encoding"
+    }
+  ]
+}

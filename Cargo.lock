@@ -3470,6 +3470,7 @@ version = "0.6.1"
 dependencies = [
  "alloy",
  "bs58",
+ "curve25519-dalek",
  "ed25519-dalek",
  "iri-string",
  "proptest",

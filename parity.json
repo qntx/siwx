@@ -153,14 +153,24 @@
     {
       "id": "svm.namespace",
       "tier": "A",
-      "status": "planned",
+      "status": "stable",
       "milestone": "TS2",
-      "ts": null,
+      "ts": {
+        "module": "packages/siwx/src/svm/index.ts",
+        "tests": ["packages/siwx/tests/vectors/svm.test.ts"]
+      },
       "rust": {
         "module": "crates/siwx/src/svm/mod.rs",
-        "tests": ["crates/siwx/tests/prop_roundtrip.rs"]
+        "tests": ["crates/siwx/tests/svm_vectors.rs"]
       },
-      "vectors": []
+      "vectors": [
+        "vectors/siws/contract.json",
+        "vectors/siws/offchain.json",
+        "vectors/svm/account.json",
+        "vectors/svm/ed25519.json",
+        "vectors/svm/speccheck/cases.json",
+        "vectors/svm/speccheck-expected.json"
+      ]
     }
   ]
 }

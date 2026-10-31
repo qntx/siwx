@@ -89,6 +89,8 @@ pub enum Syntax {
     UnexpectedTrailing,
     /// A `Resources:` item did not start with `- `.
     ResourceSyntax,
+    /// A Solana off-chain message envelope was malformed.
+    InvalidEnvelope,
 }
 
 impl Syntax {
@@ -105,6 +107,7 @@ impl Syntax {
             Self::MissingField(_) => "MissingField",
             Self::UnexpectedTrailing => "UnexpectedTrailing",
             Self::ResourceSyntax => "ResourceSyntax",
+            Self::InvalidEnvelope => "InvalidEnvelope",
         }
     }
 }
@@ -121,6 +124,7 @@ impl fmt::Display for Syntax {
             Self::MissingField(field) => write!(f, "missing {field}"),
             Self::UnexpectedTrailing => f.write_str("unexpected trailing content"),
             Self::ResourceSyntax => f.write_str("resource line must start with '- '"),
+            Self::InvalidEnvelope => f.write_str("invalid off-chain message envelope"),
         }
     }
 }

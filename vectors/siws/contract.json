@@ -1,0 +1,283 @@
+{
+  "accept": [
+    {
+      "name": "minimal valid",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "fields": {
+        "domain": "service.org",
+        "address": "9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "mainnet",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": null,
+        "notBefore": null,
+        "requestId": null,
+        "resources": null
+      }
+    },
+    {
+      "name": "with statement",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nSign in to claim your airdrop\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "fields": {
+        "domain": "service.org",
+        "address": "9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+        "statement": "Sign in to claim your airdrop",
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "mainnet",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": null,
+        "notBefore": null,
+        "requestId": null,
+        "resources": null
+      }
+    },
+    {
+      "name": "all optional fields",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nhi\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z\nExpiration Time: 2022-03-18T12:45:13.610Z\nNot Before: 2022-03-17T00:00:00Z\nRequest ID: req-1\nResources:\n- https://a/b\n- ipfs://x",
+      "fields": {
+        "domain": "service.org",
+        "address": "9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+        "statement": "hi",
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "mainnet",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2022-03-18T12:45:13.610Z",
+        "notBefore": "2022-03-17T00:00:00Z",
+        "requestId": "req-1",
+        "resources": [
+          "https://a/b",
+          "ipfs://x"
+        ]
+      }
+    },
+    {
+      "name": "bare resources header",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z\nResources:",
+      "fields": {
+        "domain": "service.org",
+        "address": "9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "mainnet",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": null,
+        "notBefore": null,
+        "requestId": null,
+        "resources": []
+      }
+    },
+    {
+      "name": "empty request id",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z\nRequest ID: ",
+      "fields": {
+        "domain": "service.org",
+        "address": "9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "mainnet",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": null,
+        "notBefore": null,
+        "requestId": "",
+        "resources": null
+      }
+    },
+    {
+      "name": "devnet chain",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nChain ID: devnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "fields": {
+        "domain": "service.org",
+        "address": "9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "devnet",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": null,
+        "notBefore": null,
+        "requestId": null,
+        "resources": null
+      }
+    }
+  ],
+  "reject": [
+    {
+      "name": "missing uri (wallet-standard minimal two lines)",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+      "error": {
+        "code": "Syntax",
+        "syntax": "MissingField",
+        "field": "uri"
+      }
+    },
+    {
+      "name": "missing version",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login",
+      "error": {
+        "code": "Syntax",
+        "syntax": "MissingField",
+        "field": "version"
+      }
+    },
+    {
+      "name": "missing chain id",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1",
+      "error": {
+        "code": "Syntax",
+        "syntax": "MissingField",
+        "field": "chainId"
+      }
+    },
+    {
+      "name": "missing nonce",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet",
+      "error": {
+        "code": "Syntax",
+        "syntax": "MissingField",
+        "field": "nonce"
+      }
+    },
+    {
+      "name": "missing issued at",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234",
+      "error": {
+        "code": "Syntax",
+        "syntax": "MissingField",
+        "field": "issuedAt"
+      }
+    },
+    {
+      "name": "wrong field order (nonce before chain id)",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nNonce: 12341234\nChain ID: mainnet\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "Syntax",
+        "syntax": "MissingField",
+        "field": "chainId"
+      }
+    },
+    {
+      "name": "scheme prefix rejected",
+      "text": "https://service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "InvalidField",
+        "field": "domain"
+      }
+    },
+    {
+      "name": "non-Solana label",
+      "text": "service.org wants you to sign in with your Ethereum account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "Mismatch",
+        "field": "label"
+      }
+    },
+    {
+      "name": "missing preamble marker",
+      "text": "service.org signs in with Solana:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+      "error": {
+        "code": "Syntax",
+        "syntax": "MissingPreamble"
+      }
+    },
+    {
+      "name": "missing account suffix",
+      "text": "service.org wants you to sign in with your Solana:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+      "error": {
+        "code": "Syntax",
+        "syntax": "MissingAccountSuffix"
+      }
+    },
+    {
+      "name": "carriage return",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\r\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "Syntax",
+        "syntax": "CarriageReturn"
+      }
+    },
+    {
+      "name": "trailing LF",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z\n",
+      "error": {
+        "code": "Syntax",
+        "syntax": "UnexpectedTrailing"
+      }
+    },
+    {
+      "name": "multi-line statement rejected",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nline1\nline2\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "Syntax",
+        "syntax": "ExpectedBlankLine"
+      }
+    },
+    {
+      "name": "no blank line before fields",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "Syntax",
+        "syntax": "ExpectedBlankLine"
+      }
+    },
+    {
+      "name": "double blank line (eip4361 style)",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "Syntax",
+        "syntax": "ExpectedBlankLine"
+      }
+    },
+    {
+      "name": "statement then no blank before fields",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nstmt\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "Syntax",
+        "syntax": "ExpectedBlankLine"
+      }
+    },
+    {
+      "name": "trailing junk after fields",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z\njunk",
+      "error": {
+        "code": "Syntax",
+        "syntax": "UnexpectedTrailing"
+      }
+    },
+    {
+      "name": "resource item bad dash",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z\nResources:\n-x https://a/b",
+      "error": {
+        "code": "Syntax",
+        "syntax": "ResourceSyntax"
+      }
+    },
+    {
+      "name": "bad address",
+      "text": "service.org wants you to sign in with your Solana account:\nnot-base58!\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "InvalidField",
+        "field": "address"
+      }
+    },
+    {
+      "name": "empty statement line is not a statement (fields parse as stmt? )",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "error": {
+        "code": "Syntax",
+        "syntax": "ExpectedBlankLine"
+      }
+    }
+  ]
+}

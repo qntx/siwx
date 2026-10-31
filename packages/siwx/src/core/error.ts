@@ -25,7 +25,8 @@ export type SyntaxKind =
   | "ExpectedBlankLine"
   | "MissingField"
   | "UnexpectedTrailing"
-  | "ResourceSyntax";
+  | "ResourceSyntax"
+  | "InvalidEnvelope";
 
 /** Per-code error detail; `switch (info.code)` narrows the payload. */
 export type SiwxErrorInfo =
@@ -54,6 +55,7 @@ const SYNTAX_MESSAGES: Record<Exclude<SyntaxKind, "MissingField">, string> = {
   ExpectedBlankLine: "expected blank line",
   UnexpectedTrailing: "unexpected trailing content",
   ResourceSyntax: "resource line must start with '- '",
+  InvalidEnvelope: "invalid off-chain message envelope",
 };
 
 function describe(info: SiwxErrorInfo): string {
