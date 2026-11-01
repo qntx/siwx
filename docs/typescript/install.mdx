@@ -17,3 +17,9 @@ import { svm } from "@qntx/siwx/svm";
 
 The package is platform-neutral and Hermes-safe: all I/O is injected, no
 Node/browser globals.
+
+## Runtime requirements
+
+- `TextEncoder` and a strict (`fatal: true`) UTF-8 `TextDecoder`.
+- `crypto.getRandomValues` for `generateNonce` (React Native: install
+  `react-native-get-random-values` or `expo-crypto`).

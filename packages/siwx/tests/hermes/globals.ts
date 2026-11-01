@@ -13,9 +13,34 @@ const has = (name: string): boolean => Reflect.get(globalThis, name) !== undefin
  */
 export const hermesGlobalsInstalled = true;
 
+// crypto.getRandomValues — production: react-native-get-random-values /
+// expo-crypto polyfill (generateNonce draws from it via @noble/hashes).
+// xorshift PRNG: test-grade only, not cryptographic.
+if (!has("crypto")) {
+  Reflect.set(globalThis, "crypto", {});
+}
+const cryptoHost: unknown = Reflect.get(globalThis, "crypto");
+if (
+  typeof cryptoHost === "object" &&
+  cryptoHost !== null &&
+  typeof Reflect.get(cryptoHost, "getRandomValues") !== "function"
+) {
+  let s0 = 0x9e3779b9 ^ Date.now();
+  const getRandomValues = <T extends { length: number; [k: number]: number }>(arr: T): T => {
+    for (let i = 0; i < arr.length; i++) {
+      s0 ^= s0 << 13;
+      s0 ^= s0 >>> 17;
+      s0 ^= s0 << 5;
+      arr[i] = s0 >>> 0;
+    }
+    return arr;
+  };
+  Reflect.set(cryptoHost, "getRandomValues", getRandomValues);
+}
+
 // TextDecoder — production: Expo ships a UTF-8 TextDecoder on native (Hermes
-// itself ships TextEncoder only). @blockchaincommons/dcbor constructs one with
-// `{ fatal: true }` at module load and uses it for CBOR text strings. Minimal
+// itself ships TextEncoder only). The library constructs one with
+// `{ fatal: true }` at module load for strict UTF-8 decoding. Minimal
 // UTF-8 decoder: fatal mode throws TypeError on ill-formed input per the
 // encoding spec; otherwise invalid, truncated, overlong, surrogate, and
 // out-of-range sequences each decode to U+FFFD, consuming the longest
