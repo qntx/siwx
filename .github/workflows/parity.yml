@@ -1,0 +1,25 @@
+# Caller owns on:. Pin at @v2.
+# Daily cross-language differential replay with a fresh random seed;
+# the printed seed makes any failure reproducible.
+name: Parity
+
+on:
+  schedule:
+    - cron: "41 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  parity:
+    uses: qntx/workflows/.github/workflows/ci-bun.yml@v2
+    permissions:
+      contents: read
+    with:
+      rust: true
+      scripts: test:parity:random

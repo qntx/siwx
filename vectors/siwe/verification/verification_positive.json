@@ -1,0 +1,51 @@
+{
+	"example message": {
+		"domain": "siwe.xyz",
+		"address": "0xAE9aA90F1a627c7a20783AF9e8747fCFEDEFAd03",
+		"statement": "Sign In with Ethereum Example Statement",
+		"uri": "https://siwe.xyz",
+		"version": "1",
+		"nonce": "bTyXgcQxn2htgkjJn",
+		"issuedAt": "2022-01-27T17:09:38.578Z",
+		"chainId": 1,
+		"expirationTime": "2100-01-07T14:31:43.952Z",
+		"signature": "0x7fcf011b4dff0a6024ce6cea93dcd0ebc4592f43e7685e174d4d3d4a1f942ed75bbf5358841924dc8e1b261f750dfec5dbcc0aad9a3d9439f1e5c4d59d7d98a81c"
+	},
+	"not yet valid": {
+		"domain": "siwe.xyz",
+		"address": "0x1F61EA6Fdd71c1D68182479b10B5CdBF3D795ece",
+		"statement": "Sign In with Ethereum Example Statement",
+		"uri": "https://siwe.xyz",
+		"version": "1",
+		"nonce": "lx2nx4so",
+		"issuedAt": "2022-01-05T14:27:30.883Z",
+		"chainId": 1,
+		"notBefore": "2100-01-07T14:31:43.952Z",
+		"signature": "0xdc299a27cc33479e665b8cbc728f214879a723d6aef43613f9ffa7da91318d0a36435d2e67271a827042f16fe276f8680303f59a18fa011d47cf4c4fe9b3a9941c",
+		"time": "2101-01-07T14:31:43.952Z"
+	},
+	"expired message": {
+		"domain": "siwe.xyz",
+		"address": "0x00401B0F059b5AF9f71A43263F2Fc17422B6B8f8",
+		"statement": "Sign In with Ethereum Example Statement",
+		"uri": "https://siwe.xyz",
+		"version": "1",
+		"nonce": "lx2nx4so",
+		"issuedAt": "2022-01-05T14:27:30.883Z",
+		"chainId": 1,
+		"expirationTime": "2021-01-05T00:00:00Z",
+		"signature": "0xf6b7ec600d25f2e2e71c99ab1f7bb60fd7096f556120dc0641f7ef287d5d4a4d701e7e5ff602838b1c34bae2b86c5ba81f64d620d4615594a5eba0b59bb7f0f81b",
+		"time": "2020-01-05T00:00:00Z"
+	},
+	"recovery byte starting at 0": {
+		"domain": "www.tally.xyz",
+		"address": "0xc95EB884FE852e241D409234bfC7045CB9E31BD7",
+		"statement": "Sign in with Ethereum to Tally",
+		"uri": "https://tally.xyz",
+		"version": "1",
+		"chainId": 1,
+		"nonce": "15050747",
+		"issuedAt": "2022-06-30T14:08:51.382Z",
+		"signature": "0x8c46b6eb8505939892d8e9b075f89f8277321b17b993151f37810cdda38cce6f4a85909d2b53e6a14629c74c0ac38bf4becde78ee5b2529812bf6cceaf7b2a2501"
+	}
+}

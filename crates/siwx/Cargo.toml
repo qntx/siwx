@@ -1,0 +1,81 @@
+[package]
+name                   = "siwx"
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+license.workspace      = true
+repository.workspace   = true
+homepage.workspace     = true
+authors.workspace      = true
+description.workspace  = true
+keywords.workspace     = true
+categories.workspace   = true
+
+[package.metadata.docs.rs]
+all-features = true
+
+[dependencies]
+thiserror.workspace  = true
+time.workspace       = true
+iri-string.workspace = true
+rand.workspace       = true
+serde                = { workspace = true, optional = true }
+alloy                = { workspace = true, optional = true }
+ed25519-dalek        = { workspace = true, optional = true }
+curve25519-dalek     = { workspace = true, optional = true }
+bs58                 = { workspace = true, optional = true }
+
+[dev-dependencies]
+alloy                = { workspace = true, features = ["node-bindings", "provider-http", "signer-local", "network", "sol-types", "json-rpc"] }
+proptest             = "1.11"
+time                 = { version = "0.3", features = ["parsing", "formatting", "macros"] }
+tokio.workspace      = true
+serde_json.workspace = true
+
+[features]
+default = []
+serde   = ["dep:serde", "time/serde-well-known"]
+## Enable the EIP-155 verifier module `siwx::evm` (EIP-191).
+evm = ["dep:alloy"]
+## Enable the Solana verifier module `siwx::svm` (Ed25519).
+svm = ["dep:ed25519-dalek", "dep:curve25519-dalek", "dep:bs58"]
+## Enable on-chain smart-account verification via the ERC-6492 universal
+## validator (provider injection, deployless eth_call).
+rpc = ["evm", "alloy/provider-http", "alloy/network", "alloy/sol-types", "alloy/transports"]
+
+[[test]]
+name              = "siwe_parsing"
+path              = "tests/siwe_parsing.rs"
+required-features = ["evm"]
+
+[[test]]
+name              = "siwe_objects"
+path              = "tests/siwe_objects.rs"
+required-features = ["evm"]
+
+[[test]]
+name              = "siwe_verify"
+path              = "tests/siwe_verify.rs"
+required-features = ["evm"]
+
+[[test]]
+name              = "evm_vectors"
+path              = "tests/evm_vectors.rs"
+required-features = ["evm"]
+
+[[test]]
+name              = "evm_rpc"
+path              = "tests/evm_rpc.rs"
+required-features = ["rpc"]
+
+[[test]]
+name              = "e2e_anvil"
+path              = "tests/e2e_anvil.rs"
+required-features = ["rpc"]
+
+[lints]
+workspace = true
+[[test]]
+name              = "differential"
+path              = "tests/differential.rs"
+required-features = ["evm", "svm", "serde"]

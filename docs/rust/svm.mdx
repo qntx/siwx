@@ -1,0 +1,25 @@
+---
+title: Rust SVM
+description: Svm namespace, siws, offchain_message, Ed25519.
+---
+
+```rust
+use siwx::svm::{Svm, offchain_message, siws};
+
+let text = siws::format(&msg)?;                 // SIWS layout
+let env = offchain_message(&text, signer)?;     // v1 envelope
+let parsed = Svm::new().parse(&env)?;           // envelope-aware parse
+
+// Wallet signs `text` or `env` — pass the exact signed bytes.
+let expect = Expect::new("service.org", &nonce)
+    .with_skew(std::time::Duration::from_secs(60));
+let auth = authenticate(&Svm::new(), &env, &sig, &expect).await?;
+```
+
+- `siws::{format, parse, parse_bytes}` implement the Phantom ABNF strictly;
+  `scheme` and empty statements are rejected at `format`.
+- `Svm::verify` = 64 B → `InvalidSignature`; `S < L`; `R` canonical +
+  torsion-free + non-identity; `VerifyingKey::verify_strict` over the exact
+  signed bytes.
+- Addresses are canonical prime-order-subgroup Ed25519 points
+  (`InvalidField { address }` otherwise).

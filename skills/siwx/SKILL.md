@@ -1,246 +1,94 @@
 ---
 name: siwx
 description: >-
-  CAIP-122 Sign-In with X CLI tool for generating signing messages and verifying
-  signatures across Ethereum and Solana. Use when the user asks to create sign-in
-  challenges, verify wallet signatures, generate nonces, or parse CAIP-122
-  messages. Supports JSON output via --json flag for agent consumption.
+  CAIP-122 Sign-In with X CLI for generating signing messages and verifying
+  signatures on Ethereum and Solana. Use for sign-in challenges, wallet
+  signature verification, nonces, or CAIP-122 message parsing. --json output
+  is designed for agent consumption.
 ---
 
-# siwx CLI — CAIP-122 Sign-In with X Tool
+# siwx CLI — CAIP-122 Sign-In with X
 
-`siwx` is a single binary CLI for generating and verifying blockchain sign-in messages following the [CAIP-122](https://chainagnostic.org/CAIPs/caip-122) standard. Supports **Ethereum (EIP-191)** and **Solana (Ed25519)**. Optional EIP-1271 / EIP-6492 require build features and paired RPC flags.
+Single binary for the [CAIP-122](https://chainagnostic.org/CAIPs/caip-122)
+Sign-In with X flow: `siwx evm|svm message|verify|parse` + `siwx nonce`.
+EVM verifies EIP-191 (plus smart accounts via the ERC-6492 universal
+validator when `rpc` providers are given); Solana verifies strict Ed25519
+over SIWS text or off-chain message v1 envelopes.
 
-## Installation
-
-**Shell** (macOS / Linux):
-
-```sh
-curl -fsSL https://sh.qntx.org/siwx | sh
-```
-
-**PowerShell** (Windows):
-
-```powershell
-irm https://sh.qntx.org/siwx/ps | iex
-```
-
-Or via Cargo:
-
-```bash
-cargo install siwx-cli
-# EIP-1271 / EIP-6492 RPC flags:
-cargo install siwx-cli --features eip1271
-# or: cargo install siwx-cli --features eip6492
-```
-
-### Verify installation
+## Install
 
 ```sh
+curl -fsSL https://sh.qntx.org/siwx | sh   # macOS/Linux
 siwx --version
 ```
 
-## CLI Structure
+## Commands
 
 ```sh
-siwx [--json] <chain> <subcommand> [options]
+siwx [--json] evm message --domain D --address A --uri U --chain-id C \
+    [--statement S] [--scheme https] [--nonce N] [--issued-at RFC3339] \
+    [--expiration SECS|RFC3339] [--not-before SECS|RFC3339] \
+    [--request-id ID] [--resource R ...]
+siwx [--json] svm message ...             # same minus --scheme (SIWS rejects it)
+
+siwx [--json] evm verify (--message TEXT | --message-file PATH | --message-hex HEX) \
+    --signature SIG --domain D --nonce N \
+    [--uri U] [--scheme S] [--chain-id C] [--request-id ID] \
+    [--skew SECS] [--max-age SECS] [--rpc CHAIN_ID=URL ...]
+siwx [--json] svm verify --message-hex HEX --signature B58 --domain D --nonce N
+
+siwx [--json] evm|svm parse (--message|--message-file|--message-hex)
+siwx [--json] nonce
 ```
 
-The `--json` flag is **global** and must appear **before** the chain subcommand. When set, all output (including errors) is a single JSON object on stdout.
+- Message input: exactly one of `--message` / `--message-file` /
+  `--message-hex` (hex carries exact signed bytes — required for SIWS
+  off-chain envelopes).
+- Signatures: evm = hex (`0x` optional); svm = base58 (or hex with `0x`).
+- `--rpc CHAIN_ID=URL` is repeatable, evm only, needs feature `rpc`; used
+  when the signature is a smart-account (1271/6492) signature.
+- Nonce auto-generates for `message`; `--issued-at` defaults to now.
 
-### Commands
+## JSON schemas
 
-| Command       | Description                                    |
-|---------------|------------------------------------------------|
-| `evm message` | Generate an Ethereum CAIP-122 signing message  |
-| `evm verify`  | Verify an EIP-191 signature                    |
-| `svm message` | Generate a Solana CAIP-122 signing message     |
-| `svm verify`  | Verify an Ed25519 signature                    |
-| `nonce`       | Generate a cryptographic nonce                 |
-| `parse`       | Parse a CAIP-122 message string into fields    |
+Success outputs:
 
-### Chain aliases
-
-| Chain      | Primary | Aliases |
-|------------|---------|---------|
-| Ethereum   | `evm`   | `eth`   |
-| Solana     | `svm`   | `sol`   |
-
-## Message Generation Flags
-
-| Flag            | Required | Description                                             |
-|-----------------|----------|---------------------------------------------------------|
-| `--domain`      | ✓        | RFC 3986 authority requesting the signing               |
-| `--address`     | ✓        | Blockchain address (EIP-55 0x-hex for EVM, base58 for SVM) |
-| `--uri`         | ✓        | RFC 3986 URI subject of the signing                     |
-| `--chain-id`    | ✓        | CAIP-2 reference (e.g. `"1"` for Ethereum mainnet)      |
-| `--statement`   |          | Human-readable statement                                |
-| `--nonce`       |          | Nonce (auto-generated if omitted)                       |
-| `--expiration`  |          | Expiration (RFC 3339 timestamp or seconds from now)     |
-| `--not-before`  |          | Not-before time (RFC 3339 or seconds from now)          |
-| `--request-id`  |          | System-specific request ID                              |
-| `--resource`    |          | Resource URI (repeatable)                               |
-
-## Verify Flags
-
-| Flag             | Required | Description |
-|------------------|----------|-------------|
-| `--message`      | ✓        | Raw CAIP-122 signing message text (LF-only; trailing LF rejected) |
-| `--signature`    | ✓        | Hex-encoded signature (`0x` prefix optional) |
-| `--domain`       | ✓        | Expected domain binding (server-issued) |
-| `--nonce`        | ✓        | Expected nonce binding (server-issued) |
-| `--uri`          |          | Expected URI binding |
-| `--scheme`       |          | Expected preamble scheme binding |
-| `--chain-id`     |          | Expected chain id binding (recommended multi-chain) |
-| `--rpc-chain-id` |          | EIP-155 chain id; **pair** with `--rpc` (repeatable, order-matched; feature `eip1271`) |
-| `--rpc`          |          | EIP-1271 / EIP-6492 JSON-RPC URL; **pair** with `--rpc-chain-id` (same order; feature `eip1271`) |
-
-`--trust-message-bindings` does not exist. Bare `--rpc` without `--rpc-chain-id` (or the reverse) is rejected. Repeat pairs in matching order, e.g. `--rpc-chain-id 1 --rpc https://eth --rpc-chain-id 137 --rpc https://polygon`. Feature `eip6492` (default off) implies `eip1271`.
-
-## Usage Examples
-
-### Generate Ethereum signing message (JSON)
-
-```bash
-siwx --json evm message \
-  --domain example.com \
-  --address 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 \
-  --uri https://example.com/login \
-  --chain-id 1 \
-  --statement "I accept the Terms of Service"
+```jsonc
+// evm|svm message
+{ "chain": "ethereum", "message": "<text>", "fields": {…}, "account": "eip155:1:0x…" }
+// evm|svm verify (exit 0)
+{ "valid": true, "chain": "ethereum", "account": "eip155:1:0x…", "fields": {…} }
+// evm|svm parse
+{ "chain": "ethereum", "fields": { "domain": "…", "address": "…", "uri": "…",
+    "version": "1", "chainId": "1", "nonce": "…", "issuedAt": "…", "scheme?": "…",
+    "statement?": "…", "expirationTime?": "…", "notBefore?": "…", "requestId?": "…",
+    "resources?": ["…"] } }
+// nonce
+{ "nonce": "…" }
 ```
 
-### Generate Solana signing message (JSON)
+Any failure exits 1 with:
 
-```bash
-siwx --json svm message \
-  --domain example.com \
-  --address GwAF45zjfyGzUbd3i3hXxzGeuchzEZXwpRYHZM5912F1 \
-  --uri https://example.com/login \
-  --chain-id 5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d
-```
-
-### Verify an EIP-191 signature (JSON)
-
-```bash
-siwx --json evm verify \
-  --message "example.com wants you to sign in with your Ethereum account:..." \
-  --signature 0x1234abcd... \
-  --domain example.com \
-  --nonce abc123def456
-```
-
-### Verify with EIP-1271 RPC pairs
-
-Requires `cargo install siwx-cli --features eip1271` (or `--features eip6492`).
-
-```bash
-siwx --json evm verify \
-  --message "..." \
-  --signature 0x... \
-  --domain example.com \
-  --nonce abc123def456 \
-  --rpc-chain-id 1 --rpc https://eth.example
-```
-
-### Verify a Solana Ed25519 signature (JSON)
-
-```bash
-siwx --json svm verify \
-  --message "example.com wants you to sign in with your Solana account:..." \
-  --signature abcd1234... \
-  --domain example.com \
-  --nonce abc123def456
-```
-
-### Generate a nonce
-
-```bash
-siwx --json nonce
-siwx nonce --len 32
-```
-
-### Parse a message
-
-```bash
-siwx --json parse --message "example.com wants you to sign in with your Ethereum account:..."
-```
-
-## JSON Output Schemas
-
-### Message Generation
-
-```json
+```jsonc
 {
-  "chain": "ethereum",
-  "message": "example.com wants you to sign in with your Ethereum account:\n0xd8dA...\n\n...",
-  "domain": "example.com",
-  "address": "0xd8dA...",
-  "uri": "https://example.com/login",
-  "version": "1",
-  "chain_id": "1",
-  "nonce": "abc123def456",
-  "issued_at": "2026-03-20T12:00:00Z"
+  "error": {
+    "code": "VerificationFailed",
+    "message": "…",
+    "field?": "chainId",
+    "syntax?": "MissingField",
+  },
 }
 ```
 
-### Verify
+`code` values: `MessageTooLarge`, `Syntax`, `InvalidField`, `Mismatch`,
+`Expired`, `NotYetValid`, `IssuedAtTooOld`, `InvalidSignature`,
+`VerificationFailed`, `Unsupported`, `Backend`.
 
-Success (`exit 0`):
+## Agent tips
 
-```json
-{
-  "valid": true,
-  "chain": "ethereum",
-  "domain": "example.com",
-  "address": "0xd8dA..."
-}
-```
-
-Failure (`exit 1`) uses the error schema below. Invalid signatures do **not** return `valid: false` with exit 0.
-
-### Nonce
-
-```json
-{
-  "nonce": "M07wdVLtaJVndQAx5",
-  "len": 17
-}
-```
-
-### Parse
-
-```json
-{
-  "domain": "example.com",
-  "address": "0xd8dA...",
-  "uri": "https://example.com/login",
-  "version": "1",
-  "chain_id": "1",
-  "nonce": "abc123",
-  "issued_at": "2026-03-20T12:00:00Z"
-}
-```
-
-### Error
-
-All errors in JSON mode return exit code 1 with:
-
-```json
-{
-  "error": "invalid message format: missing preamble marker"
-}
-```
-
-## Agent Best Practices
-
-1. **Always use `--json`** for programmatic consumption to avoid ANSI escape codes.
-2. **`--json` placement**: Must appear before the chain subcommand: `siwx --json evm message`, not `siwx evm --json message`.
-3. **Nonce auto-generation**: If `--nonce` is omitted in `message`, a 17-character cryptographic nonce is auto-generated.
-4. **Issued-at auto-set**: `issued_at` is always set to the current UTC time.
-5. **Expiration shorthand**: Pass seconds for relative expiration: `--expiration 3600` = 1 hour from now.
-6. **Verify reads address from message**: For SVM verify, the public key is derived from the address in the parsed message.
-7. **Errors** in JSON mode return `{"error": "..."}` with exit code 1 (including failed verify).
-8. **Signature format**: Always hex-encoded, `0x` prefix is optional.
-9. **Original bytes**: verify hashes the wallet-signed text. There is no canonical rewrite. Trailing LF is a parse error; `trim_end_matches('\n')` before verify if the client left one.
-10. **Bindings**: verify **must** pass server-issued `--domain` and `--nonce`. There is no `--trust-message-bindings`. Optional `--uri` / `--scheme` / `--chain-id`. RPC is `--rpc-chain-id` + `--rpc` pairs only.
+- Always pass `--json` for parsing output.
+- `verify` binds domain+nonce via `Expect` — always supply the
+  server-issued values, never trust the message's own fields.
+- Use `--message-hex` when verifying wallet-produced bytes (SIWS envelopes
+  are not valid UTF-8).
+- `--max-age` bounds issued-at freshness; `--skew` defaults to 60 s.

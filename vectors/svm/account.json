@@ -1,0 +1,205 @@
+{
+  "cases": [
+    {
+      "name": "valid mainnet",
+      "address": "9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+      "chainId": "mainnet",
+      "accountId": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp:9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj"
+    },
+    {
+      "name": "valid testnet",
+      "address": "9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+      "chainId": "testnet",
+      "accountId": "solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z:9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj"
+    },
+    {
+      "name": "valid devnet",
+      "address": "9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+      "chainId": "devnet",
+      "accountId": "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1:9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj"
+    },
+    {
+      "name": "valid localnet",
+      "address": "9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+      "chainId": "localnet",
+      "accountId": "solana:localnet:9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj"
+    },
+    {
+      "name": "solana: prefixed mainnet",
+      "address": "9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+      "chainId": "solana:mainnet",
+      "accountId": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp:9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj"
+    },
+    {
+      "name": "solana: prefixed testnet",
+      "address": "9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+      "chainId": "solana:testnet",
+      "accountId": "solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z:9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj"
+    },
+    {
+      "name": "solana: prefixed devnet",
+      "address": "9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+      "chainId": "solana:devnet",
+      "accountId": "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1:9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj"
+    },
+    {
+      "name": "solana: prefixed localnet",
+      "address": "9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+      "chainId": "solana:localnet",
+      "accountId": "solana:localnet:9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj"
+    },
+    {
+      "name": "unknown cluster",
+      "address": "9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+      "chainId": "mainnet-beta",
+      "error": {
+        "code": "InvalidField",
+        "field": "chainId"
+      }
+    },
+    {
+      "name": "raw genesis hash",
+      "address": "9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+      "chainId": "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKtcSfFGg",
+      "error": {
+        "code": "InvalidField",
+        "field": "chainId"
+      }
+    },
+    {
+      "name": "identity address (small order)",
+      "address": "11111111111111111111111111111111",
+      "chainId": "mainnet",
+      "error": {
+        "code": "InvalidField",
+        "field": "address"
+      }
+    },
+    {
+      "name": "mixed-order point (torsion component)",
+      "address": "EqxMvbvZj5dpRpmbyw9k1gzKYHkwZDZJrieP7X3ohLpU",
+      "chainId": "mainnet",
+      "error": {
+        "code": "InvalidField",
+        "field": "address"
+      }
+    },
+    {
+      "name": "small-order point 2",
+      "address": "4uQeVj5tqViQh7yWWGStvkEG1Zmhx6uasJtWCJziofM",
+      "chainId": "mainnet",
+      "error": {
+        "code": "InvalidField",
+        "field": "address"
+      }
+    },
+    {
+      "name": "small-order point 3",
+      "address": "EQAqmjhcsBQhpBv5GJkYgEB7emGHZNoo1j1yAjiFLNxR",
+      "chainId": "mainnet",
+      "error": {
+        "code": "InvalidField",
+        "field": "address"
+      }
+    },
+    {
+      "name": "small-order point 4",
+      "address": "3ctC68zTqpRDQShoondiQKDHwZDAUjRyxiPNdg8cD6Pe",
+      "chainId": "mainnet",
+      "error": {
+        "code": "InvalidField",
+        "field": "address"
+      }
+    },
+    {
+      "name": "non-canonical encoding of valid point",
+      "address": "Gx9dDNxzpALCowVuZb7pBceBLJugLA8sPa6TJDXrpfgi",
+      "chainId": "mainnet",
+      "error": {
+        "code": "InvalidField",
+        "field": "address"
+      }
+    },
+    {
+      "name": "off-curve bytes",
+      "address": "8opHzTAnfzRpPEx21XtnrVTX28YQuCpAjcn1PczScKh",
+      "chainId": "mainnet",
+      "error": {
+        "code": "InvalidField",
+        "field": "address"
+      }
+    },
+    {
+      "name": "31-byte decode",
+      "address": "7DUeBUtEcb7nujVZRJmeBju3X1mo6PpnWNtJ9EBhdY",
+      "chainId": "mainnet",
+      "error": {
+        "code": "InvalidField",
+        "field": "address"
+      }
+    },
+    {
+      "name": "33-byte decode",
+      "address": "365efUdXGhRExyDEUeKXWPg1zTZyfvuJQJDLsS7JZqzyt",
+      "chainId": "mainnet",
+      "error": {
+        "code": "InvalidField",
+        "field": "address"
+      }
+    },
+    {
+      "name": "non-base58 char 0",
+      "address": "0C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+      "chainId": "mainnet",
+      "error": {
+        "code": "InvalidField",
+        "field": "address"
+      }
+    },
+    {
+      "name": "non-base58 char O",
+      "address": "OC6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+      "chainId": "mainnet",
+      "error": {
+        "code": "InvalidField",
+        "field": "address"
+      }
+    },
+    {
+      "name": "non-base58 char I",
+      "address": "IC6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+      "chainId": "mainnet",
+      "error": {
+        "code": "InvalidField",
+        "field": "address"
+      }
+    },
+    {
+      "name": "non-base58 char l",
+      "address": "lC6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+      "chainId": "mainnet",
+      "error": {
+        "code": "InvalidField",
+        "field": "address"
+      }
+    },
+    {
+      "name": "too short",
+      "address": "9C6hybhQ6Aycep9jaUnP",
+      "chainId": "mainnet",
+      "error": {
+        "code": "InvalidField",
+        "field": "address"
+      }
+    },
+    {
+      "name": "too long",
+      "address": "9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj9C6hybhQ6Ayc",
+      "chainId": "mainnet",
+      "error": {
+        "code": "InvalidField",
+        "field": "address"
+      }
+    }
+  ]
+}

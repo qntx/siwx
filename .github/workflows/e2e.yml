@@ -1,0 +1,34 @@
+name: E2E (anvil)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  anvil:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.8.6
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Regenerate contracts fixture
+        run: scripts/vectors/build-e2e-contracts.sh && git diff --exit-code vectors/evm/e2e/contracts.json
+      - name: Rust anvil e2e
+        run: SIWX_E2E_ANVIL=1 cargo test -p siwx --test e2e_anvil --features rpc
+      - name: TS anvil e2e
+        run: SIWX_E2E_ANVIL=1 bun run --cwd packages/siwx test tests/e2e/anvil.test.ts

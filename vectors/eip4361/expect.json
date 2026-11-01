@@ -1,0 +1,646 @@
+{
+  "cases": [
+    {
+      "name": "ok all bound",
+      "fields": {
+        "scheme": "https",
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "scheme": "https",
+        "uri": "https://service.org/login",
+        "chainId": "1",
+        "requestId": "rid_1",
+        "time": "2022-06-01T00:00:00Z"
+      },
+      "error": null
+    },
+    {
+      "name": "domain mismatch",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "other.org",
+        "nonce": "12341234",
+        "time": "2022-06-01T00:00:00Z"
+      },
+      "error": {
+        "code": "Mismatch",
+        "field": "domain"
+      }
+    },
+    {
+      "name": "nonce mismatch",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "wrong",
+        "time": "2022-06-01T00:00:00Z"
+      },
+      "error": {
+        "code": "Mismatch",
+        "field": "nonce"
+      }
+    },
+    {
+      "name": "scheme mismatch",
+      "fields": {
+        "scheme": "https",
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "scheme": "http",
+        "time": "2022-06-01T00:00:00Z"
+      },
+      "error": {
+        "code": "Mismatch",
+        "field": "scheme"
+      }
+    },
+    {
+      "name": "scheme absent in message",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "scheme": "https",
+        "time": "2022-06-01T00:00:00Z"
+      },
+      "error": {
+        "code": "Mismatch",
+        "field": "scheme"
+      }
+    },
+    {
+      "name": "uri mismatch",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "uri": "https://other",
+        "time": "2022-06-01T00:00:00Z"
+      },
+      "error": {
+        "code": "Mismatch",
+        "field": "uri"
+      }
+    },
+    {
+      "name": "chain id mismatch",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "chainId": "137",
+        "time": "2022-06-01T00:00:00Z"
+      },
+      "error": {
+        "code": "Mismatch",
+        "field": "chainId"
+      }
+    },
+    {
+      "name": "request id mismatch",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "requestId": "other",
+        "time": "2022-06-01T00:00:00Z"
+      },
+      "error": {
+        "code": "Mismatch",
+        "field": "requestId"
+      }
+    },
+    {
+      "name": "request id absent in message",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": null,
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "requestId": "rid_1",
+        "time": "2022-06-01T00:00:00Z"
+      },
+      "error": {
+        "code": "Mismatch",
+        "field": "requestId"
+      }
+    },
+    {
+      "name": "expired",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "time": "2023-03-17T12:46:14.610Z",
+        "skewSeconds": 0
+      },
+      "error": {
+        "code": "Expired"
+      }
+    },
+    {
+      "name": "expired boundary ok",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "time": "2023-03-17T12:45:13.610Z",
+        "skewSeconds": 0
+      },
+      "error": null
+    },
+    {
+      "name": "expired within skew",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "time": "2023-03-17T12:46:13.610Z",
+        "skewSeconds": 60
+      },
+      "error": null
+    },
+    {
+      "name": "expired beyond skew",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "time": "2023-03-17T12:46:13.611Z",
+        "skewSeconds": 60
+      },
+      "error": {
+        "code": "Expired"
+      }
+    },
+    {
+      "name": "not before future",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-06-01T00:00:01Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "time": "2022-06-01T00:00:00Z",
+        "skewSeconds": 0
+      },
+      "error": {
+        "code": "NotYetValid"
+      }
+    },
+    {
+      "name": "not before within skew",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-06-01T00:00:59Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "time": "2022-06-01T00:00:00Z",
+        "skewSeconds": 60
+      },
+      "error": null
+    },
+    {
+      "name": "issued too old",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "time": "2022-03-17T13:45:13.611Z",
+        "skewSeconds": 0,
+        "maxAgeSeconds": 3600
+      },
+      "error": {
+        "code": "IssuedAtTooOld"
+      }
+    },
+    {
+      "name": "issued age boundary ok",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "time": "2022-03-17T13:45:13.610Z",
+        "skewSeconds": 0,
+        "maxAgeSeconds": 3600
+      },
+      "error": null
+    },
+    {
+      "name": "issued age beyond skew",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "time": "2022-03-17T13:46:13.611Z",
+        "skewSeconds": 60,
+        "maxAgeSeconds": 3600
+      },
+      "error": {
+        "code": "IssuedAtTooOld"
+      }
+    },
+    {
+      "name": "future issued ok",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-06-01T00:00:59Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "time": "2022-06-01T00:00:00Z",
+        "skewSeconds": 60,
+        "maxAgeSeconds": 60
+      },
+      "error": null
+    },
+    {
+      "name": "unbound optionals skipped",
+      "fields": {
+        "scheme": null,
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "time": "2022-06-01T00:00:00Z"
+      },
+      "error": null
+    },
+    {
+      "name": "sub-ms expiry boundary expired",
+      "fields": {
+        "scheme": "https",
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2022-03-17T12:46:13.0009Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "time": "2022-03-17T12:46:13.001Z",
+        "skewSeconds": 0
+      },
+      "error": {
+        "code": "Expired"
+      }
+    },
+    {
+      "name": "sub-ms expiry boundary ok",
+      "fields": {
+        "scheme": "https",
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2022-03-17T12:46:13.0009Z",
+        "notBefore": "2022-03-17T12:45:13.610Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "time": "2022-03-17T12:46:13.000Z",
+        "skewSeconds": 0
+      },
+      "error": null
+    },
+    {
+      "name": "sub-ms nbf boundary notyet",
+      "fields": {
+        "scheme": "https",
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.0019Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "time": "2022-03-17T12:45:13.0009Z",
+        "skewSeconds": 0
+      },
+      "error": {
+        "code": "NotYetValid"
+      }
+    },
+    {
+      "name": "sub-ms nbf boundary ok",
+      "fields": {
+        "scheme": "https",
+        "domain": "service.org",
+        "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+        "statement": null,
+        "uri": "https://service.org/login",
+        "version": "1",
+        "chainId": "1",
+        "nonce": "12341234",
+        "issuedAt": "2022-03-17T12:45:13.610Z",
+        "expirationTime": "2023-03-17T12:45:13.610Z",
+        "notBefore": "2022-03-17T12:45:13.0019Z",
+        "requestId": "rid_1",
+        "resources": null
+      },
+      "expect": {
+        "domain": "service.org",
+        "nonce": "12341234",
+        "time": "2022-03-17T12:45:13.0019Z",
+        "skewSeconds": 0
+      },
+      "error": null
+    }
+  ]
+}

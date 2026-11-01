@@ -1,0 +1,30 @@
+{
+  "parsing_positive.json#domain is RFC 3986 authority with userinfo": {
+    "error": {
+      "code": "InvalidField",
+      "field": "domain"
+    },
+    "reason": "ERC-4361 erratum signinwithethereum/ERCs#1: userinfo rejected"
+  },
+  "parsing_positive.json#domain is RFC 3986 authority with userinfo and port": {
+    "error": {
+      "code": "InvalidField",
+      "field": "domain"
+    },
+    "reason": "ERC-4361 erratum signinwithethereum/ERCs#1: userinfo rejected"
+  },
+  "valid_uris.json#IPv4address leading zeros: uri://[::000.000.010.001]": {
+    "error": {
+      "code": "InvalidField",
+      "field": "uri"
+    },
+    "reason": "RFC 3986 dec-octet forbids leading zeros; the canonical uri-js harness accepts them"
+  },
+  "valid_uris.json#IPv4address max value: uri://[::001.099.200.255]": {
+    "error": {
+      "code": "InvalidField",
+      "field": "uri"
+    },
+    "reason": "RFC 3986 dec-octet forbids leading zeros; the canonical uri-js harness accepts them"
+  }
+}

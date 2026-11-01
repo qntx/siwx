@@ -1,0 +1,33 @@
+---
+title: Rust core
+description: Message, Expect, authenticate, Namespace.
+---
+
+```rust
+use siwx::{Expect, Message, MessageFields, Namespace, authenticate};
+
+let nonce = siwx::nonce::generate();
+let msg = Message::new(MessageFields {
+    scheme: None,
+    domain: "service.org".into(),
+    address: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266".into(),
+    statement: None,
+    uri: "https://service.org/login".into(),
+    version: "1".into(),
+    chain_id: "1".into(),
+    nonce: nonce.clone(),
+    issued_at: "2026-01-01T00:00:00.000Z".into(),
+    expiration_time: None,
+    not_before: None,
+    request_id: None,
+    resources: None,
+})?;
+let text = siwx::eip4361::format(&msg);        // wallet signs `text` → `sig`
+let expect = Expect::new("service.org", &nonce)
+    .with_chain_id("1")
+    .with_max_age(std::time::Duration::from_secs(300));
+let auth = authenticate(&evm, text.as_bytes(), &sig, &expect).await?;
+```
+
+`expect.check(&message)` runs domain → nonce → scheme → uri → chainId →
+requestId (`Mismatch`), then `Expired`/`NotYetValid`/`IssuedAtTooOld`.

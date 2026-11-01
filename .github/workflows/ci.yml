@@ -9,28 +9,35 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   ci:
+    uses: qntx/workflows/.github/workflows/ci-bun.yml@v2
+    permissions:
+      contents: read
+    # bun run build → vp run -r build
+    # bun run test → vp run -r test && vp test
+    with:
+      rust: true
+      scripts: test:parity
+
+  rust:
     uses: qntx/workflows/.github/workflows/ci-rust.yml@v2
     permissions:
       contents: read
     with:
-      submodules: true
+      # rust-version omitted: rust-toolchain.toml pins the toolchain.
+      deny: true
+      # rustdoc runs with all features, matching docs.rs.
+      doc: true
 
-  # `--all-features` compiles out `not_enabled`. These rows gate magic-before-191
-  # on default and `eip1271`-only builds.
-  eip6492-off:
-    name: EIP-6492 cfg-off
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+  rust-minimal:
+    uses: qntx/workflows/.github/workflows/ci-rust.yml@v2
     permissions:
       contents: read
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Default features (no eip6492)
-        run: cargo test -p siwx-evm --lib eip6492
-      - name: eip1271 only (no eip6492)
-        run: cargo test -p siwx-evm --lib eip6492 --features eip1271
+    with:
+      features: --no-default-features
+      package-check: true

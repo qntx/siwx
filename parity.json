@@ -1,0 +1,204 @@
+{
+  "schema": 1,
+  "capabilities": [
+    {
+      "id": "core.limits",
+      "tier": "A",
+      "status": "stable",
+      "milestone": "TS1",
+      "ts": {
+        "module": "packages/siwx/src/core/limits.ts",
+        "tests": [
+          "packages/siwx/tests/vectors/limits.test.ts",
+          "packages/siwx/tests/vectors/core.test.ts"
+        ]
+      },
+      "rust": {
+        "module": "crates/siwx/src/message.rs",
+        "tests": ["crates/siwx/tests/limits.rs"]
+      },
+      "vectors": ["vectors/limits/defaults.json"]
+    },
+    {
+      "id": "core.message",
+      "tier": "A",
+      "status": "stable",
+      "milestone": "TS2",
+      "ts": {
+        "module": "packages/siwx/src/core/message.ts",
+        "tests": [
+          "packages/siwx/tests/unit.test.ts",
+          "packages/siwx/tests/vectors/siwe.test.ts",
+          "packages/siwx/tests/vectors/eip4361.test.ts"
+        ]
+      },
+      "rust": {
+        "module": "crates/siwx/src/message.rs",
+        "tests": ["crates/siwx/tests/siwe_objects.rs"]
+      },
+      "vectors": [
+        "vectors/siwe/objects/message_objects.json",
+        "vectors/siwe/objects/parsing_negative_objects.json"
+      ]
+    },
+    {
+      "id": "core.timestamp",
+      "tier": "A",
+      "status": "stable",
+      "milestone": "TS2",
+      "ts": {
+        "module": "packages/siwx/src/core/timestamp.ts",
+        "tests": ["packages/siwx/tests/vectors/core.test.ts"]
+      },
+      "rust": {
+        "module": "crates/siwx/src/message.rs",
+        "tests": ["crates/siwx/tests/timestamp.rs"]
+      },
+      "vectors": ["vectors/timestamp/from-instant.json", "vectors/timestamp/parse.json"]
+    },
+    {
+      "id": "core.eip4361",
+      "tier": "A",
+      "status": "stable",
+      "milestone": "TS2",
+      "ts": {
+        "module": "packages/siwx/src/core/eip4361.ts",
+        "tests": [
+          "packages/siwx/tests/vectors/eip4361.test.ts",
+          "packages/siwx/tests/vectors/siwe.test.ts",
+          "packages/siwx/tests/unit.test.ts"
+        ]
+      },
+      "rust": {
+        "module": "crates/siwx/src/eip4361.rs",
+        "tests": [
+          "crates/siwx/tests/siwe_parsing.rs",
+          "crates/siwx/tests/contract_eip4361.rs",
+          "crates/siwx/tests/prop_roundtrip.rs"
+        ]
+      },
+      "vectors": [
+        "vectors/siwe/parsing/parsing_positive.json",
+        "vectors/siwe/parsing/parsing_negative.json",
+        "vectors/siwe/parsing/parsing_warnings.json",
+        "vectors/siwe-overrides.json",
+        "vectors/eip4361/contract.json"
+      ]
+    },
+    {
+      "id": "core.expect",
+      "tier": "A",
+      "status": "stable",
+      "milestone": "TS2",
+      "ts": {
+        "module": "packages/siwx/src/core/expect.ts",
+        "tests": ["packages/siwx/tests/vectors/eip4361.test.ts", "packages/siwx/tests/unit.test.ts"]
+      },
+      "rust": {
+        "module": "crates/siwx/src/expect.rs",
+        "tests": ["crates/siwx/tests/expect.rs"]
+      },
+      "vectors": ["vectors/eip4361/expect.json"]
+    },
+    {
+      "id": "core.account",
+      "tier": "A",
+      "status": "stable",
+      "milestone": "TS2",
+      "ts": {
+        "module": "packages/siwx/src/core/account.ts",
+        "tests": ["packages/siwx/tests/unit.test.ts"]
+      },
+      "rust": {
+        "module": "crates/siwx/src/account.rs",
+        "tests": ["crates/siwx/tests/siwe_parsing.rs"]
+      },
+      "vectors": ["vectors/account/caip10.json"]
+    },
+    {
+      "id": "evm.namespace",
+      "tier": "A",
+      "status": "stable",
+      "milestone": "TS2",
+      "ts": {
+        "module": "packages/siwx/src/evm/index.ts",
+        "tests": [
+          "packages/siwx/tests/vectors/evm.test.ts",
+          "packages/siwx/tests/vectors/siwe.test.ts"
+        ]
+      },
+      "rust": {
+        "module": "crates/siwx/src/evm/mod.rs",
+        "tests": [
+          "crates/siwx/tests/siwe_parsing.rs",
+          "crates/siwx/tests/siwe_grammar.rs",
+          "crates/siwx/tests/siwe_verify.rs"
+        ]
+      },
+      "vectors": [
+        "vectors/siwe/grammar/valid_chars.json",
+        "vectors/siwe/grammar/invalid_chars.json",
+        "vectors/siwe/grammar/valid_uris.json",
+        "vectors/siwe/grammar/invalid_uris.json",
+        "vectors/siwe/grammar/valid_resources.json",
+        "vectors/siwe/grammar/invalid_resources.json",
+        "vectors/siwe/grammar/valid_specification.json",
+        "vectors/siwe/verification/verification_positive.json",
+        "vectors/siwe/verification/verification_negative.json",
+        "vectors/siwe/verification/eip1271.json",
+        "vectors/evm/eip191.json",
+        "vectors/evm/account.json"
+      ]
+    },
+    {
+      "id": "svm.namespace",
+      "tier": "A",
+      "status": "stable",
+      "milestone": "TS2",
+      "ts": {
+        "module": "packages/siwx/src/svm/index.ts",
+        "tests": ["packages/siwx/tests/vectors/svm.test.ts"]
+      },
+      "rust": {
+        "module": "crates/siwx/src/svm/mod.rs",
+        "tests": ["crates/siwx/tests/svm_vectors.rs"]
+      },
+      "vectors": [
+        "vectors/siws/contract.json",
+        "vectors/siws/offchain.json",
+        "vectors/svm/account.json",
+        "vectors/svm/ed25519.json",
+        "vectors/svm/speccheck/cases.json",
+        "vectors/svm/speccheck-expected.json"
+      ]
+    },
+    {
+      "id": "evm.universal-validator",
+      "tier": "A",
+      "status": "stable",
+      "milestone": "TS3",
+      "ts": {
+        "module": "packages/siwx/src/evm/validator.ts",
+        "tests": [
+          "packages/siwx/tests/vectors/evm-rpc.test.ts",
+          "packages/siwx/tests/e2e/anvil.test.ts"
+        ]
+      },
+      "rust": {
+        "module": "crates/siwx/src/evm/validator.rs",
+        "tests": [
+          "crates/siwx/src/evm/validator.rs",
+          "crates/siwx/tests/evm_rpc.rs",
+          "crates/siwx/tests/e2e_anvil.rs"
+        ]
+      },
+      "vectors": [
+        "vectors/evm/universal-validator.json",
+        "vectors/evm/e2e/Owner1271.sol",
+        "vectors/evm/e2e/Factory.sol",
+        "vectors/evm/e2e/contracts.json"
+      ],
+      "notes": "On-chain smart-account path (deployed ERC-1271 + counterfactual ERC-6492 + EOA). eip1271.json mainnet vectors are opt-in via SIWX_MAINNET_RPC."
+    }
+  ]
+}

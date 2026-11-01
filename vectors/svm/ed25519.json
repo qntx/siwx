@@ -1,0 +1,96 @@
+{
+  "cases": [
+    {
+      "name": "valid raw SIWS",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "signatureHex": "0xbd85b34f8391470472fb15c2e77cb91970093fb9abf9bd9c66eabf1bd56910784eb6f90cec67ce1300ccf13624c7c4d70d49878dcb29ab795dcb81604e49cf04",
+      "error": null
+    },
+    {
+      "name": "valid envelope",
+      "signedHex": "0xff736f6c616e61206f6666636861696e010179b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664736572766963652e6f72672077616e747320796f7520746f207369676e20696e207769746820796f757220536f6c616e61206163636f756e743a0a3943366879626851364179636570396a61556e5036754c395a5976446a55703161536b46575055464a74706a0a0a5552493a2068747470733a2f2f736572766963652e6f72672f6c6f67696e0a56657273696f6e3a20310a436861696e2049443a206d61696e6e65740a4e6f6e63653a2031323334313233340a4973737565642041743a20323032322d30332d31375431323a34353a31332e3631305a",
+      "signatureHex": "0xd42c50c37c52f195f20e3c6e00c7684b4c9a1f5c394e1265adc8b27248881f84e4c25e7295471f9866fc0f820b56a93fe5aef52d663386af82830f21d0a8f604",
+      "error": null
+    },
+    {
+      "name": "tampered text",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341235\nIssued At: 2022-03-17T12:45:13.610Z",
+      "signatureHex": "0xbd85b34f8391470472fb15c2e77cb91970093fb9abf9bd9c66eabf1bd56910784eb6f90cec67ce1300ccf13624c7c4d70d49878dcb29ab795dcb81604e49cf04",
+      "error": {
+        "code": "VerificationFailed"
+      }
+    },
+    {
+      "name": "signature for different text",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "signatureHex": "0x2d9570a9d232393053bf2232026bac2147b0ed16d9127aa6054853aef8b3c9d1dcee0eeb371ddc696102146fc267b96cd6cdbbd28c695e09765f809929372f00",
+      "error": {
+        "code": "VerificationFailed"
+      }
+    },
+    {
+      "name": "signature by other key",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "signatureHex": "0x3c2e5427785da1e95c66591d41c027170b9169ea3a451442b6d28c1e100284081ce8f1ac8779fb7eb3542a5634e9c2ad570020e71bfb6b3635ffc3bc6c8efd0a",
+      "error": {
+        "code": "VerificationFailed"
+      }
+    },
+    {
+      "name": "raw-text sig presented with envelope",
+      "signedHex": "0xff736f6c616e61206f6666636861696e010179b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664736572766963652e6f72672077616e747320796f7520746f207369676e20696e207769746820796f757220536f6c616e61206163636f756e743a0a3943366879626851364179636570396a61556e5036754c395a5976446a55703161536b46575055464a74706a0a0a5552493a2068747470733a2f2f736572766963652e6f72672f6c6f67696e0a56657273696f6e3a20310a436861696e2049443a206d61696e6e65740a4e6f6e63653a2031323334313233340a4973737565642041743a20323032322d30332d31375431323a34353a31332e3631305a",
+      "signatureHex": "0xbd85b34f8391470472fb15c2e77cb91970093fb9abf9bd9c66eabf1bd56910784eb6f90cec67ce1300ccf13624c7c4d70d49878dcb29ab795dcb81604e49cf04",
+      "error": {
+        "code": "VerificationFailed"
+      }
+    },
+    {
+      "name": "envelope sig presented on raw text",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "signatureHex": "0xd42c50c37c52f195f20e3c6e00c7684b4c9a1f5c394e1265adc8b27248881f84e4c25e7295471f9866fc0f820b56a93fe5aef52d663386af82830f21d0a8f604",
+      "error": {
+        "code": "VerificationFailed"
+      }
+    },
+    {
+      "name": "63-byte signature",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "signatureHex": "0xbd85b34f8391470472fb15c2e77cb91970093fb9abf9bd9c66eabf1bd56910784eb6f90cec67ce1300ccf13624c7c4d70d49878dcb29ab795dcb81604e49cf",
+      "error": {
+        "code": "InvalidSignature"
+      }
+    },
+    {
+      "name": "65-byte signature",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "signatureHex": "0xbd85b34f8391470472fb15c2e77cb91970093fb9abf9bd9c66eabf1bd56910784eb6f90cec67ce1300ccf13624c7c4d70d49878dcb29ab795dcb81604e49cf0400",
+      "error": {
+        "code": "InvalidSignature"
+      }
+    },
+    {
+      "name": "S = L",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "signatureHex": "0xbd85b34f8391470472fb15c2e77cb91970093fb9abf9bd9c66eabf1bd5691078edd3f55c1a631258d69cf7a2def9de1400000000000000000000000000000010",
+      "error": {
+        "code": "InvalidSignature"
+      }
+    },
+    {
+      "name": "non-canonical R",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "signatureHex": "0xecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000000000000000000000000000000000000000000000000000000000",
+      "error": {
+        "code": "VerificationFailed"
+      }
+    },
+    {
+      "name": "identity R",
+      "text": "service.org wants you to sign in with your Solana account:\n9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj\n\nURI: https://service.org/login\nVersion: 1\nChain ID: mainnet\nNonce: 12341234\nIssued At: 2022-03-17T12:45:13.610Z",
+      "signatureHex": "0x0100000000000000000000000000000000000000000000000000000000000000edd3f55c1a631258d69cf7a2def9de140000000000000000000000000000000f",
+      "error": {
+        "code": "VerificationFailed"
+      }
+    }
+  ]
+}

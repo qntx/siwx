@@ -1,0 +1,33 @@
+[package]
+name                   = "siwx-cli"
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+license.workspace      = true
+repository.workspace   = true
+description            = "CAIP-122 Sign-In with X CLI tool"
+
+[[bin]]
+name = "siwx"
+path = "src/main.rs"
+doc  = false
+
+[dependencies]
+bs58                 = { workspace = true }
+siwx                 = { workspace = true, features = ["evm", "svm"] }
+clap.workspace       = true
+colored.workspace    = true
+serde.workspace      = true
+serde_json.workspace = true
+hex.workspace        = true
+time.workspace       = true
+tokio                = { workspace = true, features = ["rt"] }
+alloy                = { workspace = true, optional = true }
+
+[features]
+default = []
+## Enable on-chain smart-account verification (`evm verify --rpc`).
+rpc = ["siwx/rpc", "dep:alloy", "alloy/provider-http", "alloy/reqwest", "alloy/network", "alloy/providers"]
+
+[lints]
+workspace = true

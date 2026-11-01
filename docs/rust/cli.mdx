@@ -1,0 +1,24 @@
+---
+title: siwx CLI
+description: JSON-first CLI for message/verify/parse/nonce.
+---
+
+```bash
+cargo install siwx-cli
+siwx --json evm message --domain service.org \
+    --address 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 \
+    --uri https://service.org --chain-id 1
+siwx --json evm verify --message "$TEXT" --signature 0x… \
+    --domain service.org --nonce "$NONCE" \
+    [--rpc 1=https://rpc.example]   # feature rpc
+siwx --json svm verify --message-hex "$HEX" --signature "$B58" \
+    --domain service.org --nonce "$NONCE"
+siwx --json evm|svm parse --message "$TEXT"
+siwx --json nonce
+```
+
+- `--message` / `--message-file` / `--message-hex` (exactly one; hex carries
+  SIWS off-chain envelopes).
+- evm signatures: hex (`0x` optional). svm: base58, or hex with `0x`.
+- Success `{valid:true, chain, account, fields}` exit 0; failure exit 1 with
+  `{error:{code,message,field?,syntax?}}`.

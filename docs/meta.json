@@ -1,5 +1,5 @@
 {
   "title": "siwx",
-  "description": "Documentation stub.",
-  "pages": ["index"]
+  "description": "CAIP-122 Sign-In with X for TypeScript and Rust.",
+  "pages": ["index", "protocol", "limits", "errors", "typescript", "rust"]
 }

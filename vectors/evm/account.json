@@ -1,0 +1,139 @@
+{
+  "cases": [
+    {
+      "name": "checksummed",
+      "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+      "chainId": "1",
+      "accountId": "eip155:1:0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+      "error": null
+    },
+    {
+      "name": "all lowercase",
+      "address": "0xe5a12547fe4e872d192e3ececb76f2ce1aea4946",
+      "chainId": "1",
+      "accountId": "eip155:1:0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+      "error": null
+    },
+    {
+      "name": "all uppercase",
+      "address": "0xE5A12547FE4E872D192E3ECECB76F2CE1AEA4946",
+      "chainId": "1",
+      "accountId": "eip155:1:0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+      "error": null
+    },
+    {
+      "name": "bad checksum",
+      "address": "0xe5a12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+      "chainId": "1",
+      "accountId": null,
+      "error": {
+        "code": "InvalidField",
+        "field": "address"
+      }
+    },
+    {
+      "name": "0X prefix",
+      "address": "0Xe5a12547fe4e872d192e3ececb76f2ce1aea4946",
+      "chainId": "1",
+      "accountId": null,
+      "error": {
+        "code": "InvalidField",
+        "field": "address"
+      }
+    },
+    {
+      "name": "short",
+      "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA494",
+      "chainId": "1",
+      "accountId": null,
+      "error": {
+        "code": "InvalidField",
+        "field": "address"
+      }
+    },
+    {
+      "name": "long",
+      "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946aa",
+      "chainId": "1",
+      "accountId": null,
+      "error": {
+        "code": "InvalidField",
+        "field": "address"
+      }
+    },
+    {
+      "name": "non-hex",
+      "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA494g",
+      "chainId": "1",
+      "accountId": null,
+      "error": {
+        "code": "InvalidField",
+        "field": "address"
+      }
+    },
+    {
+      "name": "chain 0",
+      "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+      "chainId": "0",
+      "accountId": "eip155:0:0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+      "error": null
+    },
+    {
+      "name": "chain 01",
+      "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+      "chainId": "01",
+      "accountId": null,
+      "error": {
+        "code": "InvalidField",
+        "field": "chainId"
+      }
+    },
+    {
+      "name": "chain +1",
+      "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+      "chainId": "+1",
+      "accountId": null,
+      "error": {
+        "code": "InvalidField",
+        "field": "chainId"
+      }
+    },
+    {
+      "name": "chain space",
+      "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+      "chainId": " 1",
+      "accountId": null,
+      "error": {
+        "code": "InvalidField",
+        "field": "chainId"
+      }
+    },
+    {
+      "name": "chain u64 max",
+      "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+      "chainId": "18446744073709551615",
+      "accountId": "eip155:18446744073709551615:0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+      "error": null
+    },
+    {
+      "name": "chain u64 max+1",
+      "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+      "chainId": "18446744073709551616",
+      "accountId": null,
+      "error": {
+        "code": "InvalidField",
+        "field": "chainId"
+      }
+    },
+    {
+      "name": "chain alpha",
+      "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+      "chainId": "abc",
+      "accountId": null,
+      "error": {
+        "code": "InvalidField",
+        "field": "chainId"
+      }
+    }
+  ]
+}
