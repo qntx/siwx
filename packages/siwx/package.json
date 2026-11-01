@@ -1,6 +1,6 @@
 {
   "name": "@qntx/siwx",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Sign-In with X (CAIP-122) for TypeScript: SIWE, SIWS, message parsing, validation, and signature verification.",
   "keywords": [
     "authentication",

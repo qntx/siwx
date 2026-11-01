@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.1
+
+### Changed
+
+- Minimal READMEs for the repository, npm package and both crates;
+  crates.io pages now render a README.
+
 ## 0.7.0
 
 ### Breaking
