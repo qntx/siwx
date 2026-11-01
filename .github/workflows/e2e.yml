@@ -31,4 +31,4 @@ jobs:
       - name: Rust anvil e2e
         run: SIWX_E2E_ANVIL=1 cargo test -p siwx --test e2e_anvil --features rpc
       - name: TS anvil e2e
-        run: SIWX_E2E_ANVIL=1 bunx vp test packages/siwx/tests/e2e/anvil.test.ts
+        run: SIWX_E2E_ANVIL=1 bun run --cwd packages/siwx test tests/e2e/anvil.test.ts
