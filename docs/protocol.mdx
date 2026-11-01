@@ -3,8 +3,6 @@ title: Protocol model
 description: CAIP-122 semantics, the two layouts, Expect bindings, and account rules.
 ---
 
-# Protocol model
-
 A CAIP-122 flow has two actors: the **relying party** (server) builds a
 `Message` of `MessageFields`, formats it into chain-specific text, and the
 **wallet** signs the exact bytes. Verification is the inverse: parse the
@@ -24,7 +22,7 @@ account:"` + address, optional `\n\n statement`, then a field block
 
 Round-trip invariant: for every accepted text, `format(parse(t)) == t`.
 Because the SIWS statement sits in the same line slot as the `URI:` tag, a
-`statement` starting with `URI: ` is rejected at format with
+`statement` starting with `URI:` + space is rejected at format with
 `InvalidField{statement}` — it would otherwise parse back as the URI field.
 
 ## Expect
