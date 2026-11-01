@@ -66,6 +66,55 @@ fn check(record: &Value) {
                 .parse(record["text"].as_str().unwrap().as_bytes())
                 .and_then(|m| namespace(op).format(&m))
         }),
+        "timestamp" => outcome(|| {
+            Ok(
+                siwx::Timestamp::parse(record["lexeme"].as_str().unwrap()).map_or_else(
+                    || "invalid".to_owned(),
+                    |ts| {
+                        ts.instant()
+                            .unix_timestamp_nanos()
+                            .div_euclid(1_000_000)
+                            .to_string()
+                    },
+                ),
+            )
+        }),
+        "account_id" => outcome(|| {
+            record["id"]
+                .as_str()
+                .unwrap()
+                .parse::<siwx::AccountId>()
+                .map(|a| a.to_string())
+        }),
+        "expect" => outcome(|| {
+            let e = &record["expect"];
+            let mut ex =
+                siwx::Expect::new(e["domain"].as_str().unwrap(), e["nonce"].as_str().unwrap());
+            if let Some(v) = e["uri"].as_str() {
+                ex = ex.with_uri(v);
+            }
+            if let Some(v) = e["chainId"].as_str() {
+                ex = ex.with_chain_id(v);
+            }
+            if let Some(v) = e["requestId"].as_str() {
+                ex = ex.with_request_id(v);
+            }
+            if let Some(ms) = e["timeMs"].as_i64() {
+                ex = ex.with_time(
+                    time::OffsetDateTime::from_unix_timestamp_nanos(i128::from(ms) * 1_000_000)
+                        .expect("time in range"),
+                );
+            }
+            if let Some(v) = e["skewSeconds"].as_u64() {
+                ex = ex.with_skew(std::time::Duration::from_secs(v));
+            }
+            if let Some(v) = e["maxAgeSeconds"].as_u64() {
+                ex = ex.with_max_age(std::time::Duration::from_secs(v));
+            }
+            Message::new(fields(record))
+                .and_then(|m| ex.check(&m))
+                .map(|()| "ok".to_owned())
+        }),
         "account_evm" | "account_svm" => outcome(|| {
             Message::new(fields(record))
                 .and_then(|m| namespace(op).account(&m).map(|a| a.to_string()))
@@ -73,11 +122,9 @@ fn check(record: &Value) {
         other => panic!("unknown op {other}"),
     };
     assert_eq!(
-        got,
-        record["outcome"],
+        got, record["outcome"],
         "seq {} op {op}: {}",
-        record["seq"],
-        record["fields"]
+        record["seq"], record["fields"]
     );
 }
 

@@ -1,6 +1,7 @@
 //! EIP-55 / EVM address + chain-id rules, matching `siwx::evm`.
 
 import { keccak_256 } from "@noble/hashes/sha3.js";
+import { hexToBytes } from "@noble/hashes/utils.js";
 
 import { fieldError } from "../core/error.ts";
 import { utf8Encode } from "../core/utf8.ts";
@@ -9,7 +10,10 @@ const HEX40 = /^[0-9a-fA-F]{40}$/;
 
 /** EIP-55 checksum spelling of a `0x`-prefixed 40-hex address. */
 export function toChecksumAddress(address: string): string {
-  const body = address.startsWith("0x") ? address.slice(2) : address;
+  if (!address.startsWith("0x")) {
+    throw fieldError("address", "expected 0x + 40 hex");
+  }
+  const body = address.slice(2);
   if (!HEX40.test(body)) {
     throw fieldError("address", "expected 0x + 40 hex");
   }
@@ -42,7 +46,7 @@ export function parseEip55(address: string): Uint8Array {
     throw bad();
   }
   const hex = address.slice(2);
-  if (hex.length !== 40 || !HEX40.test(hex)) {
+  if (!HEX40.test(hex)) {
     throw bad();
   }
   const hasLower = /[a-f]/.test(hex);
@@ -50,11 +54,7 @@ export function parseEip55(address: string): Uint8Array {
   if (hasLower && hasUpper && address !== toChecksumAddress(address)) {
     throw fieldError("address", "bad EIP-55 checksum");
   }
-  const out = new Uint8Array(20);
-  for (let i = 0; i < 20; i++) {
-    out[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-  }
-  return out;
+  return hexToBytes(hex);
 }
 
 /**

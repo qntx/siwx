@@ -9,8 +9,25 @@ description: svm() namespace, SIWS, off-chain envelopes, Ed25519.
 import { svm, siws, validateAddress, offchainMessage } from "@qntx/siwx/svm";
 
 const ns = svm();
-const text = siws.format(message); // SIWS text
+const message = createMessage({
+  domain: "service.org",
+  address: "9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj",
+  uri: "https://service.org/login",
+  version: "1",
+  chainId: "mainnet",
+  nonce: generateNonce(),
+  issuedAt: "2026-01-01T00:00:00.000Z",
+});
+const text = siws.format(message); // raw SIWS text, or:
 const envelope = offchainMessage(text, addr); // v1 envelope for wallets
+
+// Raw: the wallet signs `text`; envelope: it signs `envelope` — pass the
+// exact signed bytes to authenticate either way.
+await authenticate(ns, {
+  message: envelope,
+  signature,
+  expect: { domain: "service.org", nonce: message.nonce },
+});
 ```
 
 - `parse` accepts raw SIWS text or the off-chain v1 envelope (16-byte

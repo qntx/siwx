@@ -64,32 +64,15 @@ function decodeEnvelope(signed: Uint8Array): Envelope {
   if (count !== 1) {
     throw invalidEnvelope();
   }
-  const n = 32 * count;
-  const signers = signed.subarray(18, 18 + n);
-  if (signers.length !== n) {
+  const signers = signed.subarray(18, 50);
+  if (signers.length !== 32) {
     throw invalidEnvelope();
   }
-  for (let i = 0; i < n; i += 32) {
-    const s = signers.subarray(i, i + 32);
-    if (i > 0 && bytesLe(s, signers.subarray(i - 32, i)) <= 0) {
-      throw invalidEnvelope();
-    }
-  }
-  const content = signed.subarray(18 + n);
+  const content = signed.subarray(50);
   if (content.length === 0) {
     throw invalidEnvelope();
   }
   return { signer: signers.subarray(0, 32), content };
-}
-
-/** -1, 0 or 1 comparing `a` and `b` lexicographically. */
-function bytesLe(a: Uint8Array, b: Uint8Array): number {
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) {
-      return (a[i] ?? 0) < (b[i] ?? 0) ? -1 : 1;
-    }
-  }
-  return 0;
 }
 
 /**
@@ -110,16 +93,13 @@ export function offchainMessage(text: string, signer: string): Uint8Array {
   return out;
 }
 
-/** `Svm` namespace profile. `SvmOptions` is reserved for Phase 5+ extras. */
-export type SvmOptions = Record<string, never>;
-
 function svmAccount(message: Message): AccountId {
   validateAddress(message.address);
   return createAccountId(NAMESPACE, chainReference(message.chainId), message.address);
 }
 
 /** Create the Solana namespace profile. */
-export function svm(_options?: SvmOptions): Namespace {
+export function svm(): Namespace {
   return {
     namespace: NAMESPACE,
     label: CHAIN_NAME,

@@ -4,13 +4,11 @@
 
 import { SiwxError, fieldError, mismatchError, syntaxError } from "./error.ts";
 import type { Field } from "./error.ts";
+import { MID, SUFFIX, optionalTags } from "./layout.ts";
 import { MAX_MESSAGE_BYTES } from "./limits.ts";
 import { createMessage } from "./message.ts";
 import type { Message, MessageFields } from "./message.ts";
 import { utf8ByteLength, utf8Decode } from "./utf8.ts";
-
-const MID = " wants you to sign in with your ";
-const SUFFIX = " account:";
 
 function takeTag(line: string, tag: string, field: Field): string {
   if (!line.startsWith(tag)) {
@@ -62,10 +60,11 @@ export function format(label: string, message: Message): string {
 
 /** Parse `text` into a label + validated message. */
 export function parse(text: string): Parsed {
-  if (utf8ByteLength(text) > MAX_MESSAGE_BYTES) {
+  const byteLength = utf8ByteLength(text);
+  if (byteLength > MAX_MESSAGE_BYTES) {
     throw new SiwxError({
       code: "MessageTooLarge",
-      length: utf8ByteLength(text),
+      length: byteLength,
       max: MAX_MESSAGE_BYTES,
     });
   }
@@ -134,44 +133,7 @@ export function parse(text: string): Parsed {
   const nonce = takeTag(next(), "Nonce: ", "nonce");
   const issuedAt = takeTag(next(), "Issued At: ", "issuedAt");
 
-  let expirationTime: string | undefined;
-  let notBefore: string | undefined;
-  let requestId: string | undefined;
-  let resources: string[] | undefined;
-
-  const line = lines[i];
-  if (line !== undefined && line.startsWith("Expiration Time: ")) {
-    expirationTime = line.slice("Expiration Time: ".length);
-    i++;
-  }
-  const line2 = lines[i];
-  if (line2 !== undefined && line2.startsWith("Not Before: ")) {
-    notBefore = line2.slice("Not Before: ".length);
-    i++;
-  }
-  const line3 = lines[i];
-  if (line3 !== undefined && line3.startsWith("Request ID: ")) {
-    requestId = line3.slice("Request ID: ".length);
-    i++;
-  }
-  if (lines[i] === "Resources:") {
-    i++;
-    resources = [];
-    let r: string | undefined;
-    while ((r = lines[i]) !== undefined) {
-      if (r.startsWith("- ")) {
-        resources.push(r.slice(2));
-        i++;
-      } else if (r.startsWith("-")) {
-        throw syntaxError("ResourceSyntax");
-      } else {
-        throw syntaxError("UnexpectedTrailing");
-      }
-    }
-  }
-  if (i !== lines.length) {
-    throw syntaxError("UnexpectedTrailing");
-  }
+  const opt = optionalTags(lines, i);
 
   const fields: MessageFields = {
     scheme,
@@ -183,10 +145,7 @@ export function parse(text: string): Parsed {
     chainId,
     nonce,
     issuedAt,
-    expirationTime,
-    notBefore,
-    requestId,
-    resources,
+    ...opt,
   };
   return { label, message: createMessage(fields) };
 }

@@ -1,147 +1,302 @@
 {
-  "create": [
-    {
-      "name": "eip155",
-      "namespace": "eip155",
-      "reference": "1",
-      "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
-      "id": "eip155:1:0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
-      "error": null
-    },
-    {
-      "name": "solana",
-      "namespace": "solana",
-      "reference": "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
-      "address": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
-      "id": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp:9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
-      "error": null
-    },
-    {
-      "name": "namespace too short",
-      "namespace": "ab",
-      "reference": "1",
-      "address": "a",
-      "id": null,
-      "error": {
-        "code": "InvalidField",
-        "field": "chainId"
-      }
-    },
-    {
-      "name": "namespace too long",
-      "namespace": "abcdefghi",
-      "reference": "1",
-      "address": "a",
-      "id": null,
-      "error": {
-        "code": "InvalidField",
-        "field": "chainId"
-      }
-    },
-    {
-      "name": "namespace uppercase",
-      "namespace": "EIP155",
-      "reference": "1",
-      "address": "a",
-      "id": null,
-      "error": {
-        "code": "InvalidField",
-        "field": "chainId"
-      }
-    },
-    {
-      "name": "reference empty",
-      "namespace": "eip155",
-      "reference": "",
-      "address": "a",
-      "id": null,
-      "error": {
-        "code": "InvalidField",
-        "field": "chainId"
-      }
-    },
-    {
-      "name": "reference 33 chars",
-      "namespace": "eip155",
-      "reference": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      "address": "a",
-      "id": null,
-      "error": {
-        "code": "InvalidField",
-        "field": "chainId"
-      }
-    },
-    {
-      "name": "reference bad char",
-      "namespace": "eip155",
-      "reference": "1+",
-      "address": "a",
-      "id": null,
-      "error": {
-        "code": "InvalidField",
-        "field": "chainId"
-      }
-    },
-    {
-      "name": "address empty",
-      "namespace": "eip155",
-      "reference": "1",
-      "address": "",
-      "id": null,
-      "error": {
-        "code": "InvalidField",
-        "field": "address"
-      }
-    },
-    {
-      "name": "address bad char",
-      "namespace": "eip155",
-      "reference": "1",
-      "address": "a_b",
-      "id": null,
-      "error": {
-        "code": "InvalidField",
-        "field": "address"
-      }
-    },
-    {
-      "name": "address charset allowed",
-      "namespace": "eip155",
-      "reference": "1",
-      "address": "a-b.c%d",
-      "id": "eip155:1:a-b.c%d",
-      "error": null
+ "create": [
+  {
+   "name": "eip155",
+   "namespace": "eip155",
+   "reference": "1",
+   "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+   "id": "eip155:1:0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+   "error": null
+  },
+  {
+   "name": "solana",
+   "namespace": "solana",
+   "reference": "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+   "address": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+   "id": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp:9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+   "error": null
+  },
+  {
+   "name": "namespace too short",
+   "namespace": "ab",
+   "reference": "1",
+   "address": "a",
+   "id": null,
+   "error": {
+    "code": "InvalidField",
+    "field": "chainId"
+   }
+  },
+  {
+   "name": "namespace too long",
+   "namespace": "abcdefghi",
+   "reference": "1",
+   "address": "a",
+   "id": null,
+   "error": {
+    "code": "InvalidField",
+    "field": "chainId"
+   }
+  },
+  {
+   "name": "namespace uppercase",
+   "namespace": "EIP155",
+   "reference": "1",
+   "address": "a",
+   "id": null,
+   "error": {
+    "code": "InvalidField",
+    "field": "chainId"
+   }
+  },
+  {
+   "name": "reference empty",
+   "namespace": "eip155",
+   "reference": "",
+   "address": "a",
+   "id": null,
+   "error": {
+    "code": "InvalidField",
+    "field": "chainId"
+   }
+  },
+  {
+   "name": "reference 33 chars",
+   "namespace": "eip155",
+   "reference": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "address": "a",
+   "id": null,
+   "error": {
+    "code": "InvalidField",
+    "field": "chainId"
+   }
+  },
+  {
+   "name": "reference bad char",
+   "namespace": "eip155",
+   "reference": "1+",
+   "address": "a",
+   "id": null,
+   "error": {
+    "code": "InvalidField",
+    "field": "chainId"
+   }
+  },
+  {
+   "name": "address empty",
+   "namespace": "eip155",
+   "reference": "1",
+   "address": "",
+   "id": null,
+   "error": {
+    "code": "InvalidField",
+    "field": "address"
+   }
+  },
+  {
+   "name": "address bad char",
+   "namespace": "eip155",
+   "reference": "1",
+   "address": "a_b",
+   "id": null,
+   "error": {
+    "code": "InvalidField",
+    "field": "address"
+   }
+  },
+  {
+   "name": "address charset allowed",
+   "namespace": "eip155",
+   "reference": "1",
+   "address": "a-b.c%d",
+   "id": "eip155:1:a-b.c%d",
+   "error": null
+  }
+ ],
+ "parse": [
+  {
+   "name": "roundtrip",
+   "id": "eip155:1:0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+   "error": null
+  },
+  {
+   "name": "two parts",
+   "id": "eip155:1",
+   "error": {
+    "code": "InvalidField",
+    "field": "chainId"
+   }
+  },
+  {
+   "name": "four parts",
+   "id": "a:b:c:d",
+   "error": {
+    "code": "InvalidField",
+    "field": "chainId"
+   }
+  },
+  {
+   "name": "empty",
+   "id": "",
+   "error": {
+    "code": "InvalidField",
+    "field": "chainId"
+   }
+  },
+  {
+   "name": "extra colons are address data, not chainId",
+   "id": "eip155:1:a:b",
+   "error": {
+    "code": "InvalidField",
+    "field": "address"
+   }
+  }
+ ],
+ "cases": [
+  [
+   {
+    "name": "eip155",
+    "namespace": "eip155",
+    "reference": "1",
+    "address": "0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+    "id": "eip155:1:0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+    "error": null
+   },
+   {
+    "name": "solana",
+    "namespace": "solana",
+    "reference": "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+    "address": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+    "id": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp:9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+    "error": null
+   },
+   {
+    "name": "namespace too short",
+    "namespace": "ab",
+    "reference": "1",
+    "address": "a",
+    "id": null,
+    "error": {
+     "code": "InvalidField",
+     "field": "chainId"
     }
+   },
+   {
+    "name": "namespace too long",
+    "namespace": "abcdefghi",
+    "reference": "1",
+    "address": "a",
+    "id": null,
+    "error": {
+     "code": "InvalidField",
+     "field": "chainId"
+    }
+   },
+   {
+    "name": "namespace uppercase",
+    "namespace": "EIP155",
+    "reference": "1",
+    "address": "a",
+    "id": null,
+    "error": {
+     "code": "InvalidField",
+     "field": "chainId"
+    }
+   },
+   {
+    "name": "reference empty",
+    "namespace": "eip155",
+    "reference": "",
+    "address": "a",
+    "id": null,
+    "error": {
+     "code": "InvalidField",
+     "field": "chainId"
+    }
+   },
+   {
+    "name": "reference 33 chars",
+    "namespace": "eip155",
+    "reference": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "address": "a",
+    "id": null,
+    "error": {
+     "code": "InvalidField",
+     "field": "chainId"
+    }
+   },
+   {
+    "name": "reference bad char",
+    "namespace": "eip155",
+    "reference": "1+",
+    "address": "a",
+    "id": null,
+    "error": {
+     "code": "InvalidField",
+     "field": "chainId"
+    }
+   },
+   {
+    "name": "address empty",
+    "namespace": "eip155",
+    "reference": "1",
+    "address": "",
+    "id": null,
+    "error": {
+     "code": "InvalidField",
+     "field": "address"
+    }
+   },
+   {
+    "name": "address bad char",
+    "namespace": "eip155",
+    "reference": "1",
+    "address": "a_b",
+    "id": null,
+    "error": {
+     "code": "InvalidField",
+     "field": "address"
+    }
+   },
+   {
+    "name": "address charset allowed",
+    "namespace": "eip155",
+    "reference": "1",
+    "address": "a-b.c%d",
+    "id": "eip155:1:a-b.c%d",
+    "error": null
+   }
   ],
-  "parse": [
-    {
-      "name": "roundtrip",
-      "id": "eip155:1:0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
-      "error": null
-    },
-    {
-      "name": "two parts",
-      "id": "eip155:1",
-      "error": {
-        "code": "InvalidField",
-        "field": "chainId"
-      }
-    },
-    {
-      "name": "four parts",
-      "id": "a:b:c:d",
-      "error": {
-        "code": "InvalidField",
-        "field": "chainId"
-      }
-    },
-    {
-      "name": "empty",
-      "id": "",
-      "error": {
-        "code": "InvalidField",
-        "field": "chainId"
-      }
+  [
+   {
+    "name": "roundtrip",
+    "id": "eip155:1:0xe5A12547fe4E872D192E3eCecb76F2Ce1aeA4946",
+    "error": null
+   },
+   {
+    "name": "two parts",
+    "id": "eip155:1",
+    "error": {
+     "code": "InvalidField",
+     "field": "chainId"
     }
+   },
+   {
+    "name": "four parts",
+    "id": "a:b:c:d",
+    "error": {
+     "code": "InvalidField",
+     "field": "chainId"
+    }
+   },
+   {
+    "name": "empty",
+    "id": "",
+    "error": {
+     "code": "InvalidField",
+     "field": "chainId"
+    }
+   }
   ]
+ ]
 }

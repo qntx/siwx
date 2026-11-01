@@ -57,6 +57,11 @@ describe("siws contract vectors", () => {
       text: string;
       error: { code: string; syntax?: string; field?: string };
     }>;
+    formatReject: Array<{
+      name: string;
+      fields: Record<string, unknown>;
+      error: { code: string; syntax?: string; field?: string };
+    }>;
   };
   const ns = svm();
 
@@ -65,6 +70,19 @@ describe("siws contract vectors", () => {
     const want = createMessage(fieldsFromJson(c.fields));
     expect({ ...parsed }).toStrictEqual({ ...want });
     expect(ns.format(parsed)).toBe(c.text);
+  });
+
+  it.each(contract.formatReject ?? [])("$name", (c) => {
+    let thrown: unknown;
+    try {
+      ns.format(createMessage(fieldsFromJson(c.fields)));
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown).toBeInstanceOf(SiwxError);
+    if (thrown instanceof SiwxError) {
+      checkErr(thrown, c.error);
+    }
   });
 
   it.each(contract.reject)("$name", (c) => {

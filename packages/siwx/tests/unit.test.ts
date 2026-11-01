@@ -108,6 +108,18 @@ describe("checkExpect", () => {
     }
   });
 
+  it.each([
+    ["NaN time", { time: new Date(Number.NaN) }],
+    ["NaN skew", { skewSeconds: Number.NaN }],
+    ["Infinity skew", { skewSeconds: Number.POSITIVE_INFINITY }],
+    ["negative skew", { skewSeconds: -1 }],
+    ["NaN maxAge", { maxAgeSeconds: Number.NaN }],
+    ["Infinity maxAge", { maxAgeSeconds: Number.POSITIVE_INFINITY }],
+    ["negative maxAge", { maxAgeSeconds: -1 }],
+  ])("throws RangeError for %s", (_n, over) => {
+    expect(() => checkExpect(msg(), exp(over))).toThrow(RangeError);
+  });
+
   it("absent optional field mismatch uses undefined actual", () => {
     try {
       checkExpect(msg(), exp({ requestId: "r" }));

@@ -59,10 +59,10 @@ export function createAccountId(namespace: string, reference: string, address: s
  * @throws {SiwxError} `InvalidField` `chainId` when the shape is wrong.
  */
 export function parseAccountId(id: string): AccountId {
-  const parts = id.split(":");
-  const [ns, reference, address] = parts;
-  if (parts.length !== 3 || ns === undefined || reference === undefined || address === undefined) {
+  const first = id.indexOf(":");
+  const second = first === -1 ? -1 : id.indexOf(":", first + 1);
+  if (first === -1 || second < 0) {
     throw fieldError("chainId", "expected namespace:reference:address");
   }
-  return createAccountId(ns, reference, address);
+  return createAccountId(id.slice(0, first), id.slice(first + 1, second), id.slice(second + 1));
 }

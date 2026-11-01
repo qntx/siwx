@@ -55,6 +55,11 @@ impl Timestamp {
         if !has_rfc3339_timezone(s) {
             return None;
         }
+        // Leap seconds are rejected (matches the JS grammar, which has no :60).
+        let raw = s.as_bytes();
+        if raw.get(17..19) == Some(b"60") {
+            return None;
+        }
         let instant = OffsetDateTime::parse(s, &Rfc3339).ok()?;
         Some(Self {
             instant,

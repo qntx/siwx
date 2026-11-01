@@ -54,7 +54,7 @@
         "module": "crates/siwx/src/message.rs",
         "tests": ["crates/siwx/tests/timestamp.rs"]
       },
-      "vectors": ["vectors/timestamp/from-instant.json"]
+      "vectors": ["vectors/timestamp/from-instant.json", "vectors/timestamp/parse.json"]
     },
     {
       "id": "core.eip4361",

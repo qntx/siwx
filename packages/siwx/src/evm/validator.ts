@@ -96,6 +96,27 @@ function backend(): SiwxError {
   return new SiwxError({ code: "Backend", reason: "RPC request failed" });
 }
 
+const MAGIC = (() => {
+  const m = new Uint8Array(32);
+  for (let i = 0; i < m.length; i++) {
+    m[i] = i % 2 === 0 ? 0x64 : 0x92;
+  }
+  return m;
+})();
+
+/** True when `signature` ends with the ERC-6492 detection suffix. */
+export function has6492MagicSuffix(signature: Uint8Array): boolean {
+  if (signature.length < MAGIC.length) {
+    return false;
+  }
+  for (let i = 0; i < MAGIC.length; i++) {
+    if (signature[signature.length - MAGIC.length + i] !== MAGIC[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 /** `eth_chainId` as a decimal number; malformed → `Backend`. */
 export async function providerChainId(provider: Eip1193Provider): Promise<bigint> {
   let result: unknown;

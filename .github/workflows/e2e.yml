@@ -24,7 +24,6 @@ jobs:
       - uses: foundry-rs/foundry-toolchain@v1
         with:
           version: v1.8.6
-      - uses: dtolnay/rust-toolchain@stable
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - name: Regenerate contracts fixture

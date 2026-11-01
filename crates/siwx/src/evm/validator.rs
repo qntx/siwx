@@ -117,17 +117,16 @@ mod rpc {
         }
     }
 
-    /// Deployless `eth_call` against the vendored universal validator.
-    ///
-    /// `eth_chainId` must equal the message chain id; the deployless call runs
-    /// at `"latest"`. Transport errors, malformed results and every JSON-RPC
-    /// code other than 3 are [`Error::Backend`]; code 3 and a `0` result are
+    /// Deployless `eth_call` against the vendored universal validator at
+    /// `"latest"`. The caller has already bound `eth_chainId` to the message
+    /// chain. Transport errors, malformed results and every JSON-RPC code
+    /// other than 3 are [`Error::Backend`]; code 3 and a `0` result are
     /// [`Error::VerificationFailed`]. Reasons never contain provider details.
     ///
     /// # Errors
     ///
-    /// [`Error::Mismatch`] [`Field::ChainId`], [`Error::InvalidField`],
-    /// [`Error::Backend`], [`Error::VerificationFailed`].
+    /// [`Error::InvalidField`], [`Error::Backend`],
+    /// [`Error::VerificationFailed`].
     pub(crate) async fn verify(
         provider: &DynProvider,
         message: &Message,
@@ -167,7 +166,6 @@ mod rpc {
 )]
 mod tests {
     use super::{BYTECODE, decode_result, deployless_calldata, has_magic_suffix};
-    #[cfg(feature = "rpc")]
     use crate::Error;
     use serde_json::Value;
 

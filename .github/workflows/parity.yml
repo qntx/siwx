@@ -1,22 +1,25 @@
-name: Parity (daily)
+# Caller owns on:. Pin at @v2.
+# Daily cross-language differential replay with a fresh random seed;
+# the printed seed makes any failure reproducible.
+name: Parity
 
 on:
   schedule:
-    - cron: "0 4 * * *"
+    - cron: "41 5 * * *"
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  differential:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: oven-sh/setup-bun@v2
-      - run: bun install --frozen-lockfile
-      - run: bun run test:parity:random
+  parity:
+    uses: qntx/workflows/.github/workflows/ci-bun.yml@v2
+    permissions:
+      contents: read
+    with:
+      rust: true
+      scripts: test:parity:random

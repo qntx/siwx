@@ -34,4 +34,26 @@ mod tests {
             assert_eq!(got.as_str(), want, "{input}");
         }
     }
+
+    #[test]
+    fn parse_vectors() {
+        let text = std::fs::read_to_string(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../vectors/timestamp/parse.json"
+        ))
+        .expect("read vector");
+        let v: Value = serde_json::from_str(&text).expect("vector json");
+        for case in v["cases"].as_array().unwrap() {
+            let lexeme = case["lexeme"].as_str().unwrap();
+            match Timestamp::parse(lexeme) {
+                Some(ts) => {
+                    assert!(case["valid"].as_bool().unwrap(), "{lexeme} rejected");
+                    let got = ts.instant().unix_timestamp_nanos().div_euclid(1_000_000);
+                    let want: i128 = case["epochMs"].as_i64().unwrap().into();
+                    assert_eq!(got, want, "{lexeme}");
+                }
+                None => assert!(!case["valid"].as_bool().unwrap(), "{lexeme} rejected"),
+            }
+        }
+    }
 }

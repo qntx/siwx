@@ -23,6 +23,9 @@ account:"` + address, optional `\n\n statement`, then a field block
   the signer key must equal the message address.
 
 Round-trip invariant: for every accepted text, `format(parse(t)) == t`.
+Because the SIWS statement sits in the same line slot as the `URI:` tag, a
+`statement` starting with `URI: ` is rejected at format with
+`InvalidField{statement}` — it would otherwise parse back as the URI field.
 
 ## Expect
 
@@ -31,7 +34,12 @@ required; `scheme`, `uri`, `chainId`, `requestId` bind when present
 (`Mismatch{field}` on disagreement). Time policy: `expired`/`notBefore` checks
 with configurable `skew` (default 60 s) and `maxAge` (default none); a future
 `issuedAt` is not an error. Timestamps are RFC 3339 with **millisecond**
-precision — the same text both languages emit.
+precision — the same text both languages emit. Leap seconds (`:60`) are
+rejected in both languages; TS computes instants with civil-date arithmetic,
+so years `0000`–`0099` are not the `Date.UTC` 1900-offset. `skew` and
+`maxAge` are `std::time::Duration` in Rust and non-negative finite seconds
+in TS — invalid policy values (`NaN`/`Infinity`/negative, an invalid `time`)
+throw `RangeError` rather than silently disabling the checks.
 
 ## Accounts
 

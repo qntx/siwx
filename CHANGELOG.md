@@ -18,7 +18,9 @@
 - **Solana uses SIWS**: the `svm` profile parses and formats the Sign In With
   Solana layout produced by wallet-standard wallets (not the EIP-4361
   layout), chain ids are `mainnet|testnet|devnet|localnet` (optionally
-  `solana:`-prefixed) mapped to CAIP-2 genesis references.
+  `solana:`-prefixed) mapped to CAIP-2 genesis references. A `statement`
+  starting with `URI: ` is rejected at format (`InvalidField` `statement`)
+  because it would round-trip as the `URI:` field.
 - **New core API** replacing `SiwxMessage`/`SiwxError`/`Verifier`:
   `Message`/`MessageFields`, `Timestamp`, `Expect` (domain/nonce bindings +
   skew/max-age), `AccountId` (CAIP-10), `Namespace` trait, `Error` +
@@ -42,6 +44,13 @@
 - **Ed25519 rule**: `A` and `R` must be canonical prime-order-subgroup
   (torsion-free, non-identity) encodings; identity `R` is rejected in both
   languages.
+- **`Expect` takes `std::time::Duration`** for `with_skew` / `with_max_age`
+  (negative skews are unrepresentable); TS throws `RangeError` for
+  non-finite or negative `skewSeconds` / `maxAgeSeconds` and for an invalid
+  `time` — policy values can no longer silently disable every check.
+- **Leap seconds rejected** (`:60` seconds) in both languages; TS/Rust
+  `Timestamp` parse identically, with millisecond truncation and no
+  `Date.UTC` year-0–99 mapping.
 
 ### Added
 

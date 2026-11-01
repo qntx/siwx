@@ -1,10 +1,15 @@
 //! Server-side binding + time policy for a parsed [`Message`].
 
-use time::{Duration, OffsetDateTime};
+use time::OffsetDateTime;
 
 use crate::{Error, Field, Message};
 
-const DEFAULT_SKEW: Duration = Duration::seconds(60);
+const DEFAULT_SKEW: std::time::Duration = std::time::Duration::from_secs(60);
+
+/// `Duration` as i128 milliseconds, saturating on overflow.
+fn millis(d: std::time::Duration) -> i128 {
+    i128::try_from(d.as_millis()).unwrap_or(i128::MAX)
+}
 
 /// Instant in whole milliseconds since the Unix epoch, floored toward -inf.
 const fn ms_floor(t: OffsetDateTime) -> i128 {
@@ -26,8 +31,8 @@ pub struct Expect {
     chain_id: Option<String>,
     request_id: Option<String>,
     time: Option<OffsetDateTime>,
-    skew: Duration,
-    max_age: Option<Duration>,
+    skew: std::time::Duration,
+    max_age: Option<std::time::Duration>,
 }
 
 impl Expect {
@@ -84,14 +89,14 @@ impl Expect {
 
     /// Clock-skew tolerance (default 60 s).
     #[must_use]
-    pub const fn with_skew(mut self, skew: Duration) -> Self {
+    pub const fn with_skew(mut self, skew: std::time::Duration) -> Self {
         self.skew = skew;
         self
     }
 
     /// Maximum age of `issued-at` (beyond skew).
     #[must_use]
-    pub const fn with_max_age(mut self, max_age: Duration) -> Self {
+    pub const fn with_max_age(mut self, max_age: std::time::Duration) -> Self {
         self.max_age = Some(max_age);
         self
     }
@@ -146,7 +151,7 @@ impl Expect {
         // All comparisons at millisecond precision (toISOString floor),
         // truncated toward -inf like JS Date.
         let now = ms_floor(self.time.unwrap_or_else(OffsetDateTime::now_utc));
-        let skew_ms = self.skew.whole_milliseconds();
+        let skew_ms = millis(self.skew);
         if let Some(exp) = message.expiration_time()
             && now > ms_floor(exp.instant()) + skew_ms
         {
@@ -159,7 +164,7 @@ impl Expect {
         }
         if let Some(max_age) = self.max_age {
             let issued = ms_floor(message.issued_at().instant());
-            if issued <= now + skew_ms && now - issued - skew_ms > max_age.whole_milliseconds() {
+            if issued <= now + skew_ms && now - issued - skew_ms > millis(max_age) {
                 return Err(Error::IssuedAtTooOld);
             }
         }

@@ -39,6 +39,22 @@ describe("timestampFromDate vectors", () => {
   });
 });
 
+const parseCases = json("timestamp/parse.json") as {
+  cases: Array<{ lexeme: string; valid: boolean; epochMs?: number }>;
+};
+
+describe("parseTimestamp vectors (timestamp/parse.json)", () => {
+  it.each(parseCases.cases)("$lexeme", (c) => {
+    const t = parseTimestamp(c.lexeme);
+    if (c.valid) {
+      expect(t).toBeDefined();
+      expect(t!.epochMs).toBe(c.epochMs);
+    } else {
+      expect(t).toBeUndefined();
+    }
+  });
+});
+
 describe("parseTimestamp edges", () => {
   const good = [
     "2022-03-17T12:45:13Z",

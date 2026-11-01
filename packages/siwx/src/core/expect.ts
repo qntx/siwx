@@ -25,13 +25,34 @@ const DEFAULT_SKEW_SECONDS = 60;
 /**
  * Check `message` against the bindings and time policy.
  *
- * Order: domain, nonce, scheme, uri, chainId, requestId (`Mismatch`), then `Expired`,
- * `NotYetValid`, `IssuedAtTooOld`. All comparisons at millisecond precision; a future `issued-at`
- * is not an error.
- *
+ * @throws {RangeError} For invalid `time`, or non-finite/negative `skewSeconds`/`maxAgeSeconds`.
+ *   Order: domain, nonce, scheme, uri, chainId, requestId (`Mismatch`), then `Expired`,
+ *   `NotYetValid`, `IssuedAtTooOld`. All comparisons at millisecond precision; a future `issued-at`
+ *   is not an error.
  * @throws {SiwxError} The first failing check.
  */
+const assertNonNegativeFinite = (name: string, v: number | undefined): void => {
+  if (v !== undefined && (!Number.isFinite(v) || v < 0)) {
+    throw new RangeError(`${name} must be a non-negative finite number`);
+  }
+};
+
+/** EpochMs of a timestamp already validated at `Message::new` time. */
+const lexemeMs = (ts: string): number => {
+  const parsed = parseTimestamp(ts);
+  if (parsed === undefined) {
+    // Unreachable in practice: messages are validated at construction.
+    throw new RangeError("invalid stored timestamp");
+  }
+  return parsed.epochMs;
+};
+
 export function checkExpect(message: Message, expect: Expect): void {
+  if (expect.time !== undefined && !Number.isFinite(expect.time.getTime())) {
+    throw new RangeError("expect.time must be a valid Date");
+  }
+  assertNonNegativeFinite("skewSeconds", expect.skewSeconds);
+  assertNonNegativeFinite("maxAgeSeconds", expect.maxAgeSeconds);
   if (message.domain !== expect.domain) {
     throw mismatchError("domain", expect.domain, message.domain);
   }
@@ -53,43 +74,15 @@ export function checkExpect(message: Message, expect: Expect): void {
 
   const now = Math.floor((expect.time ?? new Date()).getTime());
   const skew = Math.floor((expect.skewSeconds ?? DEFAULT_SKEW_SECONDS) * 1000);
-  if (message.expirationTime !== undefined) {
-    const exp = parseTimestamp(message.expirationTime);
-    if (exp === undefined) {
-      throw new SiwxError({
-        code: "InvalidField",
-        field: "expirationTime",
-        reason: "not an RFC 3339 date-time",
-      });
-    }
-    if (now > exp.epochMs + skew) {
-      throw new SiwxError({ code: "Expired" });
-    }
+  if (message.expirationTime !== undefined && now > lexemeMs(message.expirationTime) + skew) {
+    throw new SiwxError({ code: "Expired" });
   }
-  if (message.notBefore !== undefined) {
-    const nbf = parseTimestamp(message.notBefore);
-    if (nbf === undefined) {
-      throw new SiwxError({
-        code: "InvalidField",
-        field: "notBefore",
-        reason: "not an RFC 3339 date-time",
-      });
-    }
-    if (now + skew < nbf.epochMs) {
-      throw new SiwxError({ code: "NotYetValid" });
-    }
+  if (message.notBefore !== undefined && now + skew < lexemeMs(message.notBefore)) {
+    throw new SiwxError({ code: "NotYetValid" });
   }
   if (expect.maxAgeSeconds !== undefined) {
-    const issued = parseTimestamp(message.issuedAt);
-    if (issued === undefined) {
-      throw new SiwxError({
-        code: "InvalidField",
-        field: "issuedAt",
-        reason: "not an RFC 3339 date-time",
-      });
-    }
     const maxAge = Math.floor(expect.maxAgeSeconds * 1000);
-    if (issued.epochMs <= now + skew && now - issued.epochMs - skew > maxAge) {
+    if (now > lexemeMs(message.issuedAt) + maxAge + skew) {
       throw new SiwxError({ code: "IssuedAtTooOld" });
     }
   }

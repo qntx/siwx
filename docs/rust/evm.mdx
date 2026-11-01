@@ -12,6 +12,12 @@ use siwx::evm::Evm;
 let provider: DynProvider =
     Provider::erased(ProviderBuilder::new().connect_http(url));
 let evm = Evm::new().with_provider(1, provider);
+
+let msg = Message::new(fields)?;               // build → format → wallet signs
+let text = evm.format(&msg);
+let expect = Expect::new("service.org", &nonce)
+    .with_skew(std::time::Duration::from_secs(60));
+let auth = authenticate(&evm, text.as_bytes(), &sig, &expect).await?;
 ```
 
 - `Evm::new()` verifies EOAs fully offline.

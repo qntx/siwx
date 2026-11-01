@@ -294,12 +294,7 @@ pub(crate) async fn run_verify(
         account: auth.account().to_string(),
         fields: FieldsOutput::from_message(auth.message()),
     };
-    if json {
-        print_json(&out)?;
-    } else {
-        render_verify(&out, false)?;
-    }
-    Ok(())
+    render_verify(&out, json)
 }
 
 pub(crate) fn decode_hex_signature(s: &str) -> Result<Vec<u8>, BoxedError> {
@@ -329,10 +324,10 @@ fn build_expect(args: &VerifyArgs) -> Expect {
         expect = expect.with_request_id(request_id);
     }
     if let Some(skew) = args.skew {
-        expect = expect.with_skew(time::Duration::seconds(skew.cast_signed()));
+        expect = expect.with_skew(std::time::Duration::from_secs(skew));
     }
     if let Some(max_age) = args.max_age {
-        expect = expect.with_max_age(time::Duration::seconds(max_age.cast_signed()));
+        expect = expect.with_max_age(std::time::Duration::from_secs(max_age));
     }
     expect
 }

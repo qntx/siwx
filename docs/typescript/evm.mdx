@@ -10,6 +10,31 @@ import { evm } from "@qntx/siwx/evm";
 import type { Eip1193Provider } from "@qntx/siwx/evm";
 
 const ns = evm({ rpc: { "1": provider } }); // decimal chain-id keys
+
+const message = createMessage({
+  domain: "service.org",
+  address: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  uri: "https://service.org/login",
+  version: "1",
+  chainId: "1",
+  nonce: generateNonce(),
+  issuedAt: "2026-01-01T00:00:00.000Z",
+});
+const text = ns.format(message); // wallet signs `text` → `signature`
+
+// EOA: fully offline — `evm()` works with no providers at all.
+await authenticate(evm(), {
+  message: text,
+  signature,
+  expect: { domain: "service.org", nonce: message.nonce },
+});
+
+// Smart account (1271/6492-wrapped): needs a provider for the message chain.
+await authenticate(ns, {
+  message: text,
+  signature: wrapped6492,
+  expect: { domain: "service.org", nonce: message.nonce },
+});
 ```
 
 - EOA signatures verify fully offline — no RPC call.

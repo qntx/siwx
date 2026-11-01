@@ -96,6 +96,12 @@ fn siws_contract() {
         let err = ns.parse(text.as_bytes()).expect_err(name);
         check_err(&err, &case["error"], name);
     }
+    for case in v["formatReject"].as_array().unwrap() {
+        let name = case["name"].as_str().unwrap();
+        let msg = Message::new(fields(&case["fields"])).unwrap();
+        let err = ns.format(&msg).expect_err(name);
+        check_err(&err, &case["error"], name);
+    }
 }
 
 #[test]

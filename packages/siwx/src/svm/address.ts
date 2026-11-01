@@ -29,8 +29,8 @@ export function addressBytes(address: string): Uint8Array {
 }
 
 /**
- * The canonical, on-curve, non-small-order Ed25519 point for `bytes` (decompress → recompress byte
- * equality proves canonicity).
+ * The canonical, non-identity, prime-order-subgroup Ed25519 point for `bytes` (decompress →
+ * recompress byte equality proves canonicity).
  *
  * @throws {SiwxError} `InvalidField` `address`.
  */
@@ -53,8 +53,8 @@ export function canonicalPoint(bytes: Uint8Array): void {
 }
 
 /**
- * Validate that `address` is a canonical, on-curve, non-small-order Ed25519 verifying key in base58
- * form.
+ * Validate that `address` is a canonical, non-identity, prime-order-subgroup Ed25519 verifying key
+ * in base58 form.
  *
  * @throws {SiwxError} `InvalidField` `address`.
  */

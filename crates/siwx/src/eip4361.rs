@@ -5,11 +5,9 @@
 //! [`parse`] is its strict inverse: for every accepted text `t`,
 //! `format(label, parse(t).message) == t` byte-for-byte.
 
+use crate::layout::{MID, SUFFIX, decode, optional_tags, syntax};
 use crate::message::MAX_MESSAGE_BYTES;
 use crate::{Error, Field, Message, MessageFields, Syntax};
-
-const MID: &str = " wants you to sign in with your ";
-const SUFFIX: &str = " account:";
 
 /// Result of [`parse`]: the preamble label plus the validated message.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -80,10 +78,6 @@ pub fn format(label: &str, message: &Message) -> String {
         }
     }
     out
-}
-
-const fn syntax(kind: Syntax) -> Error {
-    Error::Syntax(kind)
 }
 
 /// Parse `text` into a label + validated [`Message`].
@@ -197,58 +191,6 @@ pub fn parse(text: &str) -> Result<Parsed, Error> {
     })
 }
 
-type OptionalTail = (
-    Option<String>,
-    Option<String>,
-    Option<String>,
-    Option<Vec<String>>,
-);
-
-/// Parse the optional trailing tags in fixed ABNF order:
-/// `Expiration Time`, `Not Before`, `Request ID`, `Resources` (with `- `
-/// items). Each may appear at most once and only in this order.
-fn optional_tags(lines: &[&str], mut i: usize) -> Result<OptionalTail, Error> {
-    let mut expiration_time = None;
-    let mut not_before = None;
-    let mut request_id = None;
-    let mut resources = None;
-
-    if let Some(v) = lines
-        .get(i)
-        .and_then(|l| l.strip_prefix("Expiration Time: "))
-    {
-        expiration_time = Some(v.to_owned());
-        i += 1;
-    }
-    if let Some(v) = lines.get(i).and_then(|l| l.strip_prefix("Not Before: ")) {
-        not_before = Some(v.to_owned());
-        i += 1;
-    }
-    if let Some(v) = lines.get(i).and_then(|l| l.strip_prefix("Request ID: ")) {
-        request_id = Some(v.to_owned());
-        i += 1;
-    }
-    if lines.get(i) == Some(&"Resources:") {
-        i += 1;
-        let mut list = Vec::new();
-        while let Some(&r) = lines.get(i) {
-            if let Some(v) = r.strip_prefix("- ") {
-                list.push(v.to_owned());
-                i += 1;
-            } else if r.starts_with('-') {
-                return Err(syntax(Syntax::ResourceSyntax));
-            } else {
-                return Err(syntax(Syntax::UnexpectedTrailing));
-            }
-        }
-        resources = Some(list);
-    }
-    if i != lines.len() {
-        return Err(syntax(Syntax::UnexpectedTrailing));
-    }
-    Ok((expiration_time, not_before, request_id, resources))
-}
-
 /// [`parse_bytes`] plus a required preamble `label`.
 ///
 /// # Errors
@@ -279,6 +221,5 @@ pub fn parse_bytes(bytes: &[u8]) -> Result<Parsed, Error> {
             max: MAX_MESSAGE_BYTES,
         });
     }
-    let text = std::str::from_utf8(bytes).map_err(|_| syntax(Syntax::InvalidUtf8))?;
-    parse(text)
+    parse(decode(bytes)?)
 }

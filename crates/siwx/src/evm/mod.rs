@@ -15,7 +15,6 @@
 //! cached per provider on success only.
 
 mod eip191;
-#[cfg(feature = "evm")]
 pub(crate) mod validator;
 
 #[cfg(feature = "rpc")]

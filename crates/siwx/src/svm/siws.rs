@@ -17,14 +17,9 @@
 //! and `Issued At` as required; a text missing any of them fails with
 //! [`Syntax::MissingField`]. Scheme prefixes are not part of SIWS.
 
+use crate::layout::{MID, SUFFIX, decode, optional_tags, syntax};
 use crate::{Error, Field, MAX_MESSAGE_BYTES, Message, MessageFields, Syntax};
 
-const fn syntax(kind: Syntax) -> Error {
-    Error::Syntax(kind)
-}
-
-const MID: &str = " wants you to sign in with your ";
-const SUFFIX: &str = " account:";
 const LABEL: &str = "Solana";
 
 /// Format `message` as a SIWS signing text.
@@ -37,10 +32,16 @@ pub fn format(message: &Message) -> Result<String, Error> {
     if message.scheme().is_some() {
         return Err(Error::field(Field::Scheme, "not supported by SIWS"));
     }
-    if let Some(s) = message.statement()
-        && s.is_empty()
-    {
-        return Err(Error::field(Field::Statement, "empty"));
+    if let Some(s) = message.statement() {
+        if s.is_empty() {
+            return Err(Error::field(Field::Statement, "empty"));
+        }
+        if s.starts_with("URI: ") {
+            return Err(Error::field(
+                Field::Statement,
+                "ambiguous with the URI: tag",
+            ));
+        }
     }
     let mut out = String::with_capacity(512);
     out.push_str(message.domain());
@@ -204,56 +205,6 @@ fn statement_then_fields(lines: &[&str], i: &mut usize) -> Result<Option<String>
     }
 }
 
-type OptionalTail = (
-    Option<String>,
-    Option<String>,
-    Option<String>,
-    Option<Vec<String>>,
-);
-
-/// Optional trailing tags in fixed ABNF order — identical to eip4361.
-fn optional_tags(lines: &[&str], mut i: usize) -> Result<OptionalTail, Error> {
-    let mut expiration_time = None;
-    let mut not_before = None;
-    let mut request_id = None;
-    let mut resources = None;
-
-    if let Some(v) = lines
-        .get(i)
-        .and_then(|l| l.strip_prefix("Expiration Time: "))
-    {
-        expiration_time = Some(v.to_owned());
-        i += 1;
-    }
-    if let Some(v) = lines.get(i).and_then(|l| l.strip_prefix("Not Before: ")) {
-        not_before = Some(v.to_owned());
-        i += 1;
-    }
-    if let Some(v) = lines.get(i).and_then(|l| l.strip_prefix("Request ID: ")) {
-        request_id = Some(v.to_owned());
-        i += 1;
-    }
-    if lines.get(i) == Some(&"Resources:") {
-        i += 1;
-        let mut list = Vec::new();
-        while let Some(&r) = lines.get(i) {
-            if let Some(v) = r.strip_prefix("- ") {
-                list.push(v.to_owned());
-                i += 1;
-            } else if r.starts_with('-') {
-                return Err(syntax(Syntax::ResourceSyntax));
-            } else {
-                return Err(syntax(Syntax::UnexpectedTrailing));
-            }
-        }
-        resources = Some(list);
-    }
-    if i != lines.len() {
-        return Err(syntax(Syntax::UnexpectedTrailing));
-    }
-    Ok((expiration_time, not_before, request_id, resources))
-}
-
 /// [`parse`] over raw bytes: size check, strict UTF-8
 /// ([`Syntax::InvalidUtf8`]), then [`parse`].
 ///
@@ -267,6 +218,5 @@ pub fn parse_bytes(bytes: &[u8]) -> Result<Message, Error> {
             max: MAX_MESSAGE_BYTES,
         });
     }
-    let text = std::str::from_utf8(bytes).map_err(|_| syntax(Syntax::InvalidUtf8))?;
-    parse(text)
+    parse(decode(bytes)?)
 }

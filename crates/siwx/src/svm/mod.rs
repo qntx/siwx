@@ -62,7 +62,7 @@ fn canonical_point(bytes: &[u8; 32]) -> Result<(), Error> {
     Ok(())
 }
 
-/// Validate that `address` is a canonical, on-curve, non-small-order
+/// Validate that `address` is a canonical, non-identity, prime-order-subgroup
 /// Ed25519 verifying key in base58 form.
 ///
 /// # Errors
@@ -116,17 +116,8 @@ fn decode_envelope(signed: &[u8]) -> Result<Envelope<'_>, Error> {
     if *count != 1 {
         return Err(invalid());
     }
-    let n = 32usize * usize::from(*count);
-    let signers = rest.get(..n).ok_or_else(invalid)?;
-    // Strictly ascending signers.
-    let mut prev: Option<&[u8; 32]> = None;
-    for s in signers.as_chunks::<32>().0 {
-        if prev.is_some_and(|p| s <= p) {
-            return Err(invalid());
-        }
-        prev = Some(s);
-    }
-    let content = rest.get(n..).ok_or_else(invalid)?;
+    let signers = rest.get(..32).ok_or_else(invalid)?;
+    let content = rest.get(32..).ok_or_else(invalid)?;
     if content.is_empty() {
         return Err(invalid());
     }

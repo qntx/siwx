@@ -15,6 +15,7 @@ never to make a failing test pass.
 | `eip4361/contract.json` | Project-owned: EIP-4361 layout accept/reject contract. |
 | `eip4361/expect.json` | Project-owned: `Expect` binding + time policy contract. |
 | `timestamp/from-instant.json` | Project-owned: instant → JS `toISOString` contract. |
+| `timestamp/parse.json` | Project-owned: RFC 3339 parse accept/reject + epoch-ms contract. |
 
 ## `siwe/` contents
 

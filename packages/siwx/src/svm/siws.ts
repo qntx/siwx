@@ -2,13 +2,12 @@
 
 import { SiwxError, syntaxError } from "../core/error.ts";
 import type { Field } from "../core/error.ts";
+import { MID, SUFFIX, optionalTags } from "../core/layout.ts";
 import { MAX_MESSAGE_BYTES } from "../core/limits.ts";
-import type { Message, MessageFields } from "../core/message.ts";
+import type { Message } from "../core/message.ts";
 import { createMessage } from "../core/message.ts";
 import { utf8Decode, utf8ByteLength } from "../core/utf8.ts";
 
-const MID = " wants you to sign in with your ";
-const SUFFIX = " account:";
 const LABEL = "Solana";
 
 /**
@@ -20,8 +19,17 @@ export function format(message: Message): string {
   if (message.scheme !== undefined) {
     throw new SiwxError({ code: "InvalidField", field: "scheme", reason: "not supported by SIWS" });
   }
-  if (message.statement !== undefined && message.statement === "") {
-    throw new SiwxError({ code: "InvalidField", field: "statement", reason: "empty" });
+  if (message.statement !== undefined) {
+    if (message.statement === "") {
+      throw new SiwxError({ code: "InvalidField", field: "statement", reason: "empty" });
+    }
+    if (message.statement.startsWith("URI: ")) {
+      throw new SiwxError({
+        code: "InvalidField",
+        field: "statement",
+        reason: "ambiguous with the URI: tag",
+      });
+    }
   }
   let out = `${message.domain}${MID}${LABEL}${SUFFIX}\n${message.address}`;
   if (message.statement !== undefined) {
@@ -51,49 +59,6 @@ export function format(message: Message): string {
 }
 
 const missingUri = (): SiwxError => syntaxError("MissingField", "uri");
-
-type OptionalTail = Pick<MessageFields, "expirationTime" | "notBefore" | "requestId" | "resources">;
-
-function optionalTags(lines: string[], start: number): OptionalTail {
-  let i = start;
-  let resources: ReadonlyArray<string> | undefined;
-  const take = (tag: string): string | undefined => {
-    const line = lines[i];
-    if (line !== undefined && line.startsWith(tag)) {
-      i++;
-      return line.slice(tag.length);
-    }
-    return undefined;
-  };
-  const expirationTime = take("Expiration Time: ");
-  const notBefore = take("Not Before: ");
-  const requestId = take("Request ID: ");
-  if (lines[i] === "Resources:") {
-    i++;
-    const list: string[] = [];
-    while (i < lines.length) {
-      const r = lines[i] ?? "";
-      if (r.startsWith("- ")) {
-        list.push(r.slice(2));
-        i++;
-      } else if (r.startsWith("-")) {
-        throw syntaxError("ResourceSyntax");
-      } else {
-        throw syntaxError("UnexpectedTrailing");
-      }
-    }
-    resources = list;
-  }
-  if (i !== lines.length) {
-    throw syntaxError("UnexpectedTrailing");
-  }
-  return {
-    ...(expirationTime === undefined ? {} : { expirationTime }),
-    ...(notBefore === undefined ? {} : { notBefore }),
-    ...(requestId === undefined ? {} : { requestId }),
-    ...(resources === undefined ? {} : { resources }),
-  };
-}
 
 /** The optional statement and the gap up to the required `URI: ` line. */
 function statementThenFields(lines: string[], i: { v: number }): string | undefined {
@@ -133,10 +98,11 @@ function statementThenFields(lines: string[], i: { v: number }): string | undefi
  * @throws {SiwxError} `Syntax`, `Mismatch` `label`, or `InvalidField`.
  */
 export function parse(text: string): Message {
-  if (utf8ByteLength(text) > MAX_MESSAGE_BYTES) {
+  const byteLength = utf8ByteLength(text);
+  if (byteLength > MAX_MESSAGE_BYTES) {
     throw new SiwxError({
       code: "MessageTooLarge",
-      length: utf8ByteLength(text),
+      length: byteLength,
       max: MAX_MESSAGE_BYTES,
     });
   }

@@ -86,7 +86,7 @@ mod tests {
                 .and_then(Value::as_str)
                 .or_else(|| case.get("nonce").and_then(Value::as_str))
                 .unwrap();
-            let mut expect = Expect::new(domain, nonce).with_skew(time::Duration::ZERO);
+            let mut expect = Expect::new(domain, nonce).with_skew(std::time::Duration::ZERO);
             if let Some(t) = case.get("time").and_then(Value::as_str) {
                 let ts = Timestamp::parse(t).unwrap_or_else(|| panic!("{name}: bad time"));
                 expect = expect.with_time(ts.instant());

@@ -93,10 +93,14 @@ mod tests {
                 expect = expect.with_time(Timestamp::parse(t).expect("time").instant());
             }
             if let Some(s) = e.get("skewSeconds").and_then(Value::as_i64) {
-                expect = expect.with_skew(time::Duration::seconds(s));
+                expect = expect.with_skew(std::time::Duration::from_secs(
+                    u64::try_from(s).unwrap_or(u64::MAX),
+                ));
             }
             if let Some(s) = e.get("maxAgeSeconds").and_then(Value::as_i64) {
-                expect = expect.with_max_age(time::Duration::seconds(s));
+                expect = expect.with_max_age(std::time::Duration::from_secs(
+                    u64::try_from(s).unwrap_or(u64::MAX),
+                ));
             }
 
             let res = expect.check(&msg);

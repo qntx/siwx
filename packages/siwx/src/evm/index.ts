@@ -11,15 +11,21 @@ import { SiwxError } from "../core/error.ts";
 import type { Message } from "../core/message.ts";
 import type { Namespace } from "../core/namespace.ts";
 import { parseEip55, parseEvmChainId, toChecksumAddress } from "./address.ts";
-import { has6492MagicSuffix, verifyEip191 } from "./eip191.ts";
+import { verifyEip191 } from "./eip191.ts";
 import type { Eip1193Provider } from "./validator.ts";
-import { providerChainId, verifyOnChain } from "./validator.ts";
+import { has6492MagicSuffix, providerChainId, verifyOnChain } from "./validator.ts";
 
 export { parseEvmChainId, toChecksumAddress, validateAddress } from "./address.ts";
 export type { Eip1193Provider } from "./validator.ts";
 
 const CHAIN_NAME = "Ethereum";
 const NAMESPACE = "eip155";
+
+function evmAccount(message: Message): AccountId {
+  parseEip55(message.address);
+  parseEvmChainId(message.chainId);
+  return createAccountId(NAMESPACE, message.chainId, toChecksumAddress(message.address));
+}
 
 /** Options for `evm()`: injected EIP-1193 providers by decimal chain id. */
 export type EvmOptions = {
@@ -33,12 +39,6 @@ export type EvmOptions = {
  * and `eth_chainId` is bound to the message chain id (cached per provider on success only) before
  * any `eth_call`.
  */
-function evmAccount(message: Message): AccountId {
-  parseEip55(message.address);
-  parseEvmChainId(message.chainId);
-  return createAccountId(NAMESPACE, message.chainId, toChecksumAddress(message.address));
-}
-
 export function evm(options?: EvmOptions): Namespace {
   const rpc = options?.rpc ?? {};
   // Chain-id binding is cached per chain-id key — one provider object may
