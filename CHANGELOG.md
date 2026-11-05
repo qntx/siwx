@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **`checkOrigin` / `check_origin`**: wallet-side request-origin verification
+  (ERC-4361 "Verifying the Request Origin"). Compares the message `scheme`
+  and `domain` with a serialized web origin under an `OriginPolicy`
+  (`allowedSchemes`, `defaultScheme`, `developerMode`) and returns ordered
+  findings (`SchemeNotAllowed`, `SchemeMismatch`, `HostMismatch`,
+  `PortMismatch`) with `reject` / `warn` severity. A malformed
+  origin fails with the new error code `InvalidOrigin`.
+- Shared vectors `vectors/origin/check.json` and the `core.origin` parity
+  entry.
+
 ## 0.7.1
 
 ### Changed

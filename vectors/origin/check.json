@@ -1,0 +1,526 @@
+{
+  "cases": [
+    {
+      "name": "exact match, no scheme",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "https://example.com",
+      "policy": {},
+      "findings": [],
+      "error": null
+    },
+    {
+      "name": "explicit https scheme",
+      "scheme": "https",
+      "domain": "example.com",
+      "origin": "https://example.com",
+      "policy": {},
+      "findings": [],
+      "error": null
+    },
+    {
+      "name": "uppercase scheme and mixed-case host",
+      "scheme": "HTTPS",
+      "domain": "Example.COM",
+      "origin": "https://example.com",
+      "policy": {},
+      "findings": [],
+      "error": null
+    },
+    {
+      "name": "uppercase origin",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "HTTPS://EXAMPLE.com",
+      "policy": {},
+      "findings": [],
+      "error": null
+    },
+    {
+      "name": "no scheme vs http origin rejects",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "http://example.com",
+      "policy": {},
+      "findings": [
+        {
+          "code": "SchemeMismatch",
+          "severity": "reject"
+        },
+        {
+          "code": "PortMismatch",
+          "severity": "warn"
+        }
+      ],
+      "error": null
+    },
+    {
+      "name": "no scheme vs http origin in developer mode",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "http://example.com",
+      "policy": {
+        "allowedSchemes": [
+          "https",
+          "http"
+        ],
+        "developerMode": true
+      },
+      "findings": [
+        {
+          "code": "SchemeMismatch",
+          "severity": "warn"
+        },
+        {
+          "code": "PortMismatch",
+          "severity": "warn"
+        }
+      ],
+      "error": null
+    },
+    {
+      "name": "explicit http with default policy",
+      "scheme": "http",
+      "domain": "example.com",
+      "origin": "http://example.com",
+      "policy": {},
+      "findings": [
+        {
+          "code": "SchemeNotAllowed",
+          "severity": "reject"
+        }
+      ],
+      "error": null
+    },
+    {
+      "name": "explicit http vs https origin",
+      "scheme": "http",
+      "domain": "example.com",
+      "origin": "https://example.com",
+      "policy": {},
+      "findings": [
+        {
+          "code": "SchemeNotAllowed",
+          "severity": "reject"
+        },
+        {
+          "code": "SchemeMismatch",
+          "severity": "reject"
+        },
+        {
+          "code": "PortMismatch",
+          "severity": "warn"
+        }
+      ],
+      "error": null
+    },
+    {
+      "name": "explicit http allowed and matching",
+      "scheme": "http",
+      "domain": "localhost:3000",
+      "origin": "http://localhost:3000",
+      "policy": {
+        "allowedSchemes": [
+          "https",
+          "http"
+        ]
+      },
+      "findings": [],
+      "error": null
+    },
+    {
+      "name": "custom default scheme",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "http://example.com",
+      "policy": {
+        "allowedSchemes": [
+          "http"
+        ],
+        "defaultScheme": "http"
+      },
+      "findings": [],
+      "error": null
+    },
+    {
+      "name": "subdomain on the message side",
+      "scheme": null,
+      "domain": "evil.example.com",
+      "origin": "https://example.com",
+      "policy": {},
+      "findings": [
+        {
+          "code": "HostMismatch",
+          "severity": "reject"
+        }
+      ],
+      "error": null
+    },
+    {
+      "name": "subdomain on the origin side",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "https://evil.example.com",
+      "policy": {},
+      "findings": [
+        {
+          "code": "HostMismatch",
+          "severity": "reject"
+        }
+      ],
+      "error": null
+    },
+    {
+      "name": "host mismatch in developer mode",
+      "scheme": null,
+      "domain": "evil.com",
+      "origin": "https://example.com",
+      "policy": {
+        "allowedSchemes": [
+          "https",
+          "http"
+        ],
+        "developerMode": true
+      },
+      "findings": [
+        {
+          "code": "HostMismatch",
+          "severity": "warn"
+        }
+      ],
+      "error": null
+    },
+    {
+      "name": "explicit default port",
+      "scheme": null,
+      "domain": "example.com:443",
+      "origin": "https://example.com",
+      "policy": {},
+      "findings": [],
+      "error": null
+    },
+    {
+      "name": "default port with leading zero",
+      "scheme": null,
+      "domain": "example.com:0443",
+      "origin": "https://example.com",
+      "policy": {},
+      "findings": [],
+      "error": null
+    },
+    {
+      "name": "empty domain port is no port",
+      "scheme": null,
+      "domain": "example.com:",
+      "origin": "https://example.com",
+      "policy": {},
+      "findings": [],
+      "error": null
+    },
+    {
+      "name": "non-default domain port",
+      "scheme": null,
+      "domain": "example.com:8443",
+      "origin": "https://example.com",
+      "policy": {},
+      "findings": [
+        {
+          "code": "PortMismatch",
+          "severity": "warn"
+        }
+      ],
+      "error": null
+    },
+    {
+      "name": "non-default origin port",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "https://example.com:3000",
+      "policy": {},
+      "findings": [
+        {
+          "code": "PortMismatch",
+          "severity": "warn"
+        }
+      ],
+      "error": null
+    },
+    {
+      "name": "different explicit ports",
+      "scheme": null,
+      "domain": "example.com:443",
+      "origin": "https://example.com:8443",
+      "policy": {},
+      "findings": [
+        {
+          "code": "PortMismatch",
+          "severity": "warn"
+        }
+      ],
+      "error": null
+    },
+    {
+      "name": "same explicit port",
+      "scheme": null,
+      "domain": "example.com:3000",
+      "origin": "https://example.com:3000",
+      "policy": {},
+      "findings": [],
+      "error": null
+    },
+    {
+      "name": "ipv4 with port in developer mode",
+      "scheme": "http",
+      "domain": "127.0.0.1:8080",
+      "origin": "http://127.0.0.1:8080",
+      "policy": {
+        "allowedSchemes": [
+          "https",
+          "http"
+        ],
+        "developerMode": true
+      },
+      "findings": [],
+      "error": null
+    },
+    {
+      "name": "ipv4 port mismatch",
+      "scheme": "http",
+      "domain": "127.0.0.1:8080",
+      "origin": "http://127.0.0.1:9090",
+      "policy": {
+        "allowedSchemes": [
+          "https",
+          "http"
+        ],
+        "developerMode": true
+      },
+      "findings": [
+        {
+          "code": "PortMismatch",
+          "severity": "warn"
+        }
+      ],
+      "error": null
+    },
+    {
+      "name": "ipv6 with port in developer mode",
+      "scheme": "http",
+      "domain": "[::1]:8080",
+      "origin": "http://[::1]:8080",
+      "policy": {
+        "allowedSchemes": [
+          "https",
+          "http"
+        ],
+        "developerMode": true
+      },
+      "findings": [],
+      "error": null
+    },
+    {
+      "name": "ipv6 port mismatch",
+      "scheme": "http",
+      "domain": "[::1]:8080",
+      "origin": "http://[::1]:8081",
+      "policy": {
+        "allowedSchemes": [
+          "https",
+          "http"
+        ],
+        "developerMode": true
+      },
+      "findings": [
+        {
+          "code": "PortMismatch",
+          "severity": "warn"
+        }
+      ],
+      "error": null
+    },
+    {
+      "name": "ipv6 without port vs default",
+      "scheme": null,
+      "domain": "[::1]",
+      "origin": "https://[::1]:443",
+      "policy": {},
+      "findings": [],
+      "error": null
+    },
+    {
+      "name": "scheme without a default port",
+      "scheme": "foo",
+      "domain": "x",
+      "origin": "foo://x",
+      "policy": {
+        "allowedSchemes": [
+          "foo"
+        ]
+      },
+      "findings": [],
+      "error": null
+    },
+    {
+      "name": "scheme without a default port, explicit domain port",
+      "scheme": "foo",
+      "domain": "x:1",
+      "origin": "foo://x",
+      "policy": {
+        "allowedSchemes": [
+          "foo"
+        ]
+      },
+      "findings": [
+        {
+          "code": "PortMismatch",
+          "severity": "warn"
+        }
+      ],
+      "error": null
+    },
+    {
+      "name": "invalid origin: null",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "null",
+      "policy": {},
+      "findings": null,
+      "error": "InvalidOrigin"
+    },
+    {
+      "name": "invalid origin: no scheme separator",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "example.com",
+      "policy": {},
+      "findings": null,
+      "error": "InvalidOrigin"
+    },
+    {
+      "name": "invalid origin: empty host",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "https://",
+      "policy": {},
+      "findings": null,
+      "error": "InvalidOrigin"
+    },
+    {
+      "name": "invalid origin: empty port",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "https://a:",
+      "policy": {},
+      "findings": null,
+      "error": "InvalidOrigin"
+    },
+    {
+      "name": "invalid origin: userinfo",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "https://u@a",
+      "policy": {},
+      "findings": null,
+      "error": "InvalidOrigin"
+    },
+    {
+      "name": "invalid origin: path",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "https://a/path",
+      "policy": {},
+      "findings": null,
+      "error": "InvalidOrigin"
+    },
+    {
+      "name": "invalid origin: query",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "https://a?x",
+      "policy": {},
+      "findings": null,
+      "error": "InvalidOrigin"
+    },
+    {
+      "name": "invalid origin: fragment",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "https://a#f",
+      "policy": {},
+      "findings": null,
+      "error": "InvalidOrigin"
+    },
+    {
+      "name": "invalid origin: non-numeric port",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "https://a:b",
+      "policy": {},
+      "findings": null,
+      "error": "InvalidOrigin"
+    },
+    {
+      "name": "invalid origin: two ports",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "https://a:80:90",
+      "policy": {},
+      "findings": null,
+      "error": "InvalidOrigin"
+    },
+    {
+      "name": "invalid origin: space in host",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "https://a b",
+      "policy": {},
+      "findings": null,
+      "error": "InvalidOrigin"
+    },
+    {
+      "name": "invalid origin: empty scheme",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "://a",
+      "policy": {},
+      "findings": null,
+      "error": "InvalidOrigin"
+    },
+    {
+      "name": "invalid origin: scheme starting with a digit",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "1http://a",
+      "policy": {},
+      "findings": null,
+      "error": "InvalidOrigin"
+    },
+    {
+      "name": "invalid origin: unterminated ipv6",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "https://[::1",
+      "policy": {},
+      "findings": null,
+      "error": "InvalidOrigin"
+    },
+    {
+      "name": "invalid origin: garbage after ipv6",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "https://[::1]x",
+      "policy": {},
+      "findings": null,
+      "error": "InvalidOrigin"
+    },
+    {
+      "name": "invalid origin: empty string",
+      "scheme": null,
+      "domain": "example.com",
+      "origin": "",
+      "policy": {},
+      "findings": null,
+      "error": "InvalidOrigin"
+    }
+  ]
+}

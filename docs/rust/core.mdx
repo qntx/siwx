@@ -31,3 +31,21 @@ let auth = authenticate(&evm, text.as_bytes(), &sig, &expect).await?;
 
 `expect.check(&message)` runs domain → nonce → scheme → uri → chainId →
 requestId (`Mismatch`), then `Expired`/`NotYetValid`/`IssuedAtTooOld`.
+
+## Request origin
+
+```rust
+use siwx::{OriginPolicy, Severity, check_origin};
+
+let policy = OriginPolicy::default()      // https only, default scheme https
+    .with_allowed_schemes(["https"])
+    .with_developer_mode(false);          // true: scheme/host mismatches warn
+let findings = check_origin(&msg, "https://service.org", &policy)?;
+assert!(findings.iter().all(|f| f.severity != Severity::Reject));
+```
+
+`check_origin` follows ERC-4361 "Verifying the Request Origin" and returns
+`OriginFinding { code, severity }` in the order `SchemeNotAllowed`,
+`SchemeMismatch`, `HostMismatch`, `PortMismatch` (`PortMismatch` is always a
+warning). A malformed origin is
+`Error::InvalidOrigin`.

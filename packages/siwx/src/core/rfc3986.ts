@@ -261,4 +261,4 @@ function isUri(s: string): boolean {
   return true;
 }
 
-export { isScheme, isAuthority, isUri, isPcharString };
+export { isScheme, isHost, isAuthority, isUri, isPcharString };

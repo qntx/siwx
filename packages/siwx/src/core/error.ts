@@ -35,6 +35,7 @@ export type SiwxErrorInfo =
   | Readonly<{ code: "Syntax"; syntax: Exclude<SyntaxKind, "MissingField"> }>
   | Readonly<{ code: "InvalidField"; field: Field; reason: string }>
   | Readonly<{ code: "Mismatch"; field: Field; expected: string; actual: string | undefined }>
+  | Readonly<{ code: "InvalidOrigin" }>
   | Readonly<{ code: "Expired" }>
   | Readonly<{ code: "NotYetValid" }>
   | Readonly<{ code: "IssuedAtTooOld" }>
@@ -72,6 +73,9 @@ function describe(info: SiwxErrorInfo): string {
   }
   if (info.code === "Mismatch") {
     return `${info.field} mismatch: expected ${info.expected}, got ${JSON.stringify(info.actual)}`;
+  }
+  if (info.code === "InvalidOrigin") {
+    return "invalid origin: not a serialized web origin";
   }
   if (info.code === "Expired") {
     return "message expired";
