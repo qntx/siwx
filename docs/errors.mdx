@@ -12,6 +12,7 @@ description: Stable cross-language error contract.
 | `Syntax`             | parser                              | see syntax table below                                              |
 | `InvalidField`       | `Message::new` / `account` / verify | `{field, reason}` — value fails a validator                         |
 | `Mismatch`           | `Expect` / envelope / chain-id      | `{field, expected, actual}`                                         |
+| `InvalidOrigin`      | `check_origin`                      | origin is not a serialized web origin (`scheme://host[:port]`)      |
 | `Expired`            | `Expect`                            | `expirationTime` passed                                             |
 | `NotYetValid`        | `Expect`                            | before `notBefore`                                                  |
 | `IssuedAtTooOld`     | `Expect`                            | beyond `maxAge`                                                     |
@@ -39,5 +40,6 @@ description: Stable cross-language error contract.
 | `format`                         | `InvalidField` (statement/scheme rules)                                                              |
 | `parse`                          | `MessageTooLarge`, `Syntax` (incl. `InvalidEnvelope`), `InvalidField`, `Mismatch { label\|address }` |
 | `Expect::check` / `checkExpect`  | `Mismatch`, `Expired`, `NotYetValid`, `IssuedAtTooOld`                                               |
+| `check_origin` / `checkOrigin`   | `InvalidOrigin`                                                                                      |
 | `account()`                      | `InvalidField`                                                                                       |
 | `verify()`                       | `InvalidSignature`, `VerificationFailed`, `Unsupported`, `Backend`, `Mismatch { chainId }`           |

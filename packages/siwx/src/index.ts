@@ -26,6 +26,8 @@ export type { Authenticated, Namespace } from "./core/namespace.ts";
 export { authenticate } from "./core/namespace.ts";
 export type { Expect } from "./core/expect.ts";
 export { checkExpect } from "./core/expect.ts";
+export type { OriginFinding, OriginFindingCode, OriginPolicy } from "./core/origin.ts";
+export { checkOrigin } from "./core/origin.ts";
 export { generateNonce } from "./core/nonce.ts";
 export type { Timestamp } from "./core/timestamp.ts";
 export { parseTimestamp, timestampFromDate } from "./core/timestamp.ts";

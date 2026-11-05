@@ -86,6 +86,21 @@
       ]
     },
     {
+      "id": "core.origin",
+      "tier": "A",
+      "status": "stable",
+      "milestone": "TS3",
+      "ts": {
+        "module": "packages/siwx/src/core/origin.ts",
+        "tests": ["packages/siwx/tests/vectors/origin.test.ts"]
+      },
+      "rust": {
+        "module": "crates/siwx/src/origin.rs",
+        "tests": ["crates/siwx/tests/origin.rs"]
+      },
+      "vectors": ["vectors/origin/check.json"]
+    },
+    {
       "id": "core.expect",
       "tier": "A",
       "status": "stable",

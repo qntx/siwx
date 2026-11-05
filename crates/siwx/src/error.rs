@@ -163,6 +163,9 @@ pub enum Error {
         /// Message value (`None` when the optional field is absent).
         actual: Option<String>,
     },
+    /// The request origin is not a serialized web origin.
+    #[error("invalid origin: not a serialized web origin")]
+    InvalidOrigin,
     /// The message has expired (`expiration_time` is in the past, beyond skew).
     #[error("message expired")]
     Expired,
@@ -204,6 +207,7 @@ impl Error {
             Self::Syntax(_) => "Syntax",
             Self::InvalidField { .. } => "InvalidField",
             Self::Mismatch { .. } => "Mismatch",
+            Self::InvalidOrigin => "InvalidOrigin",
             Self::Expired => "Expired",
             Self::NotYetValid => "NotYetValid",
             Self::IssuedAtTooOld => "IssuedAtTooOld",

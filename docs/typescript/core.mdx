@@ -30,3 +30,25 @@ const auth = await authenticate(ns, {
 `Namespace` = `parse | format | account | verify | namespace | label`.
 `Expect` fields: `domain`/`nonce` required; `scheme`, `uri`, `chainId`,
 `requestId`, `time`, `skewSeconds`, `maxAge` optional.
+
+## Request origin
+
+Wallets verify where a sign-in request came from with `checkOrigin`
+(ERC-4361 "Verifying the Request Origin"):
+
+```ts
+import { checkOrigin } from "@qntx/siwx";
+
+const findings = checkOrigin(message, "https://service.org", {
+  allowedSchemes: ["https"], // default
+  defaultScheme: "https", // when the message has no scheme
+  developerMode: false, // true: scheme/host mismatches become warnings
+});
+```
+
+Findings come in this order, each `{ code, severity }`: `SchemeNotAllowed`
+(always `reject`), `SchemeMismatch`, `HostMismatch`, `PortMismatch` (always
+`warn`). Hosts compare ASCII
+case-insensitively and exactly; effective ports default to 443 for `https` and
+80 for `http`. An empty array means the origin verifies. A malformed `origin`
+throws `InvalidOrigin`.

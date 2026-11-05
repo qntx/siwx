@@ -14,6 +14,7 @@ never to make a failing test pass.
 | `siwe-overrides.json` | Project-owned: canonical cases siwx intentionally answers differently (keyed `"<file>#<case name>"`). |
 | `eip4361/contract.json` | Project-owned: EIP-4361 layout accept/reject contract. |
 | `eip4361/expect.json` | Project-owned: `Expect` binding + time policy contract. |
+| `origin/check.json` | Project-owned: wallet-side request-origin verification contract. |
 | `timestamp/from-instant.json` | Project-owned: instant → JS `toISOString` contract. |
 | `timestamp/parse.json` | Project-owned: RFC 3339 parse accept/reject + epoch-ms contract. |
 

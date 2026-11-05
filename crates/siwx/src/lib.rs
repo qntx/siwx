@@ -24,6 +24,7 @@ mod layout;
 mod message;
 mod namespace;
 pub mod nonce;
+mod origin;
 #[cfg(feature = "svm")]
 pub mod svm;
 
@@ -36,3 +37,4 @@ pub use message::{
     MIN_NONCE_LEN, Message, MessageFields, Timestamp,
 };
 pub use namespace::{Authenticated, BoxFuture, Namespace, authenticate};
+pub use origin::{OriginFinding, OriginFindingCode, OriginPolicy, Severity, check_origin};
