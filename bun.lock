@@ -9,7 +9,7 @@
         "@qntx/oxlint": "1.1.1",
         "@qntx/tsconfig": "1.0.1",
         "@taplo/cli": "0.7.0",
-        "@types/node": "26.6.5",
+        "@types/node": "26.6.6",
         "bumpp": "12.3.0",
         "typescript": "7.0.2",
         "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0",
@@ -18,7 +18,7 @@
     },
     "packages/siwx": {
       "name": "@qntx/siwx",
-      "version": "0.7.1",
+      "version": "0.8.0",
       "dependencies": {
         "@noble/curves": "^2.4.0",
         "@noble/hashes": "^2.4.0",
@@ -27,7 +27,7 @@
       "devDependencies": {
         "@arethetypeswrong/cli": "0.18.5",
         "@qntx/tsconfig": "1.0.1",
-        "@types/node": "26.6.5",
+        "@types/node": "26.6.6",
         "publint": "0.3.25",
         "typescript": "7.0.2",
         "vite-plus": "1.4.0",
@@ -194,7 +194,7 @@
 
     "@types/estree": ["@types/estree@1.0.10", "", {}, "sha512-lTyOMnOcmRBzdCv6/4zUZCrEhV0xrqQiUZBZtVcbmLHBXKLnN8q89v/wKRF/Q0HbwVsqbIG3o5HDoFl9sduM+g=="],
 
-    "@types/node": ["@types/node@26.6.5", "", { "dependencies": { "undici-types": "~8.9.0" } }, "sha512-uMzsv9stDdofIZBx4UGh4Z9ZgXnGC9seRDscilBcTHAeOFk67MZg/k9bWVfO+bk4qZmG+l52hRnLwUiH2LnJTg=="],
+    "@types/node": ["@types/node@26.6.6", "", { "dependencies": { "undici-types": "~8.9.0" } }, "sha512-MzQj+8Kx3XI40OmUAE6Qoh58ZMNstNNMwn2nfd3qWsfe7nDNSqJNzes4njhz6AHwrSHOffSLwXU6yb474Q4aog=="],
 
     "@typescript/typescript-aix-ppc64": ["@typescript/typescript-aix-ppc64@7.0.2", "", { "os": "aix", "cpu": "ppc64" }, "sha512-MTKKkWB7p/0E9xi1d1tHtZ5PiLkGEMIq88pK2CubZjOsLtYTLqhgIgi6zepFa+9GHZ6h05NMCkQxGKiPXMxXtQ=="],
 
