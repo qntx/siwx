@@ -40,7 +40,8 @@
   Solana layout produced by wallet-standard wallets (not the EIP-4361
   layout), chain ids are `mainnet|testnet|devnet|localnet` (optionally
   `solana:`-prefixed) mapped to CAIP-2 genesis references. A `statement`
-  starting with `URI: ` is rejected at format (`InvalidField` `statement`)
+  starting with `URI:` followed by a space is rejected at format
+  (`InvalidField` `statement`)
   because it would round-trip as the `URI:` field.
 - **New core API** replacing `SiwxMessage`/`SiwxError`/`Verifier`:
   `Message`/`MessageFields`, `Timestamp`, `Expect` (domain/nonce bindings +
