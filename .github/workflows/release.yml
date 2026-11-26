@@ -18,7 +18,7 @@ jobs:
       package: siwx-cli
       # The gnu builds link against glibc 2.28 (RHEL 8, Debian 10 and newer);
       # the build fails if a binary needs a newer GLIBC_x.y.
-      glibc-floor: '2.28'
+      glibc-floor: "2.28"
       # Builds an EIP-4361 message offline (nonce from OS entropy).
       smoke-command: >-
         --json evm message --domain service.org
