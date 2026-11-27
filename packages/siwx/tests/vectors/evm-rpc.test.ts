@@ -36,6 +36,15 @@ const fields = (chainId: string) =>
 
 const MAGIC = hexToBytes("6492".repeat(16));
 
+async function captureError(p: Promise<unknown>): Promise<unknown> {
+  try {
+    await p;
+    return null;
+  } catch (error) {
+    return error;
+  }
+}
+
 /** Fake provider: fixed responses per call, counts invocations. */
 function fakeProvider(
   responses: ReadonlyArray<unknown>,
@@ -129,10 +138,7 @@ describe("evm rpc path", () => {
   it("191 failure without provider → original 191 error", async () => {
     const ns = evm();
     const msg = fields("1");
-    const e = await ns.verify(msg, new Uint8Array([1]), new Uint8Array(65)).then(
-      () => null,
-      (error: unknown) => error,
-    );
+    const e = await captureError(ns.verify(msg, new Uint8Array([1]), new Uint8Array(65)));
     expect(e).toBeInstanceOf(SiwxError);
     if (e instanceof SiwxError) {
       expect(e.code).toBe("InvalidSignature");
@@ -143,10 +149,7 @@ describe("evm rpc path", () => {
     const provider = fakeProvider(["0x7a69"]);
     const ns = evm({ rpc: { "1": provider } });
     const msg = fields("1");
-    const e = await ns.verify(msg, new Uint8Array([1]), magicSig).then(
-      () => null,
-      (error: unknown) => error,
-    );
+    const e = await captureError(ns.verify(msg, new Uint8Array([1]), magicSig));
     expect(e).toBeInstanceOf(SiwxError);
     if (e instanceof SiwxError) {
       expect(e.code).toBe("Mismatch");
@@ -176,10 +179,7 @@ describe("evm rpc path", () => {
       },
     ]);
     const ns = evm({ rpc: { "1": provider } });
-    const e = await ns.verify(fields("1"), new Uint8Array([1]), magicSig).then(
-      () => null,
-      (error: unknown) => error,
-    );
+    const e = await captureError(ns.verify(fields("1"), new Uint8Array([1]), magicSig));
     expect((e as SiwxError).code).toBe("VerificationFailed");
   });
 
@@ -198,10 +198,7 @@ describe("evm rpc path", () => {
       },
     ]);
     const ns = evm({ rpc: { "1": provider } });
-    const e = await ns.verify(fields("1"), new Uint8Array([1]), magicSig).then(
-      () => null,
-      (error: unknown) => error,
-    );
+    const e = await captureError(ns.verify(fields("1"), new Uint8Array([1]), magicSig));
     expect(e).toBeInstanceOf(SiwxError);
     if (e instanceof SiwxError) {
       expect(e.code).toBe("Backend");
@@ -212,10 +209,7 @@ describe("evm rpc path", () => {
     const secret = "https://secret-node.example/KEY";
     const provider = fakeProvider(["0x1", () => new Error(`cannot reach ${secret}`)]);
     const ns = evm({ rpc: { "1": provider } });
-    const e = await ns.verify(fields("1"), new Uint8Array([1]), magicSig).then(
-      () => null,
-      (error: unknown) => error,
-    );
+    const e = await captureError(ns.verify(fields("1"), new Uint8Array([1]), magicSig));
     expect(e).toBeInstanceOf(SiwxError);
     if (e instanceof SiwxError) {
       expect(e.code).toBe("Backend");
@@ -252,10 +246,12 @@ describe.skipIf(process.env["SIWX_MAINNET_RPC"] === undefined)("eip1271 mainnet 
     const c = vec[name] ?? { message: "", signature: "" };
     const text = new TextEncoder().encode(c.message);
     const msg = ns.parse(text);
-    const err = await ns.verify(msg, text, hexToBytes(c.signature)).then(
-      () => undefined,
-      (error: unknown) => error,
-    );
+    let err: unknown;
+    try {
+      await ns.verify(msg, text, hexToBytes(c.signature));
+    } catch (error) {
+      err = error;
+    }
     expect(err).toBeUndefined();
   });
 });

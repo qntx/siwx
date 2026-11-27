@@ -343,10 +343,12 @@ it.each(verifyCases)("verify $file#$name", async ({ valid, signature, time, ...f
     checkExpect(msg, expect_);
     await ns.verify(msg, signed, hexToBytes(signature));
   })();
-  const error = await p.then(
-    () => null,
-    (error: unknown) => error,
-  );
+  let error: unknown = null;
+  try {
+    await p;
+  } catch (error_) {
+    error = error_;
+  }
   expect(error instanceof SiwxError).toBe(!valid);
 });
 

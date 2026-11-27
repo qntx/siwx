@@ -18,6 +18,15 @@ const hexToBytes = (s: string) => {
   return b;
 };
 
+async function captureError(p: Promise<unknown>): Promise<unknown> {
+  try {
+    await p;
+    return null;
+  } catch (error) {
+    return error;
+  }
+}
+
 const fieldsFromJson = (v: Record<string, unknown>): MessageFields => ({
   scheme: (v["scheme"] as string | null) ?? undefined,
   domain: (v["domain"] as string | undefined) ?? "",
@@ -191,10 +200,7 @@ describe("svm ed25519 vectors", () => {
       c.text === undefined ? hexToBytes(c.signedHex ?? "") : new TextEncoder().encode(c.text);
     const msg = ns.parse(signed);
     const sig = hexToBytes(c.signatureHex);
-    const error = await ns.verify(msg, signed, sig).then(
-      () => null,
-      (error: unknown) => error,
-    );
+    const error = await captureError(ns.verify(msg, signed, sig));
     if (c.error === null) {
       expect(error).toBeNull();
     } else {
@@ -234,10 +240,7 @@ describe("ed25519-speccheck vectors", () => {
       }),
     );
     const sig = hexToBytes(c.signature);
-    const error = await ns.verify(msg, msgBytes, sig).then(
-      () => null,
-      (error: unknown) => error,
-    );
+    const error = await captureError(ns.verify(msg, msgBytes, sig));
     const want = expected.cases[c.index]!.accept;
     if (want) {
       expect(error).toBeNull();
