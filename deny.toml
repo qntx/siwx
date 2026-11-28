@@ -23,17 +23,6 @@ ignore = [
   { id = "RUSTSEC-2026-0387", reason = "transitive via alloy k256 chain (crypto-bigint 0.5); drop when alloy moves to elliptic-curve 0.14" },
   # alloy-primitives / syn-solidity still use unmaintained `paste`.
   { id = "RUSTSEC-2024-0436", reason = "transitive via alloy-primitives and syn-solidity (unmaintained paste); drop when alloy replaces it" },
-  # url <= 2.5.8: `Url::origin()` recurses once per nested `blob:` prefix
-  # and can overflow the stack. url 2.5.8 arrives via the alloy chain
-  # (alloy-node-bindings/-provider/-rpc-client/-transport(-http)) plus
-  # reqwest and tower-http. Across the workspace and every registry crate
-  # in Cargo.lock, nothing calls `Url::origin()` or
-  # `url::quirks::origin()` outside url's own sources — the vulnerable
-  # function is never invoked.
-  # Fixed in 2.5.9, published 2026-11-20T23:03Z.
-  # Revisit: from 2026-11-28 (7-day rule) run `cargo update -p url` to
-  # 2.5.9 and remove this entry.
-  { id = "RUSTSEC-2026-0592", reason = "Url::origin() blob: recursion; no caller of .origin()/quirks::origin anywhere in the workspace or lockfile deps; bump url to 2.5.9 and remove from 2026-11-28" },
 ]
 
 [licenses]
